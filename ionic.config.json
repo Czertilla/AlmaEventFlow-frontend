@@ -1,0 +1,8 @@
+{
+  "name": "Alma Event Flow",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "vue-vite",
+  "id": "566fa621"
+}
