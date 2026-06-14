@@ -1,2 +1,246 @@
-/* For information on how to create your own theme, please refer to:
-http://ionicframework.com/docs/theming/ */
+:root {
+  /* Brand palette */
+  --ion-color-primary: #6C63FF;
+  --ion-color-primary-rgb: 108, 99, 255;
+  --ion-color-primary-contrast: #ffffff;
+  --ion-color-primary-contrast-rgb: 255, 255, 255;
+  --ion-color-primary-shade: #5A52E0;
+  --ion-color-primary-tint: #7D75FF;
+
+  --ion-color-secondary: #00D9A6;
+  --ion-color-secondary-rgb: 0, 217, 166;
+  --ion-color-secondary-contrast: #000000;
+  --ion-color-secondary-contrast-rgb: 0, 0, 0;
+  --ion-color-secondary-shade: #00BF92;
+  --ion-color-secondary-tint: #1AE0B0;
+
+  --ion-color-tertiary: #FF6B9D;
+  --ion-color-tertiary-rgb: 255, 107, 157;
+  --ion-color-tertiary-contrast: #ffffff;
+  --ion-color-tertiary-contrast-rgb: 255, 255, 255;
+  --ion-color-tertiary-shade: #E05E8B;
+  --ion-color-tertiary-tint: #FF7AA8;
+
+  --ion-color-success: #00D9A6;
+  --ion-color-warning: #FFB800;
+  --ion-color-danger: #FF4757;
+  --ion-color-medium: #92949c;
+  --ion-color-light: #f4f5f8;
+
+  /* Surfaces */
+  --ion-background-color: #f8f9fe;
+  --ion-background-color-rgb: 248, 249, 254;
+  --ion-text-color: #1a1a2e;
+  --ion-text-color-rgb: 26, 26, 46;
+  --ion-card-background: #ffffff;
+  --ion-item-background: #ffffff;
+  --ion-toolbar-background: #ffffff;
+  --ion-tab-bar-background: #ffffff;
+
+  /* Borders & Radius */
+  --ion-border-color: #e8e8f0;
+  --ion-border-radius: 16px;
+
+  /* Shadows */
+  --ion-card-shadow: 0 2px 16px rgba(108, 99, 255, 0.08);
+
+  /* Typography */
+  --ion-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Dark mode */
+.ion-palette-dark {
+  --ion-color-primary: #7D75FF;
+  --ion-color-primary-rgb: 125, 117, 255;
+  --ion-color-primary-shade: #6C63FF;
+  --ion-color-primary-tint: #8F88FF;
+
+  --ion-color-secondary: #00D9A6;
+  --ion-color-tertiary: #FF6B9D;
+
+  --ion-background-color: #0f0f23;
+  --ion-background-color-rgb: 15, 15, 35;
+  --ion-text-color: #e8e8f0;
+  --ion-text-color-rgb: 232, 232, 240;
+  --ion-card-background: #1a1a35;
+  --ion-item-background: #1a1a35;
+  --ion-toolbar-background: #13132b;
+  --ion-tab-bar-background: #13132b;
+
+  --ion-border-color: #2a2a45;
+  --ion-card-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
+
+  --ion-color-step-50: #232340;
+  --ion-color-step-100: #2a2a45;
+  --ion-color-step-150: #31314a;
+  --ion-color-step-200: #383850;
+  --ion-color-step-250: #3f3f55;
+  --ion-color-step-300: #46465a;
+  --ion-color-step-350: #4d4d5f;
+  --ion-color-step-400: #545465;
+  --ion-color-step-450: #5b5b6a;
+  --ion-color-step-500: #62626f;
+  --ion-color-step-550: #696974;
+  --ion-color-step-600: #70707a;
+  --ion-color-step-650: #77777f;
+  --ion-color-step-700: #7e7e84;
+  --ion-color-step-750: #858589;
+  --ion-color-step-800: #8c8c8f;
+  --ion-color-step-850: #939394;
+  --ion-color-step-900: #9a9a99;
+  --ion-color-step-950: #a1a19e;
+}
+
+/* Global styles */
+ion-card {
+  border-radius: 16px !important;
+  box-shadow: var(--ion-card-shadow) !important;
+  margin: 12px 16px;
+}
+
+ion-card-header {
+  padding: 20px 20px 12px;
+}
+
+ion-card-content {
+  padding: 12px 20px 20px;
+}
+
+ion-item {
+  --border-radius: 12px;
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --inner-padding-end: 16px;
+  margin: 4px 0;
+}
+
+ion-toolbar {
+  --border-width: 0 !important;
+}
+
+ion-button {
+  --border-radius: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+}
+
+ion-input, ion-textarea {
+  --border-radius: 12px;
+  --padding-start: 16px;
+  --padding-end: 16px;
+  --background: var(--ion-item-background);
+  border: 1px solid var(--ion-border-color);
+  border-radius: 12px;
+  margin-top: 4px;
+}
+
+ion-item.item-has-focus ion-input {
+  border-color: var(--ion-color-primary);
+}
+
+ion-chip {
+  --border-radius: 8px;
+  font-weight: 500;
+}
+
+ion-menu ion-content {
+  --background: var(--ion-background-color);
+}
+
+/* Modals — единый стиль по всему приложению */
+ion-modal {
+  --border-radius: 20px;
+  --box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+  --background: var(--ion-card-background);
+}
+
+@media (min-width: 768px) {
+  ion-modal {
+    --width: 560px;
+    --max-width: calc(100vw - 32px);
+    --max-height: 86vh;
+  }
+}
+
+ion-modal ion-toolbar {
+  --background: var(--ion-card-background);
+  --padding-start: 8px;
+  --padding-end: 8px;
+}
+
+ion-modal ion-title {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+ion-modal ion-content {
+  --background: var(--ion-card-background);
+}
+
+/* Searchbar — единый вид по всему приложению */
+ion-searchbar {
+  --border-radius: 12px;
+  --background: var(--ion-card-background);
+  --box-shadow: inset 0 0 0 1.5px var(--ion-border-color);
+  --placeholder-color: var(--ion-color-step-400);
+  --icon-color: var(--ion-color-medium);
+  padding: 0 0 8px;
+}
+
+ion-searchbar.searchbar-has-focus {
+  --box-shadow: inset 0 0 0 1.5px var(--ion-color-primary);
+}
+
+/* Dropdowns (popovers селектов и пр.) — скруглённые углы глобально */
+ion-popover {
+  --border-radius: 14px;
+  --box-shadow: 0 8px 32px rgba(0, 0, 0, 0.14);
+}
+
+ion-popover ion-content {
+  --background: var(--ion-card-background);
+}
+
+/* Alerts */
+ion-alert {
+  --backdrop-opacity: 0.4;
+}
+
+ion-alert .alert-wrapper {
+  border-radius: 18px !important;
+}
+
+ion-tab-bar {
+  --border: 0;
+  box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.08);
+  padding: 4px 0;
+  padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+.ion-palette-dark ion-tab-bar {
+  box-shadow: 0 -2px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* На десктопе навигацию даёт верхняя шапка — мобильная кнопка «назад» не нужна */
+@media (min-width: 768px) {
+  ion-back-button {
+    display: none;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--ion-color-step-300);
+  border-radius: 3px;
+}
+
+/* Transitions */
+ion-router-outlet {
+  --page-transition-duration: 300ms;
+}
