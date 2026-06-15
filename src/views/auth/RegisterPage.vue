@@ -18,6 +18,15 @@
               <span class="auth-tab active">Регистрация</span>
             </div>
 
+            <div v-if="invitePersonName" class="invite-notice">
+              <ion-icon :icon="linkOutline" />
+              <span>Вы регистрируетесь с привязкой к профилю <strong>{{ invitePersonName }}</strong></span>
+            </div>
+            <div v-else-if="inviteError" class="invite-notice invite-notice--error">
+              <ion-icon :icon="alertCircleOutline" />
+              <span>{{ inviteError }}</span>
+            </div>
+
             <div class="auth-form">
               <div class="field-group">
                 <label class="field-label">Email</label>
@@ -90,15 +99,44 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, reactive, computed, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { checkUsernameUserV1UsersCheckUsernameGet } from '@/api/generated/-user'
+import { decodeJwt } from '@/utils/jwt'
+import { resolvePersonName } from '@/utils/names'
 import { IonPage, IonContent, IonIcon } from '@ionic/vue'
-import { mailOutline, personOutline, lockClosedOutline, checkmarkOutline, alertCircleOutline } from 'ionicons/icons'
+import { mailOutline, personOutline, lockClosedOutline, checkmarkOutline, alertCircleOutline, linkOutline } from 'ionicons/icons'
 
 const router = useRouter()
+const route = useRoute()
 const auth = useAuthStore()
+
+const inviteToken = ref('')
+const invitePersonName = ref('')
+const inviteError = ref('')
+
+onMounted(async () => {
+  const token = route.query.token
+  if (typeof token !== 'string' || !token) return
+  const payload = decodeJwt(token)
+  const personId = payload?.person_id ?? payload?.sub
+  if (!payload || !personId) {
+    inviteError.value = 'Недействительная пригласительная ссылка'
+    return
+  }
+  if (payload.exp && payload.exp * 1000 < Date.now()) {
+    inviteError.value = 'Срок действия пригласительной ссылки истёк'
+    return
+  }
+  inviteToken.value = token
+  const name = await resolvePersonName(personId)
+  if (name) {
+    invitePersonName.value = name
+  } else {
+    inviteError.value = 'Не удалось загрузить профиль для привязки'
+  }
+})
 
 const email = ref('')
 const username = ref('')
@@ -207,6 +245,7 @@ async function handleRegister() {
       email: email.value,
       username: username.value,
       password: password.value,
+      ...(inviteToken.value ? { invite_token: inviteToken.value } : {}),
     })
     router.push('/auth/verify?email=' + encodeURIComponent(email.value))
   } catch (err: any) {
@@ -331,6 +370,36 @@ async function handleRegister() {
 
 .auth-tab:hover {
   color: var(--ion-text-color);
+}
+
+.invite-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  background: rgba(108, 99, 255, 0.1);
+  border: 1px solid rgba(108, 99, 255, 0.25);
+  border-radius: 12px;
+  color: var(--ion-color-primary);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.invite-notice ion-icon {
+  font-size: 18px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.invite-notice strong {
+  font-weight: 700;
+}
+
+.invite-notice--error {
+  background: rgba(255, 71, 87, 0.1);
+  border-color: rgba(255, 71, 87, 0.25);
+  color: var(--ion-color-danger);
 }
 
 .auth-form {

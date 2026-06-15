@@ -2,6 +2,7 @@ export interface JwtPayload {
   sub?: string
   email?: string
   username?: string
+  person_id?: string
   sup?: boolean
   exp?: number
   iat?: number
