@@ -45,7 +45,7 @@ const copied = ref(false)
 async function createInvite() {
   creating.value = true
   try {
-    const res = await createInviteTokenUserV1UsersInvitePost({ person_id: props.personId, expires_in: expiresIn.value })
+    const res = await createInviteTokenUserV1UsersInvitePost({ person_id: props.personId, expires_in: expiresIn.value * 3600 })
     inviteLink.value = `${window.location.origin}/auth/register?token=${res.data.token}`
   } catch (err) {
     console.error('Failed to create invite', err)
