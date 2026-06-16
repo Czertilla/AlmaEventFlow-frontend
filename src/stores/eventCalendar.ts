@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, addMonths, isSameDay, isWithinInterval } from 'date-fns'
-import { getParticipationsEventV1ParticipationsGet, getAttendancesEventV1AttendancesGet } from '@/api/generated/-event'
-import type { EventRead, AttendanceRead } from '@/api/generated/almaEventFlow.schemas'
+import { getParticipationsEventV1ParticipationsGet, getAttendancesEventV1AttendancesGet } from '@/api/generated/almaEventFlow'
+import type { EventRead, AttendanceRead } from '@/api/generated/almaEventFlow'
 import type { CollectiveInfo } from './principal'
 
 export interface EventAttendanceItem {

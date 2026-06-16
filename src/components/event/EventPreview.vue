@@ -10,7 +10,7 @@
           <template v-if="eventTime"> · {{ eventTime }}</template>
         </span>
       </div>
-      <div class="event-members" v-if="isPrincipal && items.length === 1 && items[0]?.totalCount">
+      <div class="event-members" v-if="showAttendanceCount && items.length === 1 && items[0]?.totalCount">
         <span class="member-badge">{{ items[0].attendedCount }}/{{ items[0].totalCount }}</span>
       </div>
     </div>
@@ -47,7 +47,7 @@
             <span class="collective-dot" :style="{ background: getColor(item.collectiveId) }" />
             <span class="collective-name">{{ item.collectiveName }}</span>
           </div>
-          <div class="collective-badge" v-if="isPrincipal && (item.totalCount ?? 0) > 0">
+          <div class="collective-badge" v-if="showAttendanceCount && (item.totalCount ?? 0) > 0">
             <span class="member-badge">{{ item.attendedCount }}/{{ item.totalCount }}</span>
           </div>
           <div class="collective-actions" v-if="item.attendance" @click.stop>
@@ -83,7 +83,7 @@ import { formatDate, formatTime } from '@/utils/date'
 import { getCollectiveColor } from '@/utils/colors'
 import EventAttendanceChip from './EventAttendanceChip.vue'
 import EventCommentChip from './EventCommentChip.vue'
-import type { EventRead, AttendanceRead, EventStatus } from '@/api/generated/almaEventFlow.schemas'
+import type { EventRead, AttendanceRead, EventStatusEnumV1 } from '@/api/generated/almaEventFlow'
 import { calendarOutline, lockClosed } from 'ionicons/icons'
 
 export interface CollectiveAttendanceItem {
@@ -111,6 +111,9 @@ defineEmits<{
 
 const settings = useSettingsStore()
 
+// Счётчик присутствий показываем руководителю только у активных мероприятий
+const showAttendanceCount = computed(() => props.isPrincipal && props.event.status === 'active')
+
 // Есть собственная неотмеченная запись — карточка подсвечивается жёлтым свечением
 const hasPendingAttendance = computed(() =>
   props.items.some((i) => i.attendance && i.attendance.edited_at == null && !i.attendance.is_verified),
@@ -125,7 +128,7 @@ const eventTime = computed(() => {
 })
 
 const statusColor = computed(() => {
-  const map: Record<EventStatus, string> = {
+  const map: Record<EventStatusEnumV1, string> = {
     draft: '#92949c',
     template: '#6C63FF',
     active: '#00D9A6',
@@ -135,7 +138,7 @@ const statusColor = computed(() => {
 })
 
 const statusLabel = computed(() => {
-  const map: Record<EventStatus, string> = {
+  const map: Record<EventStatusEnumV1, string> = {
     draft: 'Черновик',
     template: 'Шаблон',
     active: 'Активно',

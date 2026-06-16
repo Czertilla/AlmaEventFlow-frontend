@@ -75,7 +75,7 @@
             </div>
             <div class="about-text">
               <span class="about-name">Alma Event Flow</span>
-              <span class="about-version">Версия 0.1.0</span>
+              <span class="about-version">Приложение {{ appVersion }} · API {{ apiVersion }}</span>
               <span class="about-desc">Управление мероприятиями и присутствиями коллективов</span>
             </div>
           </div>
@@ -96,6 +96,11 @@ import { usePlatform } from '@/composables/usePlatform'
 
 const settings = useSettingsStore()
 const { isDesktop } = usePlatform()
+
+// Версия приложения берётся из package.json, версия API — из openapi.json бэкенда
+// (оба прокидываются через Vite define; см. vite.config.ts и scripts/fetch-schema.mjs)
+const appVersion = __APP_VERSION__
+const apiVersion = __API_VERSION__
 </script>
 
 <style scoped>

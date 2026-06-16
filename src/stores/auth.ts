@@ -9,8 +9,8 @@ import {
   refreshUserV1AuthJwtRefreshPost,
   usersCurrentUserUserV1UsersMeGet,
   registerRegisterUserV1AuthRegisterPost,
-} from '@/api/generated/-user'
-import type { UserCreate, UserRead, BodyLoginUserV1AuthJwtLoginPost } from '@/api/generated/almaEventFlow.schemas'
+} from '@/api/generated/almaEventFlow'
+import type { UserCreate, UserRead, BodyLoginUserV1AuthJwtLoginPost } from '@/api/generated/almaEventFlow'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<UserRead | null>(null)

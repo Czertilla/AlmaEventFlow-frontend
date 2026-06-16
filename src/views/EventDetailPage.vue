@@ -20,9 +20,14 @@
             <div class="info-card">
               <div class="info-card-top">
                 <h2>{{ event.name }}</h2>
-                <span v-if="principal.isPrincipal" class="status-badge" :style="{ color: statusColor, background: statusColor + '1A' }">
-                  {{ statusLabel }}
-                </span>
+                <div class="info-card-actions">
+                  <span v-if="principal.isPrincipal" class="status-badge" :style="{ color: statusColor, background: statusColor + '1A' }">
+                    {{ statusLabel }}
+                  </span>
+                  <button v-if="editableCollectiveId" class="edit-btn" title="Редактировать мероприятие" @click="openEdit">
+                    <ion-icon :icon="createOutline" />
+                  </button>
+                </div>
               </div>
               <div class="info-meta">
                 <span class="info-meta-item">
@@ -39,7 +44,12 @@
             </div>
 
             <div class="info-card">
-              <h3 class="card-title">Этапы</h3>
+              <div class="card-head">
+                <h3 class="card-title">Этапы</h3>
+                <button v-if="editableCollectiveId" class="link-btn" @click="openStages">
+                  <ion-icon :icon="createOutline" /> Редактировать
+                </button>
+              </div>
               <p v-if="stages.length === 0" class="card-empty">Этапы не добавлены</p>
               <div v-else class="stage-timeline">
                 <div v-for="(s, i) in stages" :key="s.id" class="stage-row">
@@ -184,6 +194,168 @@
         <ion-icon :icon="alertCircleOutline" />
         <p>Мероприятие не найдено</p>
       </div>
+
+      <!-- Edit event modal — доступно руководителю участвующего коллектива -->
+      <ion-modal :is-open="showEditModal" @ion-modal-did-dismiss="showEditModal = false">
+        <ion-header>
+          <ion-toolbar>
+            <ion-title>Редактирование</ion-title>
+            <ion-buttons slot="end">
+              <ion-button aria-label="Закрыть" @click="showEditModal = false">
+                <ion-icon slot="icon-only" :icon="closeOutline" />
+              </ion-button>
+            </ion-buttons>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content class="ion-padding">
+          <div class="form">
+            <div class="form-field">
+              <label>Название</label>
+              <ion-input v-model="editForm.name" placeholder="Название мероприятия" />
+            </div>
+
+            <div class="form-field">
+              <label>Дата</label>
+              <input v-model="editForm.date" type="date" class="native-input" />
+            </div>
+
+            <div class="form-field">
+              <label>Описание</label>
+              <ion-textarea v-model="editForm.description" :rows="3" placeholder="Описание мероприятия" />
+            </div>
+
+            <div class="form-field">
+              <label>Организатор</label>
+              <div v-if="selectedOrganizer" class="chip-selected">
+                <span>{{ selectedOrganizer.name }}</span>
+                <button class="chip-clear" aria-label="Убрать организатора" @click="selectedOrganizer = null">
+                  <ion-icon :icon="closeOutline" />
+                </button>
+              </div>
+              <template v-else>
+                <ion-searchbar
+                  v-model="organizerSearch"
+                  placeholder="Поиск организации..."
+                  class="member-search"
+                  :debounce="400"
+                  @ion-input="searchOrganizers"
+                />
+                <div v-if="organizerOptions.length" class="combo-options">
+                  <button v-for="o in organizerOptions" :key="o.id" class="combo-option" @click="selectOrganizer(o)">
+                    {{ o.name }}
+                  </button>
+                </div>
+              </template>
+            </div>
+
+            <div class="form-field">
+              <label>Локация</label>
+              <div v-if="selectedLocation" class="chip-selected">
+                <span><ion-icon class="inline-icon" :icon="locationOutline" /> {{ selectedLocation.name }}</span>
+                <button class="chip-clear" aria-label="Убрать локацию" @click="selectedLocation = null">
+                  <ion-icon :icon="closeOutline" />
+                </button>
+              </div>
+              <template v-else>
+                <ion-searchbar
+                  v-model="locationSearch"
+                  placeholder="Поиск локации..."
+                  class="member-search"
+                  :debounce="400"
+                  @ion-input="searchLocations"
+                />
+                <div v-if="locationOptions.length" class="combo-options">
+                  <button v-for="l in locationOptions" :key="l.id" class="combo-option" @click="selectLocation(l)">
+                    {{ l.name }}
+                  </button>
+                </div>
+              </template>
+            </div>
+
+            <div class="form-field">
+              <label>Статус</label>
+              <ion-select v-model="editForm.status" interface="popover">
+                <ion-select-option v-for="[v, l] in statusOptions" :key="v" :value="v">{{ l }}</ion-select-option>
+              </ion-select>
+            </div>
+
+            <div class="form-field">
+              <label>Тип</label>
+              <ion-select v-model="editForm.type" placeholder="Не выбран" interface="popover">
+                <ion-select-option v-for="[v, l] in typeOptions" :key="v" :value="v">{{ l }}</ion-select-option>
+              </ion-select>
+            </div>
+
+            <div class="form-field">
+              <label>Уровень</label>
+              <ion-select v-model="editForm.level" placeholder="Не выбран" interface="popover">
+                <ion-select-option v-for="[v, l] in levelOptions" :key="v" :value="v">{{ l }}</ion-select-option>
+              </ion-select>
+            </div>
+
+            <div class="form-field">
+              <label>Формат</label>
+              <ion-select v-model="editForm.format" placeholder="Не выбран" interface="popover">
+                <ion-select-option v-for="[v, l] in formatOptions" :key="v" :value="v">{{ l }}</ion-select-option>
+              </ion-select>
+            </div>
+
+            <ion-button expand="block" :disabled="saving || !editForm.name" @click="submitEdit">
+              {{ saving ? 'Сохранение...' : 'Сохранить' }}
+            </ion-button>
+          </div>
+        </ion-content>
+      </ion-modal>
+
+      <!-- Stages editor — добавление/изменение/удаление этапов -->
+      <ion-modal :is-open="showStagesModal" @ion-modal-did-dismiss="showStagesModal = false">
+        <ion-header>
+          <ion-toolbar>
+            <ion-title>Этапы мероприятия</ion-title>
+            <ion-buttons slot="end">
+              <ion-button aria-label="Закрыть" @click="showStagesModal = false">
+                <ion-icon slot="icon-only" :icon="closeOutline" />
+              </ion-button>
+            </ion-buttons>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content class="ion-padding">
+          <div class="form">
+            <p v-if="stageForms.length === 0" class="card-empty">Этапов пока нет — добавьте первый.</p>
+            <div v-for="(s, i) in stageForms" :key="s.id ?? `new-${i}`" class="stage-edit">
+              <div class="stage-edit-row">
+                <input v-model="s.name" type="text" class="native-input stage-name-input" placeholder="Название этапа" />
+                <button class="row-icon-btn row-icon-btn--danger" title="Удалить этап" @click="deleteStage(i)">
+                  <ion-icon :icon="trashOutline" />
+                </button>
+              </div>
+              <div class="stage-edit-row">
+                <input v-model="s.start_at" type="datetime-local" class="native-input" />
+                <span class="stage-dash">—</span>
+                <input v-model="s.end_at" type="datetime-local" class="native-input" placeholder="Окончание" />
+              </div>
+              <textarea
+                v-model="s.description"
+                class="native-input stage-desc-input"
+                rows="2"
+                placeholder="Описание этапа (необязательно)"
+              />
+              <ion-button
+                size="small"
+                expand="block"
+                :disabled="stagePending || !s.name || !s.start_at"
+                @click="saveStage(i)"
+              >
+                {{ s.id ? 'Сохранить этап' : 'Добавить этап' }}
+              </ion-button>
+            </div>
+            <button class="add-stage-btn" @click="addStageRow">
+              <ion-icon :icon="addOutline" />
+              Добавить этап
+            </button>
+          </div>
+        </ion-content>
+      </ion-modal>
     </ion-content>
   </ion-page>
 </template>
@@ -193,12 +365,13 @@ import { ref, computed, onMounted, reactive } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   IonPage, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonContent,
-  IonButton, IonIcon, toastController,
+  IonButton, IonIcon, IonModal, IonInput, IonTextarea, IonSelect, IonSelectOption,
+  IonSearchbar, toastController,
 } from '@ionic/vue'
 import {
   calendarOutline, timeOutline, chevronDownOutline, chevronUpOutline,
   shieldCheckmarkOutline, shieldCheckmark, shieldOutline, trashOutline,
-  addOutline, alertCircleOutline,
+  addOutline, alertCircleOutline, createOutline, closeOutline, locationOutline,
 } from 'ionicons/icons'
 import { usePrincipalStore } from '@/stores/principal'
 import { useSettingsStore } from '@/stores/settings'
@@ -219,12 +392,22 @@ import {
   deleteMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdAttendanceAttendanceIdDelete,
   verifyMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdParticipationParticipationIdAttendanceVerifyPost,
   createMyCollectiveParticipationEventV1MeCollectivesCollectiveIdParticipationsPost,
-} from '@/api/generated/-event'
+  patchMyCollectiveEventEventV1MeCollectivesCollectiveIdEventsEventIdPatch,
+  createMyCollectiveEventStageEventV1MeCollectivesCollectiveIdEventsEventIdStagesPost,
+  patchMyCollectiveEventStageEventV1MeCollectivesCollectiveIdStagesStageIdPatch,
+  deleteMyCollectiveEventStageEventV1MeCollectivesCollectiveIdStagesStageIdDelete,
+  listOrganizationsOrgV1OrganizationsGet,
+  getLocationsGeoV1LocationsGet,
+} from '@/api/generated/almaEventFlow'
+import { format as fnsFormat } from 'date-fns'
 import { resolveMemberName, rememberMemberPerson, shortId, shortenName } from '@/utils/names'
 import UuidBadge from '@/components/common/UuidBadge.vue'
 import EventAttendanceChip from '@/components/event/EventAttendanceChip.vue'
 import EventCommentChip from '@/components/event/EventCommentChip.vue'
-import type { EventRead, EventStatus, StageRead, AttendanceRead, MemberRead } from '@/api/generated/almaEventFlow.schemas'
+import type {
+  EventRead, EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1,
+  StageRead, AttendanceRead, MemberRead,
+} from '@/api/generated/almaEventFlow'
 
 interface ParticipationItem {
   participationId: string
@@ -258,14 +441,14 @@ const eventTime = computed(() => {
 })
 
 const statusColor = computed(() => {
-  const map: Record<EventStatus, string> = {
+  const map: Record<EventStatusEnumV1, string> = {
     draft: '#92949c', template: '#6C63FF', active: '#00D9A6', archived: '#FF4757',
   }
   return map[event.value?.status ?? 'draft']
 })
 
 const statusLabel = computed(() => {
-  const map: Record<EventStatus, string> = {
+  const map: Record<EventStatusEnumV1, string> = {
     draft: 'Черновик', template: 'Шаблон', active: 'Активно', archived: 'Архив',
   }
   return map[event.value?.status ?? 'draft']
@@ -277,6 +460,242 @@ const joinableCollectives = computed(() =>
     (c) => !participationItems.value.some((p) => p.collectiveId === c.id),
   ),
 )
+
+// Руководитель может редактировать мероприятие, если его коллектив в нём участвует.
+// Бэкенд проверяет ту же связку (verify_collective_principal + ParticipationORM);
+// здесь берём любой участвующий коллектив, где пользователь — руководитель.
+const editableCollectiveId = computed(
+  () => participationItems.value.find((p) => p.isPrincipal)?.collectiveId ?? null,
+)
+
+const statusLabels: Record<EventStatusEnumV1, string> = {
+  draft: 'Черновик', active: 'Активно', template: 'Шаблон', archived: 'Архив',
+}
+const levelLabels: Record<EventLevelEnumV1, string> = {
+  internal: 'Внутренний', regional: 'Региональный', national: 'Национальный', international: 'Международный',
+}
+const typeLabels: Record<EventTypeEnumV1, string> = {
+  rehearsal: 'Репетиция', competition: 'Конкурс', concert: 'Концерт',
+  festival: 'Фестиваль', play: 'Спектакль', performance: 'Выступление',
+}
+const formatLabels: Record<EventFormatEnumV1, string> = {
+  online: 'Онлайн', offline: 'Офлайн',
+}
+const statusOptions = Object.entries(statusLabels) as [EventStatusEnumV1, string][]
+const levelOptions = Object.entries(levelLabels) as [EventLevelEnumV1, string][]
+const typeOptions = Object.entries(typeLabels) as [EventTypeEnumV1, string][]
+const formatOptions = Object.entries(formatLabels) as [EventFormatEnumV1, string][]
+
+// ---- Редактирование мероприятия ----
+const showEditModal = ref(false)
+const saving = ref(false)
+const editForm = reactive({
+  name: '',
+  date: '',
+  description: '',
+  status: 'draft' as EventStatusEnumV1,
+  level: null as EventLevelEnumV1 | null,
+  type: null as EventTypeEnumV1 | null,
+  format: null as EventFormatEnumV1 | null,
+})
+
+interface PickOption { id: string; name: string }
+const organizerSearch = ref('')
+const organizerOptions = ref<PickOption[]>([])
+const selectedOrganizer = ref<PickOption | null>(null)
+const locationSearch = ref('')
+const locationOptions = ref<PickOption[]>([])
+const selectedLocation = ref<PickOption | null>(null)
+
+async function searchOrganizers() {
+  if (!organizerSearch.value) { organizerOptions.value = []; return }
+  try {
+    const res = await listOrganizationsOrgV1OrganizationsGet({ search: organizerSearch.value, limit: 10 })
+    organizerOptions.value = (res.data.items as PickOption[]) || []
+  } catch { organizerOptions.value = [] }
+}
+function selectOrganizer(o: PickOption) {
+  selectedOrganizer.value = o
+  organizerSearch.value = ''
+  organizerOptions.value = []
+}
+async function searchLocations() {
+  if (!locationSearch.value) { locationOptions.value = []; return }
+  try {
+    const res = await getLocationsGeoV1LocationsGet({ search: locationSearch.value, limit: 10 })
+    locationOptions.value = (res.data.items as PickOption[]) || []
+  } catch { locationOptions.value = [] }
+}
+function selectLocation(l: PickOption) {
+  selectedLocation.value = l
+  locationSearch.value = ''
+  locationOptions.value = []
+}
+
+async function openEdit() {
+  const e = event.value
+  if (!e) return
+  editForm.name = e.name
+  editForm.date = e.date ? e.date.slice(0, 10) : ''
+  editForm.description = e.description || ''
+  editForm.status = e.status ?? 'draft'
+  editForm.level = e.level ?? null
+  editForm.type = e.type ?? null
+  editForm.format = e.format ?? null
+  selectedOrganizer.value = e.organizer_id ? { id: e.organizer_id, name: 'Организатор' } : null
+  selectedLocation.value = e.location_id ? { id: e.location_id, name: 'Локация' } : null
+  organizerSearch.value = ''
+  organizerOptions.value = []
+  locationSearch.value = ''
+  locationOptions.value = []
+  showEditModal.value = true
+  // Подтянуть человекочитаемые названия выбранных организатора/локации
+  if (e.organizer_id) {
+    try {
+      const res = await listOrganizationsOrgV1OrganizationsGet({ limit: 100 })
+      const found = (res.data.items as PickOption[]).find((o) => o.id === e.organizer_id)
+      if (found) selectedOrganizer.value = found
+    } catch { /* имя не критично */ }
+  }
+  if (e.location_id) {
+    try {
+      const res = await getLocationsGeoV1LocationsGet({ limit: 100 })
+      const found = (res.data.items as PickOption[]).find((l) => l.id === e.location_id)
+      if (found) selectedLocation.value = found
+    } catch { /* имя не критично */ }
+  }
+}
+
+async function submitEdit() {
+  const collectiveId = editableCollectiveId.value
+  if (!collectiveId || !editForm.name) return
+  // Бизнес-правило: мероприятие не может быть active без даты
+  if (editForm.status === 'active' && !editForm.date) {
+    const toast = await toastController.create({
+      message: 'Активное мероприятие должно иметь дату',
+      duration: 3000,
+      color: 'danger',
+    })
+    toast.present()
+    return
+  }
+  saving.value = true
+  try {
+    const resp = await patchMyCollectiveEventEventV1MeCollectivesCollectiveIdEventsEventIdPatch(
+      collectiveId, eventId, {
+        name: editForm.name,
+        date: editForm.date || null,
+        description: editForm.description || null,
+        status: editForm.status,
+        level: editForm.level,
+        type: editForm.type,
+        format: editForm.format,
+        organizer_id: selectedOrganizer.value?.id ?? null,
+        location_id: selectedLocation.value?.id ?? null,
+      },
+    )
+    event.value = resp.data
+    showEditModal.value = false
+    const toast = await toastController.create({ message: 'Мероприятие обновлено', duration: 2000, color: 'success' })
+    toast.present()
+  } catch (err) {
+    showError(err, 'Не удалось сохранить изменения')
+  } finally {
+    saving.value = false
+  }
+}
+
+// ---- Этапы мероприятия ----
+function toLocalInput(iso: string): string {
+  return fnsFormat(new Date(iso), "yyyy-MM-dd'T'HH:mm")
+}
+function toTzIso(localInput: string): string {
+  return fnsFormat(new Date(localInput), "yyyy-MM-dd'T'HH:mm:ssxxx")
+}
+
+interface StageForm { id?: string; name: string; start_at: string; end_at: string; description: string }
+const showStagesModal = ref(false)
+const stagePending = ref(false)
+const stageForms = ref<StageForm[]>([])
+
+function mapStagesToForms() {
+  stageForms.value = stages.value.map((s) => ({
+    id: s.id,
+    name: s.name,
+    start_at: s.start_at ? toLocalInput(s.start_at) : '',
+    end_at: s.end_at ? toLocalInput(s.end_at) : '',
+    description: s.description ?? '',
+  }))
+}
+
+function openStages() {
+  mapStagesToForms()
+  showStagesModal.value = true
+}
+
+// Новый этап стартует там, где закончился предыдущий (или в дату мероприятия)
+function addStageRow() {
+  const prev = stageForms.value[stageForms.value.length - 1]
+  let start = ''
+  if (prev?.end_at) start = prev.end_at
+  else if (prev?.start_at) start = `${prev.start_at.slice(0, 10)}T12:00`
+  else if (event.value?.date) start = `${event.value.date.slice(0, 10)}T12:00`
+  stageForms.value.push({ name: '', start_at: start, end_at: '', description: '' })
+}
+
+async function reloadStages() {
+  try {
+    const resp = await getEventStagesEventV1EventsEventIdStagesGet(eventId, { limit: 100, order_by: 'start_at' })
+    stages.value = resp.data.items
+  } catch { /* ignore */ }
+}
+
+async function saveStage(i: number) {
+  const cid = editableCollectiveId.value
+  const s = stageForms.value[i]
+  if (!cid || !s.name || !s.start_at) return
+  stagePending.value = true
+  try {
+    const body = {
+      name: s.name,
+      start_at: toTzIso(s.start_at),
+      end_at: s.end_at ? toTzIso(s.end_at) : null,
+      description: s.description || null,
+    }
+    if (s.id) {
+      await patchMyCollectiveEventStageEventV1MeCollectivesCollectiveIdStagesStageIdPatch(cid, s.id, body)
+    } else {
+      await createMyCollectiveEventStageEventV1MeCollectivesCollectiveIdEventsEventIdStagesPost(cid, eventId, body)
+    }
+    await reloadStages()
+    mapStagesToForms()
+    const toast = await toastController.create({ message: 'Этап сохранён', duration: 1500, color: 'success' })
+    toast.present()
+  } catch (err) {
+    showError(err, 'Не удалось сохранить этап')
+  } finally {
+    stagePending.value = false
+  }
+}
+
+async function deleteStage(i: number) {
+  const s = stageForms.value[i]
+  if (!s.id) { stageForms.value.splice(i, 1); return }
+  const cid = editableCollectiveId.value
+  if (!cid) return
+  const ok = await confirmAction('Удалить этап?', `Этап «${s.name || 'без названия'}» будет удалён.`)
+  if (!ok) return
+  stagePending.value = true
+  try {
+    await deleteMyCollectiveEventStageEventV1MeCollectivesCollectiveIdStagesStageIdDelete(cid, s.id)
+    await reloadStages()
+    mapStagesToForms()
+  } catch (err) {
+    showError(err, 'Не удалось удалить этап')
+  } finally {
+    stagePending.value = false
+  }
+}
 
 // member_id → ФИО; пока имя не загрузилось, показываем сокращённый id
 const memberNames = reactive<Record<string, string>>({})
@@ -591,12 +1010,224 @@ onMounted(async () => {
   color: var(--ion-text-color);
 }
 
+.info-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
 .status-badge {
   flex-shrink: 0;
   padding: 4px 12px;
   border-radius: 999px;
   font-size: 12px;
   font-weight: 600;
+}
+
+.edit-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1.5px solid var(--ion-border-color);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ion-color-medium);
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.edit-btn:hover {
+  border-color: var(--ion-color-primary);
+  color: var(--ion-color-primary);
+}
+
+/* Форма редактирования */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field > label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ion-text-color);
+}
+
+.native-input {
+  width: 100%;
+  border: 1.5px solid var(--ion-border-color);
+  border-radius: 10px;
+  background: var(--ion-card-background);
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ion-text-color);
+  padding: 10px 12px;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.native-input:focus {
+  border-color: var(--ion-color-primary);
+}
+
+.member-search {
+  padding: 0;
+  --border-radius: 10px;
+}
+
+.chip-selected {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--ion-border-color);
+  border-radius: 10px;
+  background: var(--ion-background-color);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ion-text-color);
+}
+
+.chip-clear {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ion-color-medium);
+  font-size: 16px;
+  cursor: pointer;
+}
+
+.chip-clear:hover {
+  color: var(--ion-color-danger);
+}
+
+.combo-options {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border: 1px solid var(--ion-border-color);
+  border-radius: 12px;
+  padding: 6px;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.combo-option {
+  padding: 10px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 14px;
+  color: var(--ion-text-color);
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+
+.combo-option:hover {
+  background: var(--ion-background-color);
+}
+
+.inline-icon {
+  vertical-align: -2px;
+  margin-right: 4px;
+  color: var(--ion-color-medium);
+}
+
+.card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.card-head .card-title {
+  margin: 0;
+}
+
+.link-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: none;
+  background: none;
+  color: var(--ion-color-primary);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.stage-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--ion-background-color);
+}
+
+.stage-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stage-name-input {
+  flex: 1;
+}
+
+.stage-dash {
+  color: var(--ion-color-step-400);
+  flex-shrink: 0;
+}
+
+.stage-desc-input {
+  resize: vertical;
+  min-height: 48px;
+}
+
+.add-stage-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1.5px dashed var(--ion-border-color);
+  border-radius: 10px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ion-color-medium);
+  cursor: pointer;
+  transition: all 0.15s;
+  align-self: flex-start;
+}
+
+.add-stage-btn:hover {
+  border-color: var(--ion-color-primary);
+  color: var(--ion-color-primary);
 }
 
 .info-meta {

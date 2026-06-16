@@ -1,5 +1,5 @@
-import { getPersonProfileV1PersonsPersonIdGet } from '@/api/generated/-profile'
-import { getMemberEventV1MembersMemberIdGet } from '@/api/generated/-event'
+import { getPersonProfileV1PersonsPersonIdGet } from '@/api/generated/almaEventFlow'
+import { getMemberEventV1MembersMemberIdGet } from '@/api/generated/almaEventFlow'
 
 // Caches survive for the app session — entity names change rarely
 const personNameCache = new Map<string, string | null>()

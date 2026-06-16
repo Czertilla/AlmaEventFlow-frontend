@@ -93,7 +93,7 @@
 import { ref, reactive, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { checkUsernameUserV1UsersCheckUsernameGet } from '@/api/generated/-user'
+import { checkUsernameUserV1UsersCheckUsernameGet } from '@/api/generated/almaEventFlow'
 import { IonPage, IonContent, IonIcon } from '@ionic/vue'
 import { mailOutline, personOutline, lockClosedOutline, checkmarkOutline, alertCircleOutline } from 'ionicons/icons'
 

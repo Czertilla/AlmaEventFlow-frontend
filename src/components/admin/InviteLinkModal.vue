@@ -31,7 +31,7 @@
 import { ref } from 'vue'
 import { IonButton, IonContent, IonIcon } from '@ionic/vue'
 import { closeOutline, copyOutline, checkmarkOutline } from 'ionicons/icons'
-import { createInviteTokenUserV1UsersInvitePost } from '@/api/generated/-user'
+import { createInviteTokenUserV1UsersInvitePost } from '@/api/generated/almaEventFlow'
 
 defineEmits<{ close: [] }>()
 

@@ -7,6 +7,7 @@
         :get-subtitle="(e) => e.date || 'Нет даты'"
         :fetch-items="fetchEvents"
         :sort-options="sortOptions"
+        :filters="filters"
         default-sort="date"
         add-label="Добавить"
         @add="openCreate"
@@ -33,26 +34,44 @@ import { IonModal } from '@ionic/vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import ResourceTable from '@/components/admin/ResourceTable.vue'
 import ResourceFormModal from '@/components/admin/ResourceFormModal.vue'
-import { getEventsEventV1EventsGet, createEventEventV1EventsPost, patchEventEventV1EventsEventIdPatch, deleteEventEventV1EventsEventIdDelete } from '@/api/generated/-event'
-import { getLocationsGeoV1LocationsGet } from '@/api/generated/-geo'
-import { listOrganizationsOrgV1OrganizationsGet } from '@/api/generated/-org'
-import type { EventStatus } from '@/api/generated/almaEventFlow.schemas'
-import type { ColumnDef, SortOption } from '@/components/admin/ResourceTable.vue'
+import {
+  getEventsEventV1EventsGet,
+  createEventEventV1EventsPost,
+  patchEventEventV1EventsEventIdPatch,
+  deleteEventEventV1EventsEventIdDelete,
+  getLocationsGeoV1LocationsGet,
+  listOrganizationsOrgV1OrganizationsGet,
+} from '@/api/generated/almaEventFlow'
+import type { EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1 } from '@/api/generated/almaEventFlow'
+import type { ColumnDef, SortOption, FilterDef } from '@/components/admin/ResourceTable.vue'
 import type { FormField } from '@/components/admin/ResourceFormModal.vue'
 
 const tableRef = ref()
 
-const statusLabels: Record<EventStatus, string> = {
-  draft: 'Черновик',
-  template: 'Шаблон',
-  active: 'Активно',
-  archived: 'Архив',
+const statusLabels: Record<EventStatusEnumV1, string> = {
+  draft: 'Черновик', template: 'Шаблон', active: 'Активно', archived: 'Архив',
 }
+const levelLabels: Record<EventLevelEnumV1, string> = {
+  internal: 'Внутренний', regional: 'Региональный', national: 'Национальный', international: 'Международный',
+}
+const typeLabels: Record<EventTypeEnumV1, string> = {
+  rehearsal: 'Репетиция', competition: 'Конкурс', concert: 'Концерт',
+  festival: 'Фестиваль', play: 'Спектакль', performance: 'Выступление',
+}
+const formatLabels: Record<EventFormatEnumV1, string> = {
+  online: 'Онлайн', offline: 'Офлайн',
+}
+
+const toOptions = (labels: Record<string, string>) =>
+  Object.entries(labels).map(([value, label]) => ({ value, label }))
 
 const columns: ColumnDef[] = [
   { key: 'name', label: 'Название', sortable: true },
   { key: 'date', label: 'Дата', sortable: true, render: (e) => e.date || '—' },
-  { key: 'status', label: 'Статус', sortable: true, render: (e) => statusLabels[e.status as EventStatus] || e.status || '—' },
+  { key: 'status', label: 'Статус', sortable: true, render: (e) => statusLabels[e.status as EventStatusEnumV1] || e.status || '—' },
+  { key: 'type', label: 'Тип', render: (e) => typeLabels[e.type as EventTypeEnumV1] || '—' },
+  { key: 'level', label: 'Уровень', render: (e) => levelLabels[e.level as EventLevelEnumV1] || '—' },
+  { key: 'format', label: 'Формат', render: (e) => formatLabels[e.format as EventFormatEnumV1] || '—', hideMobile: true },
 ]
 
 const sortOptions: SortOption[] = [
@@ -61,20 +80,22 @@ const sortOptions: SortOption[] = [
   { value: 'status', label: 'Статусу' },
 ]
 
+const filters: FilterDef[] = [
+  { key: 'status', label: 'Статус', type: 'select', options: toOptions(statusLabels) },
+  { key: 'type', label: 'Тип', type: 'select', options: toOptions(typeLabels) },
+  { key: 'level', label: 'Уровень', type: 'select', options: toOptions(levelLabels) },
+  { key: 'format', label: 'Формат', type: 'select', options: toOptions(formatLabels) },
+  { key: 'date__gte', label: 'Дата с', type: 'date' },
+  { key: 'date__lte', label: 'Дата по', type: 'date' },
+]
+
 const formFields: FormField[] = [
   { key: 'name', label: 'Название', type: 'text', required: true },
   { key: 'date', label: 'Дата', type: 'text', placeholder: 'YYYY-MM-DD' },
-  {
-    key: 'status',
-    label: 'Статус',
-    type: 'select',
-    options: [
-      { value: 'draft', label: 'Черновик' },
-      { value: 'template', label: 'Шаблон' },
-      { value: 'active', label: 'Активно' },
-      { value: 'archived', label: 'Архив' },
-    ],
-  },
+  { key: 'status', label: 'Статус', type: 'select', options: toOptions(statusLabels) },
+  { key: 'type', label: 'Тип', type: 'select', options: toOptions(typeLabels) },
+  { key: 'level', label: 'Уровень', type: 'select', options: toOptions(levelLabels) },
+  { key: 'format', label: 'Формат', type: 'select', options: toOptions(formatLabels) },
   {
     key: 'location_id',
     label: 'Место проведения',

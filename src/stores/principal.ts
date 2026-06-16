@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { getMyCollectivesEventV1MeCollectivesGet, getMembersEventV1MembersGet } from '@/api/generated/-event'
-import { getCollectiveOrgV1CollectivesCollectiveIdGet } from '@/api/generated/-org'
+import { getMyCollectivesEventV1MeCollectivesGet, getMembersEventV1MembersGet } from '@/api/generated/almaEventFlow'
+import { getCollectiveOrgV1CollectivesCollectiveIdGet } from '@/api/generated/almaEventFlow'
 import { useAuthStore } from './auth'
 import { getCollectiveColor } from '@/utils/colors'
 

@@ -7,6 +7,7 @@
         :get-subtitle="(o) => o.acronym"
         :fetch-items="fetchOrganizations"
         :sort-options="sortOptions"
+        :filters="filters"
         default-sort="name"
         add-label="Добавить"
         @add="openCreate"
@@ -33,18 +34,26 @@ import { IonModal } from '@ionic/vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import ResourceTable from '@/components/admin/ResourceTable.vue'
 import ResourceFormModal from '@/components/admin/ResourceFormModal.vue'
-import { listOrganizationsOrgV1OrganizationsGet, createOrganizationOrgV1OrganizationsPost, patchOrganizationOrgV1OrganizationsOrganizationIdPatch, deleteOrganizationOrgV1OrganizationsOrganizationIdDelete } from '@/api/generated/-org'
-import { searchPersonProfileV1PersonsGet } from '@/api/generated/-profile'
-import { getAddressesGeoV1AddressesGet } from '@/api/generated/-geo'
-import type { ColumnDef, SortOption } from '@/components/admin/ResourceTable.vue'
+import { listOrganizationsOrgV1OrganizationsGet, createOrganizationOrgV1OrganizationsPost, patchOrganizationOrgV1OrganizationsOrganizationIdPatch, deleteOrganizationOrgV1OrganizationsOrganizationIdDelete } from '@/api/generated/almaEventFlow'
+import { searchPersonProfileV1PersonsGet } from '@/api/generated/almaEventFlow'
+import { getAddressesGeoV1AddressesGet } from '@/api/generated/almaEventFlow'
+import type { ColumnDef, SortOption, FilterDef } from '@/components/admin/ResourceTable.vue'
 import type { FormField } from '@/components/admin/ResourceFormModal.vue'
 
 const tableRef = ref()
 
+const typeLabels: Record<string, string> = {
+  organization: 'Организация',
+  university: 'Университет',
+  faculty: 'Факультет',
+  collective: 'Коллектив',
+}
+const typeOptions = Object.entries(typeLabels).map(([value, label]) => ({ value, label }))
+
 const columns: ColumnDef[] = [
   { key: 'name', label: 'Название', sortable: true },
   { key: 'acronym', label: 'Аббревиатура', sortable: true },
-  { key: 'type', label: 'Тип', sortable: true },
+  { key: 'type', label: 'Тип', sortable: true, render: (o) => typeLabels[o.type] || o.type || '—' },
 ]
 
 const sortOptions: SortOption[] = [
@@ -52,11 +61,15 @@ const sortOptions: SortOption[] = [
   { value: 'acronym', label: 'Аббревиатуре' },
 ]
 
-// Поля по схеме OrganizationCreate: type (обязателен), name, acronym, principal_id, address_id
+const filters: FilterDef[] = [
+  { key: 'type', label: 'Тип', type: 'select', options: typeOptions },
+]
+
+// Поля по схеме OrganizationCreate: type (обязателен), name, acronym (опц.), principal_id, address_id
 const formFields: FormField[] = [
   { key: 'name', label: 'Название', type: 'text', required: true },
-  { key: 'acronym', label: 'Аббревиатура', type: 'text', required: true },
-  { key: 'type', label: 'Тип', type: 'text', required: true, placeholder: 'organization / university / faculty...' },
+  { key: 'acronym', label: 'Аббревиатура', type: 'text' },
+  { key: 'type', label: 'Тип', type: 'select', required: true, options: typeOptions },
   {
     key: 'principal_id',
     label: 'Руководитель',

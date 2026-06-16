@@ -62,7 +62,7 @@ import {
 } from '@ionic/vue'
 import { closeOutline, checkmarkCircleOutline } from 'ionicons/icons'
 import EventPreview, { type CollectiveAttendanceItem } from './EventPreview.vue'
-import type { EventRead } from '@/api/generated/almaEventFlow.schemas'
+import type { EventRead } from '@/api/generated/almaEventFlow'
 import type { EventAttendanceItem } from '@/stores/eventCalendar'
 
 const props = defineProps<{

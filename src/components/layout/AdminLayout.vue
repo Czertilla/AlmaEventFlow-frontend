@@ -1,45 +1,68 @@
 <template>
   <ion-page>
+    <!-- Mobile: sliding side menu (drawer) with all admin resources -->
+    <ion-menu
+      v-if="!isDesktop"
+      content-id="admin-content"
+      menu-id="admin-menu"
+      type="overlay"
+      class="admin-menu"
+    >
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Администрирование</ion-title>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content>
+        <div class="admin-menu-body">
+          <button class="admin-nav-link admin-nav-link--home" @click="go('/')">
+            <ion-icon :icon="homeOutline" />
+            На главную
+          </button>
+          <div v-for="group in NAV_GROUPS" :key="group.label" class="admin-nav-group">
+            <span class="admin-nav-group-label">{{ group.label }}</span>
+            <button
+              v-for="item in group.items"
+              :key="item.path"
+              class="admin-nav-link"
+              :class="{ 'admin-nav-link--active': isActive(item.path) }"
+              @click="go(item.path)"
+            >
+              <ion-icon :icon="item.icon" />
+              {{ item.label }}
+            </button>
+          </div>
+        </div>
+      </ion-content>
+    </ion-menu>
+
     <ion-header v-if="!isDesktop">
       <ion-toolbar>
         <ion-buttons slot="start">
-          <ion-back-button default-href="/" />
+          <ion-menu-button menu="admin-menu" />
         </ion-buttons>
         <ion-title>{{ title }}</ion-title>
       </ion-toolbar>
     </ion-header>
-    <ion-content>
+
+    <ion-content id="admin-content">
       <div class="admin-shell">
         <!-- Desktop: persistent sidebar grouped by API microservice -->
         <aside class="admin-sidebar">
           <div v-for="group in NAV_GROUPS" :key="group.label" class="admin-nav-group">
             <span class="admin-nav-group-label">{{ group.label }}</span>
-            <router-link
+            <button
               v-for="item in group.items"
               :key="item.path"
-              :to="item.path"
               class="admin-nav-link"
-              active-class="admin-nav-link--active"
+              :class="{ 'admin-nav-link--active': isActive(item.path) }"
+              @click="go(item.path)"
             >
               <ion-icon :icon="item.icon" />
               {{ item.label }}
-            </router-link>
+            </button>
           </div>
         </aside>
-
-        <!-- Mobile: horizontally scrollable chips -->
-        <nav class="admin-chips">
-          <router-link
-            v-for="item in flatItems"
-            :key="item.path"
-            :to="item.path"
-            class="admin-chip"
-            active-class="admin-chip--active"
-          >
-            <ion-icon :icon="item.icon" />
-            {{ item.label }}
-          </router-link>
-        </nav>
 
         <main class="admin-main">
           <h1 v-if="isDesktop" class="admin-title">{{ title }}</h1>
@@ -52,17 +75,21 @@
 
 <script setup lang="ts">
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBackButton, IonIcon,
+  IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonIcon,
+  IonMenu, IonMenuButton, useIonRouter, menuController,
 } from '@ionic/vue'
 import {
   peopleOutline, personOutline, businessOutline, peopleCircleOutline,
-  idCardOutline, mapOutline, calendarOutline,
+  idCardOutline, mapOutline, calendarOutline, homeOutline,
 } from 'ionicons/icons'
+import { useRoute } from 'vue-router'
 import { usePlatform } from '@/composables/usePlatform'
 
 defineProps<{ title: string }>()
 
 const { isDesktop } = usePlatform()
+const ionRouter = useIonRouter()
+const route = useRoute()
 
 // Grouped by API microservice (TZ: навигация с разделением по микросервисам)
 const NAV_GROUPS = [
@@ -85,7 +112,18 @@ const NAV_GROUPS = [
   ]},
 ]
 
-const flatItems = NAV_GROUPS.flatMap((g) => g.items)
+function isActive(path: string): boolean {
+  return route.path === path
+}
+
+// Switch resources without stacking pages: a root-direction replace resets the
+// Ionic navigation stack, so the back button always returns to the home page
+// instead of walking the previously visited admin resources.
+async function go(path: string) {
+  await menuController.close('admin-menu').catch(() => {})
+  if (route.path === path) return
+  ionRouter.navigate(path, 'root', 'replace')
+}
 </script>
 
 <style scoped>
@@ -112,6 +150,13 @@ const flatItems = NAV_GROUPS.flatMap((g) => g.items)
   padding: 16px 10px;
 }
 
+.admin-menu-body {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 12px 10px;
+}
+
 .admin-nav-group {
   display: flex;
   flex-direction: column;
@@ -132,11 +177,16 @@ const flatItems = NAV_GROUPS.flatMap((g) => g.items)
   align-items: center;
   gap: 10px;
   padding: 9px 12px;
+  border: none;
+  background: transparent;
   border-radius: 10px;
+  font-family: inherit;
   font-size: 14px;
   font-weight: 500;
   color: var(--ion-color-medium);
   text-decoration: none;
+  text-align: left;
+  cursor: pointer;
   transition: all 0.15s;
 }
 
@@ -155,43 +205,7 @@ const flatItems = NAV_GROUPS.flatMap((g) => g.items)
   font-weight: 600;
 }
 
-.admin-chips {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  padding-bottom: 4px;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: none;
-}
-
-.admin-chips::-webkit-scrollbar {
-  display: none;
-}
-
-.admin-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border-radius: 999px;
-  border: 1.5px solid var(--ion-border-color);
-  background: var(--ion-card-background);
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--ion-color-medium);
-  text-decoration: none;
-  white-space: nowrap;
-  flex-shrink: 0;
-  transition: all 0.15s;
-}
-
-.admin-chip ion-icon {
-  font-size: 15px;
-}
-
-.admin-chip--active {
-  border-color: var(--ion-color-primary);
-  background: rgba(108, 99, 255, 0.08);
+.admin-nav-link--home {
   color: var(--ion-color-primary);
   font-weight: 600;
 }
@@ -213,17 +227,11 @@ const flatItems = NAV_GROUPS.flatMap((g) => g.items)
     flex-direction: column;
     gap: 12px;
   }
-  .admin-chips {
-    width: 100%;
-  }
 }
 
 @media (min-width: 768px) {
   .admin-sidebar {
     display: flex;
-  }
-  .admin-chips {
-    display: none;
   }
 }
 </style>

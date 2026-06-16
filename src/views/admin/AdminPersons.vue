@@ -37,13 +37,13 @@
 import { ref, onMounted } from 'vue'
 import { IonModal } from '@ionic/vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
-import { getManyUserV1UsersGet } from '@/api/generated/-user'
+import { getManyUserV1UsersGet } from '@/api/generated/almaEventFlow'
 import type { ExtraAction } from '@/components/admin/ResourceTable.vue'
 import { linkOutline } from 'ionicons/icons'
 import ResourceTable from '@/components/admin/ResourceTable.vue'
 import ResourceFormModal from '@/components/admin/ResourceFormModal.vue'
 import InviteLinkModal from '@/components/admin/InviteLinkModal.vue'
-import { searchPersonProfileV1PersonsGet, createPersonProfileV1PersonsPost, patchPersonProfileV1PersonsPersonIdPatch, deletePersonProfileV1PersonsPersonIdDelete } from '@/api/generated/-profile'
+import { searchPersonProfileV1PersonsGet, createPersonProfileV1PersonsPost, patchPersonProfileV1PersonsPersonIdPatch, deletePersonProfileV1PersonsPersonIdDelete } from '@/api/generated/almaEventFlow'
 import type { ColumnDef, SortOption } from '@/components/admin/ResourceTable.vue'
 import type { FormField } from '@/components/admin/ResourceFormModal.vue'
 
@@ -61,8 +61,8 @@ const sortOptions: SortOption[] = [
 ]
 
 const formFields: FormField[] = [
-  { key: 'name', label: 'Имя', type: 'text', required: true },
   { key: 'surname', label: 'Фамилия', type: 'text', required: true },
+  { key: 'name', label: 'Имя', type: 'text', required: true },
   { key: 'patronymic', label: 'Отчество', type: 'text' },
 ]
 

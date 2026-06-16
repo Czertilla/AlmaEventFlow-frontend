@@ -101,6 +101,30 @@
                     </button>
                   </div>
                 </template>
+                <div class="filters-divider" />
+                <div class="facet-filters">
+                  <label class="facet-field">
+                    <span class="filters-sublabel">Тип</span>
+                    <select v-model="typeFilter" class="facet-select">
+                      <option value="all">Любой</option>
+                      <option v-for="[v, l] in typeOptions" :key="v" :value="v">{{ l }}</option>
+                    </select>
+                  </label>
+                  <label class="facet-field">
+                    <span class="filters-sublabel">Уровень</span>
+                    <select v-model="levelFilter" class="facet-select">
+                      <option value="all">Любой</option>
+                      <option v-for="[v, l] in levelOptions" :key="v" :value="v">{{ l }}</option>
+                    </select>
+                  </label>
+                  <label class="facet-field">
+                    <span class="filters-sublabel">Формат</span>
+                    <select v-model="formatFilter" class="facet-select">
+                      <option value="all">Любой</option>
+                      <option v-for="[v, l] in formatOptions" :key="v" :value="v">{{ l }}</option>
+                    </select>
+                  </label>
+                </div>
               </div>
             </div>
 
@@ -214,6 +238,30 @@
               </button>
             </div>
           </template>
+          <div class="filters-divider" />
+          <div class="facet-filters">
+            <label class="facet-field">
+              <span class="filters-sublabel">Тип</span>
+              <select v-model="typeFilter" class="facet-select">
+                <option value="all">Любой</option>
+                <option v-for="[v, l] in typeOptions" :key="v" :value="v">{{ l }}</option>
+              </select>
+            </label>
+            <label class="facet-field">
+              <span class="filters-sublabel">Уровень</span>
+              <select v-model="levelFilter" class="facet-select">
+                <option value="all">Любой</option>
+                <option v-for="[v, l] in levelOptions" :key="v" :value="v">{{ l }}</option>
+              </select>
+            </label>
+            <label class="facet-field">
+              <span class="filters-sublabel">Формат</span>
+              <select v-model="formatFilter" class="facet-select">
+                <option value="all">Любой</option>
+                <option v-for="[v, l] in formatOptions" :key="v" :value="v">{{ l }}</option>
+              </select>
+            </label>
+          </div>
         </div>
       </ion-content>
     </ion-modal>
@@ -275,8 +323,8 @@ import {
   getParticipationsEventV1ParticipationsGet,
   patchMyAttendanceEventV1MeMembersMemberIdAttendanceAttendanceIdPatch,
   patchMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdAttendanceAttendanceIdPatch,
-} from '@/api/generated/-event'
-import type { EventRead, SPageEventRead, EventStatus, AttendanceRead, ParticipationRead } from '@/api/generated/almaEventFlow.schemas'
+} from '@/api/generated/almaEventFlow'
+import type { EventRead, SPageEventRead, EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1, AttendanceRead, ParticipationRead } from '@/api/generated/almaEventFlow'
 import { getCollectiveColor } from '@/utils/colors'
 import CalendarGrid from '@/components/calendar/CalendarGrid.vue'
 import MiniCalendar from '@/components/calendar/MiniCalendar.vue'
@@ -305,16 +353,42 @@ const getColor = getCollectiveColor
 const collectives = computed(() => principal.collectives)
 const selectedIds = computed(() => principal.selectedCollectiveIds)
 
-const STATUS_ACTIVE: EventStatus = 'active'
+const STATUS_ACTIVE: EventStatusEnumV1 = 'active'
 
 // Фильтр статуса доступен только руководителю (участник всегда видит лишь активные)
-const STATUS_FILTERS: Array<{ value: EventStatus | 'all'; label: string }> = [
+const STATUS_FILTERS: Array<{ value: EventStatusEnumV1 | 'all'; label: string }> = [
   { value: 'all', label: 'Любой статус' },
   { value: 'active', label: 'Активно' },
   { value: 'draft', label: 'Черновик' },
   { value: 'archived', label: 'Архив' },
 ]
-const statusFilter = ref<EventStatus | 'all'>('all')
+const statusFilter = ref<EventStatusEnumV1 | 'all'>('active')
+
+// Фасетные фильтры (тип / уровень / формат) — доступны всем пользователям
+const typeLabels: Record<EventTypeEnumV1, string> = {
+  rehearsal: 'Репетиция', competition: 'Конкурс', concert: 'Концерт',
+  festival: 'Фестиваль', play: 'Спектакль', performance: 'Выступление',
+}
+const levelLabels: Record<EventLevelEnumV1, string> = {
+  internal: 'Внутренний', regional: 'Региональный', national: 'Национальный', international: 'Международный',
+}
+const formatLabels: Record<EventFormatEnumV1, string> = {
+  online: 'Онлайн', offline: 'Офлайн',
+}
+const typeOptions = Object.entries(typeLabels) as [EventTypeEnumV1, string][]
+const levelOptions = Object.entries(levelLabels) as [EventLevelEnumV1, string][]
+const formatOptions = Object.entries(formatLabels) as [EventFormatEnumV1, string][]
+
+const typeFilter = ref<EventTypeEnumV1 | 'all'>('all')
+const levelFilter = ref<EventLevelEnumV1 | 'all'>('all')
+const formatFilter = ref<EventFormatEnumV1 | 'all'>('all')
+
+function matchesFacets(e: EventRead): boolean {
+  if (typeFilter.value !== 'all' && e.type !== typeFilter.value) return false
+  if (levelFilter.value !== 'all' && e.level !== levelFilter.value) return false
+  if (formatFilter.value !== 'all' && e.format !== formatFilter.value) return false
+  return true
+}
 
 // Роль пользователя в коллективе для подписи на чипе фильтра
 function roleLabel(collectiveId: string): string {
@@ -328,10 +402,11 @@ function roleLabel(collectiveId: string): string {
 const filteredEvents = computed(() => {
   // Руководитель видит мероприятия любого статуса (кроме шаблонов) и может фильтровать,
   // участник — только активные
-  const visible = principal.isPrincipal
+  const visible = (principal.isPrincipal
     ? calendar.events.filter((e) =>
         e.status !== 'template' && (statusFilter.value === 'all' || e.status === statusFilter.value))
     : calendar.events.filter((e) => e.status === STATUS_ACTIVE)
+  ).filter(matchesFacets)
   // «Все мероприятия» — вообще все активные, без фильтра по коллективам
   if (principal.showAllEvents) return visible
   // Иначе — только мероприятия, в которых участвует хотя бы один выбранный коллектив
@@ -1063,6 +1138,43 @@ onIonViewWillEnter(initLoad)
   letter-spacing: 0.4px;
   color: var(--ion-color-step-400);
   margin-bottom: 8px;
+}
+
+.facet-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.facet-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  flex: 1;
+  min-width: 120px;
+}
+
+.facet-field .filters-sublabel {
+  margin-bottom: 0;
+}
+
+.facet-select {
+  height: 38px;
+  padding: 0 10px;
+  border: 1.5px solid var(--ion-border-color);
+  border-radius: 10px;
+  background: var(--ion-background-color);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ion-text-color);
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+
+.facet-select:focus {
+  border-color: var(--ion-color-primary);
 }
 
 .events-empty,

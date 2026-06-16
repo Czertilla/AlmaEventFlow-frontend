@@ -45,8 +45,8 @@ import {
   createMyCollectiveRoleEventV1MeCollectivesCollectiveIdRolesPost,
   patchMyCollectiveRoleEventV1MeCollectivesCollectiveIdRolesRoleIdPatch,
   deleteMyCollectiveRoleEventV1MeCollectivesCollectiveIdRolesRoleIdDelete,
-} from '@/api/generated/-event'
-import type { RoleRead } from '@/api/generated/almaEventFlow.schemas'
+} from '@/api/generated/almaEventFlow'
+import type { RoleRead } from '@/api/generated/almaEventFlow'
 
 const principal = usePrincipalStore()
 const roles = ref<RoleRead[]>([])

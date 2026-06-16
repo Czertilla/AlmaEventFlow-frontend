@@ -1,31 +1,48 @@
 <template>
   <div class="resource-table">
-    <div class="toolbar-row">
-      <ion-searchbar
-        v-model="query"
-        :placeholder="searchPlaceholder || 'Поиск...'"
-        @ion-input="onSearchInput"
-        class="search-bar"
-        :debounce="300"
-        mode="md"
-      />
-      <div class="toolbar-actions">
-        <ion-select
-          v-if="sortOptions.length"
-          v-model="sortKey"
-          interface="popover"
-          class="sort-select"
-          @ion-change="onSortChange"
-          mode="md"
+    <!-- Unified toolbar: search · filters · sort · add -->
+    <div class="rt-toolbar">
+      <div class="rt-search">
+        <ion-icon :icon="searchOutline" class="rt-search-icon" />
+        <input
+          v-model="query"
+          class="rt-search-input"
+          :placeholder="searchPlaceholder || 'Поиск...'"
+          @input="onSearchInput"
+        />
+        <button v-if="query" class="rt-search-clear" aria-label="Очистить" @click="clearSearch">
+          <ion-icon :icon="closeOutline" />
+        </button>
+      </div>
+
+      <div class="rt-toolbar-actions">
+        <button
+          v-if="filters.length"
+          class="rt-tool-btn"
+          :class="{ 'rt-tool-btn--active': filterOpen || activeFilterCount > 0 }"
+          @click="filterOpen = !filterOpen"
         >
-          <ion-select-option
-            v-for="opt in sortOptions"
-            :key="opt.value"
-            :value="opt.value"
+          <ion-icon :icon="optionsOutline" />
+          <span class="rt-tool-btn-label">Фильтры</span>
+          <span v-if="activeFilterCount" class="rt-tool-badge">{{ activeFilterCount }}</span>
+        </button>
+
+        <div v-if="sortOptions.length" class="rt-sort">
+          <ion-icon :icon="swapVerticalOutline" class="rt-sort-icon" />
+          <select v-model="sortKey" class="rt-sort-select" @change="onSortChange">
+            <option v-for="opt in sortOptions" :key="opt.value" :value="opt.value">
+              {{ opt.label }}
+            </option>
+          </select>
+          <button
+            class="rt-sort-dir"
+            :aria-label="sortOrder === 'asc' ? 'По возрастанию' : 'По убыванию'"
+            @click="toggleOrder"
           >
-            {{ opt.label }}
-          </ion-select-option>
-        </ion-select>
+            <ion-icon :icon="sortOrder === 'asc' ? arrowUpOutline : arrowDownOutline" />
+          </button>
+        </div>
+
         <ion-button
           v-if="addLabel"
           fill="solid"
@@ -40,6 +57,42 @@
       </div>
     </div>
 
+    <!-- Filter panel -->
+    <div v-if="filters.length && filterOpen" class="rt-filter-panel">
+      <div v-for="f in filters" :key="f.key" class="rt-filter-field">
+        <label class="rt-filter-label">{{ f.label }}</label>
+        <select
+          v-if="f.type === 'select'"
+          v-model="filterValues[f.key]"
+          class="rt-filter-control"
+          @change="applyFilters"
+        >
+          <option value="">Любой</option>
+          <option v-for="opt in f.options || []" :key="String(opt.value)" :value="opt.value">
+            {{ opt.label }}
+          </option>
+        </select>
+        <label v-else-if="f.type === 'toggle'" class="rt-filter-toggle">
+          <ion-toggle
+            :checked="filterValues[f.key] === true"
+            mode="md"
+            @ion-change="onToggleFilter(f.key, $event)"
+          />
+        </label>
+        <input
+          v-else-if="f.type === 'date'"
+          v-model="filterValues[f.key]"
+          type="date"
+          class="rt-filter-control"
+          @change="applyFilters"
+        />
+      </div>
+      <button v-if="activeFilterCount" class="rt-filter-reset" @click="resetFilters">
+        <ion-icon :icon="closeOutline" />
+        Сбросить
+      </button>
+    </div>
+
     <div v-if="loading && !items.length" class="state-box">
       <ion-spinner name="crescent" />
       <p>Загрузка...</p>
@@ -48,7 +101,7 @@
     <div v-else-if="error" class="state-box error">
       <ion-icon :icon="alertCircleOutline" size="large" />
       <p>{{ error }}</p>
-      <ion-button fill="outline" @click="loadData">Повторить</ion-button>
+      <ion-button fill="outline" @click="reload">Повторить</ion-button>
     </div>
 
     <div v-else-if="!items.length" class="state-box">
@@ -131,21 +184,10 @@
       </div>
     </div>
 
-    <div v-if="totalPages > 1 && items.length" class="pagination-bar">
-      <ion-button :disabled="page === 0" fill="clear" @click="goToPage(0)">
-        <ion-icon :icon="chevronBackOutline" />
-      </ion-button>
-      <ion-button :disabled="page === 0" fill="clear" @click="goToPage(page - 1)">
-        <ion-icon :icon="chevronBackOutline" />
-      </ion-button>
-      <span class="page-info">{{ page + 1 }} / {{ totalPages }}</span>
-      <ion-button :disabled="page >= totalPages - 1" fill="clear" @click="goToPage(page + 1)">
-        <ion-icon :icon="chevronForwardOutline" />
-      </ion-button>
-      <ion-button :disabled="page >= totalPages - 1" fill="clear" @click="goToPage(totalPages - 1)">
-        <ion-icon :icon="chevronForwardOutline" />
-      </ion-button>
-    </div>
+    <!-- Infinite auto-loading (replaces pagination) -->
+    <ion-infinite-scroll :disabled="!hasMore || loading" @ion-infinite="onInfinite">
+      <ion-infinite-scroll-content loading-spinner="crescent" loading-text="Загрузка..." />
+    </ion-infinite-scroll>
 
     <button
       v-if="addLabel"
@@ -167,16 +209,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import {
-  IonSearchbar, IonSelect, IonSelectOption, IonButton, IonIcon,
-  IonSpinner, IonAlert,
+  IonButton, IonIcon, IonSpinner, IonAlert, IonToggle,
+  IonInfiniteScroll, IonInfiniteScrollContent,
 } from '@ionic/vue'
 import {
   pencilOutline, trashOutline, addOutline,
-  arrowUpOutline, arrowDownOutline,
-  chevronBackOutline, chevronForwardOutline,
-  alertCircleOutline, searchOutline,
+  arrowUpOutline, arrowDownOutline, swapVerticalOutline,
+  alertCircleOutline, searchOutline, optionsOutline, closeOutline,
 } from 'ionicons/icons'
 import type { AxiosResponse } from 'axios'
 
@@ -199,6 +240,13 @@ export interface ExtraAction {
   visible?: (item: any) => boolean
 }
 
+export interface FilterDef {
+  key: string
+  label: string
+  type: 'select' | 'toggle' | 'date'
+  options?: { value: any; label: string }[]
+}
+
 const props = withDefaults(defineProps<{
   columns: ColumnDef[]
   getLabel: (item: any) => string
@@ -211,12 +259,14 @@ const props = withDefaults(defineProps<{
   defaultOrder?: 'asc' | 'desc'
   pageSize?: number
   extraAction?: ExtraAction
+  filters?: FilterDef[]
 }>(), {
   searchPlaceholder: 'Поиск...',
   defaultSort: '',
   defaultOrder: 'asc' as const,
   pageSize: 20,
   sortOptions: () => [],
+  filters: () => [],
 })
 
 const emit = defineEmits<{
@@ -237,11 +287,21 @@ const loading = ref(false)
 const error = ref('')
 const deleteAlert = ref<{ open: boolean; item: any }>({ open: false, item: null })
 
-const totalPages = computed(() => Math.max(1, Math.ceil(total.value / limit.value)))
+const filterOpen = ref(false)
+const filterValues = reactive<Record<string, any>>({})
+for (const f of props.filters) filterValues[f.key] = f.type === 'toggle' ? false : ''
 
+const hasMore = computed(() => items.value.length < total.value)
 const visibleColumns = computed(() => props.columns)
-
 const mobileMetaColumns = computed(() => props.columns.filter(c => !c.hideMobile))
+
+const activeFilterCount = computed(() =>
+  props.filters.reduce((n, f) => {
+    const v = filterValues[f.key]
+    const set = f.type === 'toggle' ? v === true : v !== '' && v !== null && v !== undefined
+    return n + (set ? 1 : 0)
+  }, 0),
+)
 
 const deleteAlertButtons = [
   { text: 'Отмена', role: 'cancel' },
@@ -266,59 +326,94 @@ function toggleSort(key: string) {
     sortKey.value = key
     sortOrder.value = 'asc'
   }
-  page.value = 0
-  loadData()
+  reload()
 }
 
-function onSortChange(ev: CustomEvent) {
-  const val = ev.detail.value as string
-  if (val.startsWith('-')) {
-    sortKey.value = val.slice(1)
-    sortOrder.value = 'desc'
-  } else {
-    sortKey.value = val
-    sortOrder.value = 'asc'
-  }
-  page.value = 0
-  loadData()
+function onSortChange() {
+  reload()
 }
 
+function toggleOrder() {
+  sortOrder.value = sortOrder.value === 'asc' ? 'desc' : 'asc'
+  reload()
+}
+
+let searchTimer: ReturnType<typeof setTimeout> | undefined
 function onSearchInput() {
-  page.value = 0
-  loadData()
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => reload(), 300)
 }
 
-function goToPage(p: number) {
-  page.value = p
-  loadData()
+function clearSearch() {
+  query.value = ''
+  reload()
 }
 
-async function loadData() {
+function onToggleFilter(key: string, ev: CustomEvent) {
+  filterValues[key] = !!(ev.detail as { checked: boolean }).checked
+  applyFilters()
+}
+
+function applyFilters() {
+  reload()
+}
+
+function resetFilters() {
+  for (const f of props.filters) filterValues[f.key] = f.type === 'toggle' ? false : ''
+  reload()
+}
+
+function buildParams(): Record<string, any> {
+  const params: Record<string, any> = { page: page.value, limit: limit.value }
+  if (query.value) params.search = query.value
+  if (sortKey.value) {
+    params.order_by = sortOrder.value === 'desc' ? `-${sortKey.value}` : sortKey.value
+  }
+  for (const f of props.filters) {
+    const v = filterValues[f.key]
+    if (f.type === 'toggle') {
+      if (v === true) params[f.key] = true
+    } else if (v !== '' && v !== null && v !== undefined) {
+      params[f.key] = v
+    }
+  }
+  return params
+}
+
+// reload() resets to the first page; loadMore() appends the next page (infinite scroll)
+async function loadData(append = false) {
   loading.value = true
   error.value = ''
   try {
-    const params: Record<string, any> = {
-      page: page.value,
-      limit: limit.value,
-    }
-    if (query.value) params.search = query.value
-    if (sortKey.value) {
-      params.order_by = sortOrder.value === 'desc' ? `-${sortKey.value}` : sortKey.value
-    }
-    const res = await props.fetchItems(params)
-    items.value = res.data.items
+    const res = await props.fetchItems(buildParams())
+    const fetched = res.data.items
+    items.value = append ? [...items.value, ...fetched] : fetched
     total.value = res.data.pagination.total
   } catch (err: any) {
     error.value = err?.message || 'Ошибка загрузки'
-    items.value = []
+    if (!append) items.value = []
   } finally {
     loading.value = false
   }
 }
 
-onMounted(() => { loadData() })
+function reload() {
+  page.value = 0
+  return loadData(false)
+}
 
-defineExpose({ loadData })
+async function onInfinite(ev: CustomEvent) {
+  if (hasMore.value && !loading.value) {
+    page.value += 1
+    await loadData(true)
+  }
+  const target = ev.target as HTMLIonInfiniteScrollElement
+  target.complete()
+}
+
+onMounted(() => { reload() })
+
+defineExpose({ loadData: reload })
 </script>
 
 <style scoped>
@@ -327,36 +422,246 @@ defineExpose({ loadData })
   min-height: 200px;
 }
 
-/* ── Toolbar ── */
-.toolbar-row {
+/* ── Unified toolbar ── */
+.rt-toolbar {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 16px;
+  margin-bottom: 14px;
   flex-wrap: wrap;
 }
 
-.search-bar {
+.rt-search {
+  position: relative;
+  display: flex;
+  align-items: center;
   flex: 1;
-  min-width: 200px;
-  --border-radius: 10px;
-  --box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+  min-width: 220px;
 }
 
-.toolbar-actions {
+.rt-search-icon {
+  position: absolute;
+  left: 14px;
+  font-size: 18px;
+  color: var(--ion-color-medium);
+  pointer-events: none;
+}
+
+.rt-search-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 38px;
+  border: 1.5px solid var(--ion-border-color);
+  border-radius: 12px;
+  background: var(--ion-card-background);
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ion-text-color);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.rt-search-input:focus {
+  border-color: var(--ion-color-primary);
+  box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.12);
+}
+
+.rt-search-clear {
+  position: absolute;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ion-color-medium);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.rt-search-clear:hover {
+  background: var(--ion-background-color);
+}
+
+.rt-toolbar-actions {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.sort-select {
-  max-width: 180px;
-  --padding-end: 8px;
+.rt-tool-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 44px;
+  padding: 0 14px;
+  border: 1.5px solid var(--ion-border-color);
+  border-radius: 12px;
+  background: var(--ion-card-background);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ion-color-medium);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.rt-tool-btn ion-icon {
+  font-size: 18px;
+}
+
+.rt-tool-btn:hover {
+  border-color: var(--ion-color-step-400);
+  color: var(--ion-text-color);
+}
+
+.rt-tool-btn--active {
+  border-color: var(--ion-color-primary);
+  color: var(--ion-color-primary);
+  background: rgba(108, 99, 255, 0.06);
+}
+
+.rt-tool-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--ion-color-primary);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.rt-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 44px;
+  padding: 0 6px 0 12px;
+  border: 1.5px solid var(--ion-border-color);
+  border-radius: 12px;
+  background: var(--ion-card-background);
+}
+
+.rt-sort-icon {
+  font-size: 17px;
+  color: var(--ion-color-medium);
+}
+
+.rt-sort-select {
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ion-text-color);
+  outline: none;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.rt-sort-dir {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ion-color-medium);
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.rt-sort-dir:hover {
+  background: rgba(108, 99, 255, 0.1);
+  color: var(--ion-color-primary);
 }
 
 .add-btn-desktop {
   display: none;
   font-weight: 600;
+  height: 44px;
+}
+
+/* ── Filter panel ── */
+.rt-filter-panel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 14px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 1.5px solid var(--ion-border-color);
+  border-radius: 14px;
+  background: var(--ion-card-background);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
+}
+
+.rt-filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 160px;
+}
+
+.rt-filter-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ion-color-medium);
+}
+
+.rt-filter-control {
+  height: 40px;
+  padding: 0 10px;
+  border: 1.5px solid var(--ion-border-color);
+  border-radius: 10px;
+  background: var(--ion-background-color);
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ion-text-color);
+  outline: none;
+}
+
+.rt-filter-control:focus {
+  border-color: var(--ion-color-primary);
+}
+
+.rt-filter-toggle {
+  display: flex;
+  align-items: center;
+  height: 40px;
+}
+
+.rt-filter-reset {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 14px;
+  border: 1.5px solid var(--ion-border-color);
+  border-radius: 10px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ion-color-medium);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.rt-filter-reset:hover {
+  border-color: var(--ion-color-danger);
+  color: var(--ion-color-danger);
 }
 
 /* ── Empty / Error / Loading states ── */
@@ -512,23 +817,6 @@ defineExpose({ loadData })
   margin-top: 8px;
   padding-top: 8px;
   border-top: 1px solid var(--ion-color-step-100, #f0f0f0);
-}
-
-/* ── Pagination ── */
-.pagination-bar {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  padding: 20px 0 8px;
-}
-
-.page-info {
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--ion-color-medium);
-  min-width: 60px;
-  text-align: center;
 }
 
 /* ── FAB (закреплён над BottomNav) ── */

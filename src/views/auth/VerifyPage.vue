@@ -49,7 +49,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { verifyRequestTokenUserV1AuthRequestVerifyTokenPost } from '@/api/generated/-user'
+import { verifyRequestTokenUserV1AuthRequestVerifyTokenPost } from '@/api/generated/almaEventFlow'
 import { IonPage, IonContent, IonIcon } from '@ionic/vue'
 import { mailUnreadOutline, mailOpenOutline, timeOutline, checkmarkCircleOutline, arrowBackOutline } from 'ionicons/icons'
 

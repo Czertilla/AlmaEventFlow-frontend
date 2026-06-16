@@ -114,10 +114,10 @@ import {
   createMyCollectiveMemberEventV1MeCollectivesCollectiveIdMembersPost,
   patchMyCollectiveMemberEventV1MeCollectivesCollectiveIdMembersMemberIdPatch,
   deleteMyCollectiveMemberEventV1MeCollectivesCollectiveIdMembersMemberIdDelete,
-} from '@/api/generated/-event'
-import { searchPersonProfileV1PersonsGet } from '@/api/generated/-profile'
+} from '@/api/generated/almaEventFlow'
+import { searchPersonProfileV1PersonsGet } from '@/api/generated/almaEventFlow'
 import { resolvePersonName, shortId } from '@/utils/names'
-import type { MemberRead, RoleRead } from '@/api/generated/almaEventFlow.schemas'
+import type { MemberRead, RoleRead } from '@/api/generated/almaEventFlow'
 
 interface PersonOption { id: string; name: string; surname: string; patronymic?: string | null }
 

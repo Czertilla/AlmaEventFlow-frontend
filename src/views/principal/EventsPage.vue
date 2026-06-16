@@ -95,6 +95,14 @@
                   <ion-icon :icon="calendarOutline" />
                   Мероприятия
                 </button>
+                <select v-model="sourceFilters.type" class="source-filter-select">
+                  <option value="">Любой тип</option>
+                  <option v-for="[v, l] in typeOptions" :key="v" :value="v">{{ l }}</option>
+                </select>
+                <select v-model="sourceFilters.level" class="source-filter-select">
+                  <option value="">Любой уровень</option>
+                  <option v-for="[v, l] in levelOptions" :key="v" :value="v">{{ l }}</option>
+                </select>
               </div>
 
               <!-- Подсказки -->
@@ -220,9 +228,60 @@
               </ion-select>
             </div>
 
-            <!-- Этапы: из шаблона (даты пересчитываются со смещением) + свои -->
             <div class="form-field">
-              <label>Этапы</label>
+              <label>Тип</label>
+              <ion-select v-model="form.type" placeholder="Не выбран" interface="popover">
+                <ion-select-option v-for="[v, l] in typeOptions" :key="v" :value="v">{{ l }}</ion-select-option>
+              </ion-select>
+            </div>
+
+            <div class="form-field">
+              <label>Уровень</label>
+              <ion-select v-model="form.level" placeholder="Не выбран" interface="popover">
+                <ion-select-option v-for="[v, l] in levelOptions" :key="v" :value="v">{{ l }}</ion-select-option>
+              </ion-select>
+            </div>
+
+            <div class="form-field">
+              <label>Формат</label>
+              <ion-select v-model="form.format" placeholder="Не выбран" interface="popover">
+                <ion-select-option v-for="[v, l] in formatOptions" :key="v" :value="v">{{ l }}</ion-select-option>
+              </ion-select>
+            </div>
+
+            <!-- План: либо одно время начала, либо подробные этапы -->
+            <div class="form-field">
+              <label>План мероприятия</label>
+              <div class="role-chips">
+                <button
+                  type="button"
+                  class="role-chip"
+                  :class="{ 'role-chip--active': planMode === 'time' }"
+                  @click="setPlanMode('time')"
+                >
+                  Указать время
+                </button>
+                <button
+                  type="button"
+                  class="role-chip"
+                  :class="{ 'role-chip--active': planMode === 'stages' }"
+                  @click="setPlanMode('stages')"
+                >
+                  Расписать этапы
+                </button>
+              </div>
+
+              <template v-if="planMode === 'time'">
+                <input v-model="startTime" type="time" class="native-input" />
+                <p class="form-hint">
+                  Будет создан один этап «Начало» с указанным временем.
+                  <span v-if="startTime && !form.date" class="form-hint-warn">Сначала укажите дату мероприятия.</span>
+                </p>
+              </template>
+            </div>
+
+            <!-- Этапы: из шаблона (даты пересчитываются со смещением) + свои -->
+            <div v-if="planMode === 'stages'" class="form-field">
               <div v-if="form.stages.length" class="stage-list">
                 <div v-for="(s, i) in form.stages" :key="i" class="stage-edit">
                   <div class="stage-edit-row">
@@ -326,8 +385,8 @@ import {
   optionsOutline, copyOutline, locationOutline, searchOutline,
 } from 'ionicons/icons'
 import { format as fnsFormat } from 'date-fns'
-import { listOrganizationsOrgV1OrganizationsGet } from '@/api/generated/-org'
-import { getLocationsGeoV1LocationsGet } from '@/api/generated/-geo'
+import { listOrganizationsOrgV1OrganizationsGet } from '@/api/generated/almaEventFlow'
+import { getLocationsGeoV1LocationsGet } from '@/api/generated/almaEventFlow'
 import { usePrincipalStore } from '@/stores/principal'
 import { useSettingsStore } from '@/stores/settings'
 import { formatDate } from '@/utils/date'
@@ -339,9 +398,23 @@ import {
   getMyCollectiveRolesEventV1MeCollectivesCollectiveIdRolesGet,
   createMyEventEventV1MeEventsPost,
   createMyCollectiveParticipationEventV1MeCollectivesCollectiveIdParticipationsPost,
-} from '@/api/generated/-event'
+} from '@/api/generated/almaEventFlow'
 import { resolvePersonName, rememberMemberPerson, shortId } from '@/utils/names'
-import type { EventRead, EventStatus, MemberRead, RoleRead } from '@/api/generated/almaEventFlow.schemas'
+import type { EventRead, EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1, MemberRead, RoleRead } from '@/api/generated/almaEventFlow'
+
+const levelLabels: Record<EventLevelEnumV1, string> = {
+  internal: 'Внутренний', regional: 'Региональный', national: 'Национальный', international: 'Международный',
+}
+const typeLabels: Record<EventTypeEnumV1, string> = {
+  rehearsal: 'Репетиция', competition: 'Конкурс', concert: 'Концерт',
+  festival: 'Фестиваль', play: 'Спектакль', performance: 'Выступление',
+}
+const formatLabels: Record<EventFormatEnumV1, string> = {
+  online: 'Онлайн', offline: 'Офлайн',
+}
+const levelOptions = Object.entries(levelLabels) as [EventLevelEnumV1, string][]
+const typeOptions = Object.entries(typeLabels) as [EventTypeEnumV1, string][]
+const formatOptions = Object.entries(formatLabels) as [EventFormatEnumV1, string][]
 
 // Редактируемый этап формы: даты в формате datetime-local, fromTemplate помечает
 // стадии, перенесённые из шаблона (их даты пересчитываются при смене даты мероприятия)
@@ -377,6 +450,9 @@ const searchQuery = ref('')
 
 const showCreateModal = ref(false)
 const statusTouched = ref(false)
+// План мероприятия: 'time' — одно время начала (этап «Начало»), 'stages' — подробные этапы
+const planMode = ref<'time' | 'stages'>('time')
+const startTime = ref('')
 const participantsExpanded = ref(false)
 const memberSearch = ref('')
 const selectedMemberIds = ref<Set<string>>(new Set())
@@ -386,7 +462,10 @@ const form = ref({
   name: '',
   date: '',
   description: '',
-  status: 'draft' as EventStatus,
+  status: 'draft' as EventStatusEnumV1,
+  level: null as EventLevelEnumV1 | null,
+  type: null as EventTypeEnumV1 | null,
+  format: null as EventFormatEnumV1 | null,
   stages: [] as StageForm[],
 })
 
@@ -452,20 +531,29 @@ function clearLocation() {
 const sourceSearch = ref('')
 const sourceDropdownOpen = ref(false)
 const sourceFilterOpen = ref(false)
-const sourceFilters = reactive({ templates: true, events: true })
+const sourceFilters = reactive({
+  templates: true,
+  events: true,
+  type: '' as '' | EventTypeEnumV1,
+  level: '' as '' | EventLevelEnumV1,
+})
 
-// Подсказки: при пустом запросе — все доступные источники, иначе фильтр по названию
+// Подсказки: при пустом запросе — все доступные источники, иначе фильтр по названию,
+// плюс фильтры по типу/уровню мероприятия
 const sourceSuggestions = computed(() => {
   const q = sourceSearch.value.trim().toLowerCase()
-  const items: Array<{ id: string; name: string; kind: 'template' | 'event' }> = []
+  const items: Array<{ id: string; name: string; kind: 'template' | 'event'; type?: EventTypeEnumV1 | null; level?: EventLevelEnumV1 | null }> = []
   if (sourceFilters.templates) {
-    for (const t of templates.value) items.push({ id: t.id, name: t.name, kind: 'template' })
+    for (const t of templates.value) items.push({ id: t.id, name: t.name, kind: 'template', type: t.type, level: t.level })
   }
   if (sourceFilters.events) {
-    for (const e of joinableEvents.value) items.push({ id: e.id, name: e.name, kind: 'event' })
+    for (const e of joinableEvents.value) items.push({ id: e.id, name: e.name, kind: 'event', type: e.type, level: e.level })
   }
-  if (!q) return items
-  return items.filter((i) => i.name.toLowerCase().includes(q))
+  let res = items
+  if (sourceFilters.type) res = res.filter((i) => i.type === sourceFilters.type)
+  if (sourceFilters.level) res = res.filter((i) => i.level === sourceFilters.level)
+  if (q) res = res.filter((i) => i.name.toLowerCase().includes(q))
+  return res
 })
 
 // Текущий выбранный источник для отображения в строке
@@ -521,6 +609,21 @@ function removeStage(i: number) {
   form.value.stages.splice(i, 1)
 }
 
+// Переключение режима плана. При переходе к этапам ранее указанное время
+// подставляется в первый этап (без названия), как просит ТЗ.
+function setPlanMode(mode: 'time' | 'stages') {
+  if (mode === planMode.value) return
+  if (mode === 'stages' && form.value.stages.length === 0 && startTime.value && form.value.date) {
+    form.value.stages.push({
+      name: '',
+      start_at: `${form.value.date}T${startTime.value}`,
+      end_at: '',
+      description: '',
+    })
+  }
+  planMode.value = mode
+}
+
 // Автоподстановка окончания при первом клике: если пусто — копируем старт стадии
 function onEndFocus(stage: StageForm) {
   if (!stage.end_at && stage.start_at) {
@@ -562,15 +665,15 @@ const filteredEvents = computed(() => {
   return events.value.filter((e) => e.name.toLowerCase().includes(q))
 })
 
-function statusColor(status?: EventStatus): string {
-  const map: Record<EventStatus, string> = {
+function statusColor(status?: EventStatusEnumV1): string {
+  const map: Record<EventStatusEnumV1, string> = {
     draft: '#92949c', template: '#6C63FF', active: '#00D9A6', archived: '#FF4757',
   }
   return map[status ?? 'draft']
 }
 
-function statusLabel(status?: EventStatus): string {
-  const map: Record<EventStatus, string> = {
+function statusLabel(status?: EventStatusEnumV1): string {
+  const map: Record<EventStatusEnumV1, string> = {
     draft: 'Черновик', template: 'Шаблон', active: 'Активно', archived: 'Архив',
   }
   return map[status ?? 'draft']
@@ -616,8 +719,10 @@ function cancelParticipantsEdit() {
 }
 
 function openCreate() {
-  form.value = { sourceId: null, name: '', date: '', description: '', status: 'draft', stages: [] }
+  form.value = { sourceId: null, name: '', date: '', description: '', status: 'draft', level: null, type: null, format: null, stages: [] }
   templateBase = null
+  sourceFilters.type = ''
+  sourceFilters.level = ''
   selectedOrganizer.value = null
   organizerSearch.value = ''
   organizerOptions.value = []
@@ -628,6 +733,8 @@ function openCreate() {
   sourceDropdownOpen.value = false
   sourceFilterOpen.value = false
   statusTouched.value = false
+  planMode.value = 'time'
+  startTime.value = ''
   participantsExpanded.value = false
   selectedMemberIds.value = new Set(activeMembers.value.map((m) => m.id))
   showCreateModal.value = true
@@ -644,6 +751,9 @@ async function onSourceSelected(id: string | null) {
   // С шаблона переносятся все поля, кроме даты (включая стадии, организатора и локацию)
   form.value.name = template.name
   form.value.description = template.description || ''
+  form.value.level = template.level ?? null
+  form.value.type = template.type ?? null
+  form.value.format = template.format ?? null
   if (template.organizer_id) {
     selectedOrganizer.value = { id: template.organizer_id, name: 'Организатор из шаблона' }
     try {
@@ -676,6 +786,8 @@ async function onSourceSelected(id: string | null) {
       fromTemplate: true,
       templateIdx: idx,
     }))
+    // У шаблона есть этапы — открываем режим подробного плана
+    planMode.value = form.value.stages.length ? 'stages' : 'time'
     if (form.value.date) recalcStages()
   } catch {
     templateBase = { date: template.date ?? null, stages: [] }
@@ -711,7 +823,7 @@ function onDateChanged() {
   autoStatus()
 }
 
-function onStatusChanged(value: EventStatus) {
+function onStatusChanged(value: EventStatusEnumV1) {
   form.value.status = value
   statusTouched.value = true
 }
@@ -727,6 +839,16 @@ watch(() => [form.value.name, form.value.date, form.value.description], autoStat
 async function submit() {
   const collectiveId = principal.activePrincipalCollectiveId
   if (!collectiveId) return
+  // Бизнес-правило: мероприятие не может быть active без даты
+  if (!isJoinMode.value && form.value.status === 'active' && !form.value.date) {
+    const toast = await toastController.create({
+      message: 'Активное мероприятие должно иметь дату',
+      duration: 3000,
+      color: 'danger',
+    })
+    toast.present()
+    return
+  }
   creating.value = true
   try {
     if (isJoinMode.value && form.value.sourceId) {
@@ -736,14 +858,24 @@ async function submit() {
         member_ids: participantsExpanded.value ? Array.from(selectedMemberIds.value) : null,
       })
     } else {
-      const stages = form.value.stages
-        .filter((s) => s.name && s.start_at)
-        .map((s) => ({
-          name: s.name,
-          start_at: toTzIso(s.start_at),
-          end_at: s.end_at ? toTzIso(s.end_at) : null,
-          description: s.description ?? null,
-        }))
+      // Режим «время» → один этап «Начало»; иначе — подробные этапы формы
+      const stages = planMode.value === 'time'
+        ? (startTime.value && form.value.date
+            ? [{
+                name: 'Начало',
+                start_at: toTzIso(`${form.value.date}T${startTime.value}`),
+                end_at: null,
+                description: null,
+              }]
+            : [])
+        : form.value.stages
+            .filter((s) => s.name && s.start_at)
+            .map((s) => ({
+              name: s.name,
+              start_at: toTzIso(s.start_at),
+              end_at: s.end_at ? toTzIso(s.end_at) : null,
+              description: s.description ?? null,
+            }))
       // ТЗ: настройка не активирована → member_ids = null (None);
       // но для шаблона — именно пустой список, т.к. шаблон не имеет участников
       let memberIds: string[] | null
@@ -757,6 +889,9 @@ async function submit() {
         date: form.value.date || null,
         description: form.value.description || null,
         status: form.value.status,
+        level: form.value.level,
+        type: form.value.type,
+        format: form.value.format ?? undefined,
         organizer_id: selectedOrganizer.value?.id ?? null,
         location_id: selectedLocation.value?.id ?? null,
         collective_id: collectiveId,
@@ -968,6 +1103,11 @@ watch(() => principal.activePrincipalCollectiveId, async (collectiveId) => {
   margin: 4px 0 0;
   font-size: 12px;
   color: var(--ion-color-medium);
+}
+
+.form-hint-warn {
+  color: var(--ion-color-danger);
+  font-weight: 600;
 }
 
 .native-input {
@@ -1318,6 +1458,25 @@ watch(() => principal.activePrincipalCollectiveId, async (collectiveId) => {
 .source-filter-chip--active {
   border-color: var(--ion-color-primary);
   background: rgba(108, 99, 255, 0.1);
+  color: var(--ion-color-primary);
+}
+
+.source-filter-select {
+  height: 32px;
+  padding: 0 8px;
+  border: 1.5px solid var(--ion-border-color);
+  border-radius: 999px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ion-color-medium);
+  cursor: pointer;
+  outline: none;
+}
+
+.source-filter-select:focus {
+  border-color: var(--ion-color-primary);
   color: var(--ion-color-primary);
 }
 

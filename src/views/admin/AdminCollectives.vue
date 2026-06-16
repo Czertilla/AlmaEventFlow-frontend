@@ -33,9 +33,9 @@ import { IonModal } from '@ionic/vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import ResourceTable from '@/components/admin/ResourceTable.vue'
 import ResourceFormModal from '@/components/admin/ResourceFormModal.vue'
-import { listCollectivesOrgV1CollectivesGet, createCollectiveOrgV1CollectivesPost, patchCollectiveOrgV1CollectivesCollectiveIdPatch, deleteCollectiveOrgV1CollectivesCollectiveIdDelete, listUniversitiesOrgV1UniversitiesGet } from '@/api/generated/-org'
-import { searchPersonProfileV1PersonsGet } from '@/api/generated/-profile'
-import { getAddressesGeoV1AddressesGet } from '@/api/generated/-geo'
+import { listCollectivesOrgV1CollectivesGet, createCollectiveOrgV1CollectivesPost, patchCollectiveOrgV1CollectivesCollectiveIdPatch, deleteCollectiveOrgV1CollectivesCollectiveIdDelete, listUniversitiesOrgV1UniversitiesGet } from '@/api/generated/almaEventFlow'
+import { searchPersonProfileV1PersonsGet } from '@/api/generated/almaEventFlow'
+import { getAddressesGeoV1AddressesGet } from '@/api/generated/almaEventFlow'
 import type { ColumnDef, SortOption } from '@/components/admin/ResourceTable.vue'
 import type { FormField } from '@/components/admin/ResourceFormModal.vue'
 
@@ -52,10 +52,10 @@ const sortOptions: SortOption[] = [
   { value: 'acronym', label: 'Аббревиатуре' },
 ]
 
-// Поля по схеме CollectiveCreate: name, acronym, university_id, principal_id, address_id
+// Поля по схеме CollectiveCreate: name, acronym (опц.), university_id, principal_id, address_id
 const formFields: FormField[] = [
   { key: 'name', label: 'Название', type: 'text', required: true },
-  { key: 'acronym', label: 'Аббревиатура', type: 'text', required: true },
+  { key: 'acronym', label: 'Аббревиатура', type: 'text' },
   {
     key: 'university_id',
     label: 'Университет',
