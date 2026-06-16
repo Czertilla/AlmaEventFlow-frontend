@@ -98,6 +98,11 @@ const routes: Array<RouteRecordRaw> = [
     meta: { auth: true },
   },
   {
+    path: '/calendar-subscriptions',
+    component: () => import('@/views/CalendarSubscriptionsPage.vue'),
+    meta: { auth: true },
+  },
+  {
     path: '/profile',
     component: () => import('@/views/ProfilePage.vue'),
     meta: { auth: true },

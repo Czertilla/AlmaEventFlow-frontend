@@ -1173,6 +1173,57 @@ export interface UserUpdate {
   username: string;
 }
 
+export type CalendarSubscriptionTypeEnum = typeof CalendarSubscriptionTypeEnum[keyof typeof CalendarSubscriptionTypeEnum];
+
+
+export const CalendarSubscriptionTypeEnum = {
+  personal_all: 'personal_all',
+  personal_collective: 'personal_collective',
+  principal_collective: 'principal_collective',
+} as const;
+
+export interface FeedDescriptor {
+  type: CalendarSubscriptionTypeEnum;
+  title: string;
+  collective_id?: string | null;
+}
+
+export interface AvailableFeeds {
+  personal?: FeedDescriptor | null;
+  member_collectives?: FeedDescriptor[];
+  principal_collectives?: FeedDescriptor[];
+}
+
+export interface SubscriptionCreate {
+  type: CalendarSubscriptionTypeEnum;
+  collective_id?: string | null;
+}
+
+/**
+ * Returned by create / rotate-token — ``feed_url`` is always present.
+ */
+export interface SubscriptionCreated {
+  id: string;
+  type: CalendarSubscriptionTypeEnum;
+  title: string;
+  collective_id: string | null;
+  is_active: boolean;
+  feed_url: string;
+  created_at: string;
+  last_accessed_at?: string | null;
+}
+
+export interface SubscriptionRead {
+  id: string;
+  type: CalendarSubscriptionTypeEnum;
+  title: string;
+  collective_id: string | null;
+  is_active: boolean;
+  feed_url?: string | null;
+  created_at: string;
+  last_accessed_at?: string | null;
+}
+
 export type GetAttendancesEventV1AttendancesGetParams = {
 order_by?: string | null;
 search?: string | null;
@@ -4009,6 +4060,76 @@ export const downloadAppYamlSchemaAsyncapiYamlGet = (
     );
   }
 
+/**
+ * @summary Get Available Feeds
+ */
+export const getAvailableFeedsEventV2CalendarAvailableFeedsGet = (
+     options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<AvailableFeeds>> => {
+    return axios.get(
+      `/event/v2/calendar/available-feeds`,options
+    );
+  }
+
+/**
+ * @summary List Subscriptions
+ */
+export const listSubscriptionsEventV2CalendarSubscriptionsGet = (
+     options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<SubscriptionRead[]>> => {
+    return axios.get(
+      `/event/v2/calendar/subscriptions`,options
+    );
+  }
+
+/**
+ * @summary Create Subscription
+ */
+export const createSubscriptionEventV2CalendarSubscriptionsPost = (
+    subscriptionCreate: SubscriptionCreate, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<SubscriptionCreated>> => {
+    return axios.post(
+      `/event/v2/calendar/subscriptions`,
+      subscriptionCreate,options
+    );
+  }
+
+/**
+ * @summary Rotate Subscription Token
+ */
+export const rotateSubscriptionTokenEventV2CalendarSubscriptionsSubscriptionIdRotateTokenPost = (
+    subscriptionId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<SubscriptionCreated>> => {
+    return axios.post(
+      `/event/v2/calendar/subscriptions/${subscriptionId}/rotate-token`,
+      undefined,options
+    );
+  }
+
+/**
+ * @summary Delete Subscription
+ */
+export const deleteSubscriptionEventV2CalendarSubscriptionsSubscriptionIdDelete = (
+    subscriptionId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<void>> => {
+    return axios.delete(
+      `/event/v2/calendar/subscriptions/${subscriptionId}`,options
+    );
+  }
+
+/**
+ * Public ICS feed — no Authorization header (external calendar clients
+ * subscribe by URL only). Security relies on the unguessable token.
+ * @summary Get Calendar Feed
+ */
+export const getCalendarFeedEventV2CalendarFeedTokenIcsGet = (
+    token: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<unknown>> => {
+    return axios.get(
+      `/event/v2/calendar/feed/${token}.ics`,options
+    );
+  }
+
 export type GetAttendancesEventV1AttendancesGetResult = AxiosResponse<SPageAttendanceRead>
 export type CreateAttendanceEventV1AttendancesPostResult = AxiosResponse<AttendanceRead>
 export type GetAttendanceEventV1AttendancesAttendanceIdGetResult = AxiosResponse<AttendanceRead>
@@ -4205,3 +4326,9 @@ export type CreateInviteTokenUserV1UsersInvitePostResult = AxiosResponse<InviteT
 export type ServeAsyncapiSchemaAsyncapiGetResult = AxiosResponse<unknown>
 export type DownloadAppJsonSchemaAsyncapiJsonGetResult = AxiosResponse<unknown>
 export type DownloadAppYamlSchemaAsyncapiYamlGetResult = AxiosResponse<unknown>
+export type GetAvailableFeedsEventV2CalendarAvailableFeedsGetResult = AxiosResponse<AvailableFeeds>
+export type ListSubscriptionsEventV2CalendarSubscriptionsGetResult = AxiosResponse<SubscriptionRead[]>
+export type CreateSubscriptionEventV2CalendarSubscriptionsPostResult = AxiosResponse<SubscriptionCreated>
+export type RotateSubscriptionTokenEventV2CalendarSubscriptionsSubscriptionIdRotateTokenPostResult = AxiosResponse<SubscriptionCreated>
+export type DeleteSubscriptionEventV2CalendarSubscriptionsSubscriptionIdDeleteResult = AxiosResponse<void>
+export type GetCalendarFeedEventV2CalendarFeedTokenIcsGetResult = AxiosResponse<unknown>

@@ -68,6 +68,22 @@
         </div>
 
         <div class="settings-section">
+          <h3 class="settings-section-title">Календарь</h3>
+          <div class="settings-card">
+            <button class="settings-row settings-row--link" @click="router.push('/calendar-subscriptions')">
+              <div class="settings-row-icon" style="background: rgba(108, 99, 255, 0.1); color: #6C63FF;">
+                <ion-icon :icon="calendarNumberOutline" />
+              </div>
+              <div class="settings-row-text">
+                <span class="settings-row-label">Календарные подписки</span>
+                <span class="settings-row-hint">Подключение расписания к внешним календарям (ICS)</span>
+              </div>
+              <ion-icon :icon="chevronForwardOutline" class="settings-row-arrow" />
+            </button>
+          </div>
+        </div>
+
+        <div class="settings-section">
           <h3 class="settings-section-title">О приложении</h3>
           <div class="settings-card about-card">
             <div class="about-logo">
@@ -86,14 +102,19 @@
 </template>
 
 <script setup lang="ts">
+import { useRouter } from 'vue-router'
 import { useSettingsStore } from '@/stores/settings'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBackButton,
   IonToggle, IonSelect, IonSelectOption, IonIcon,
 } from '@ionic/vue'
-import { moonOutline, calendarOutline, todayOutline } from 'ionicons/icons'
+import {
+  moonOutline, calendarOutline, todayOutline, calendarNumberOutline,
+  chevronForwardOutline,
+} from 'ionicons/icons'
 import { usePlatform } from '@/composables/usePlatform'
 
+const router = useRouter()
 const settings = useSettingsStore()
 const { isDesktop } = usePlatform()
 
@@ -178,6 +199,21 @@ const apiVersion = __API_VERSION__
 .settings-row-hint {
   font-size: 12px;
   color: var(--ion-color-medium);
+}
+
+.settings-row--link {
+  border: none;
+  background: none;
+  width: 100%;
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.settings-row-arrow {
+  font-size: 16px;
+  color: var(--ion-color-step-400);
+  flex-shrink: 0;
 }
 
 /* Селекты не должны сжиматься — иначе текст переносится по буквам */
