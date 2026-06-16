@@ -2,7 +2,7 @@
     "openapi": "3.1.0",
     "info": {
         "title": "Alma Event Flow",
-        "version": "0.1.0"
+        "version": "0.1.2"
     },
     "paths": {
         "/event/v1/attendances": {
@@ -773,13 +773,61 @@
                         "schema": {
                             "anyOf": [
                                 {
-                                    "$ref": "#/components/schemas/EventStatus"
+                                    "$ref": "#/components/schemas/EventStatusEnumV1"
                                 },
                                 {
                                     "type": "null"
                                 }
                             ],
                             "title": "Status"
+                        }
+                    },
+                    {
+                        "name": "level",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/EventLevelEnumV1"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Level"
+                        }
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/EventTypeEnumV1"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Type"
+                        }
+                    },
+                    {
+                        "name": "format",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/EventFormatEnumV1"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Format"
                         }
                     },
                     {
@@ -814,6 +862,54 @@
                                 }
                             ],
                             "title": "Date  Lte"
+                        }
+                    },
+                    {
+                        "name": "level__in",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Level  In"
+                        }
+                    },
+                    {
+                        "name": "type__in",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Type  In"
+                        }
+                    },
+                    {
+                        "name": "format__in",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Format  In"
                         }
                     },
                     {
@@ -4215,6 +4311,322 @@
                             "type": "string",
                             "format": "uuid",
                             "title": "Event Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/event/v1/me/collectives/{collective_id}/events/{event_id}/stages": {
+            "post": {
+                "tags": [
+                    "me"
+                ],
+                "summary": "Create My Collective Event Stage",
+                "operationId": "create_my_collective_event_stage_event_v1_me_collectives__collective_id__events__event_id__stages_post",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "collective_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Collective Id"
+                        }
+                    },
+                    {
+                        "name": "event_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Event Id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StageCreateData"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StageRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/event/v1/me/collectives/{collective_id}/stages/{stage_id}": {
+            "patch": {
+                "tags": [
+                    "me"
+                ],
+                "summary": "Patch My Collective Event Stage",
+                "operationId": "patch_my_collective_event_stage_event_v1_me_collectives__collective_id__stages__stage_id__patch",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "collective_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Collective Id"
+                        }
+                    },
+                    {
+                        "name": "stage_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Stage Id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StagePatchData"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StageRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "me"
+                ],
+                "summary": "Delete My Collective Event Stage",
+                "operationId": "delete_my_collective_event_stage_event_v1_me_collectives__collective_id__stages__stage_id__delete",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "collective_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Collective Id"
+                        }
+                    },
+                    {
+                        "name": "stage_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Stage Id"
                         }
                     }
                 ],
@@ -8112,6 +8524,22 @@
                         }
                     },
                     {
+                        "name": "city_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "City Id"
+                        }
+                    },
+                    {
                         "name": "page",
                         "in": "query",
                         "required": false,
@@ -8770,6 +9198,23 @@
                                 }
                             ],
                             "title": "Search"
+                        }
+                    },
+                    {
+                        "name": "address_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Address Id"
                         }
                     },
                     {
@@ -9435,6 +9880,23 @@
                                 }
                             ],
                             "title": "Search"
+                        }
+                    },
+                    {
+                        "name": "university_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "University Id"
                         }
                     },
                     {
@@ -10765,6 +11227,38 @@
                                 }
                             ],
                             "title": "Search"
+                        }
+                    },
+                    {
+                        "name": "type",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Type"
+                        }
+                    },
+                    {
+                        "name": "type__in",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Type  In"
                         }
                     },
                     {
@@ -12131,6 +12625,24 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -12164,24 +12676,6 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 },
@@ -12235,6 +12729,24 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -12268,24 +12780,6 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 },
@@ -12353,6 +12847,24 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -12386,24 +12898,6 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 },
@@ -12469,6 +12963,24 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -12502,24 +13014,6 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 },
@@ -12573,6 +13067,24 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -12606,24 +13118,6 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 },
@@ -12667,149 +13161,6 @@
                             "type": "string",
                             "format": "uuid",
                             "title": "Id"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ContactRead"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Missing or invalid authentication token",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "NOT_AUTHENTICATED": {
-                                        "summary": "Missing or invalid authentication token",
-                                        "value": {
-                                            "detail": "NOT_AUTHENTICATED"
-                                        }
-                                    },
-                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
-                                        "summary": "Token decode failed",
-                                        "value": {
-                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Insufficient permissions",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "FORBIDDEN": {
-                                        "summary": "Not superuser or not verified",
-                                        "value": {
-                                            "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "CONTACT_NOT_FOUND",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "CONTACT_NOT_FOUND": {
-                                        "summary": "CONTACT_NOT_FOUND",
-                                        "value": {
-                                            "detail": "CONTACT_NOT_FOUND"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "tags": [
-                    "contact"
-                ],
-                "summary": "Create Contact",
-                "operationId": "create_contact_profile_v1_contacts__id__post",
-                "security": [
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid"
-                        }
-                    },
-                    {
-                        "name": "type",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/components/schemas/ContactType"
-                        }
-                    },
-                    {
-                        "name": "value",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "maxLength": 256,
-                            "title": "Value"
-                        }
-                    },
-                    {
-                        "name": "is_main",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean",
-                            "default": false,
-                            "title": "Is Main"
-                        }
-                    },
-                    {
-                        "name": "person_id",
-                        "in": "query",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid",
-                            "title": "Person Id"
                         }
                     }
                 ],
@@ -13298,6 +13649,112 @@
                         }
                     }
                 }
+            }
+        },
+        "/profile/v1/contacts": {
+            "post": {
+                "tags": [
+                    "contact"
+                ],
+                "summary": "Create Contact",
+                "operationId": "create_contact_profile_v1_contacts_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ContactCreate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ContactRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "CONTACT_NOT_FOUND",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "CONTACT_NOT_FOUND": {
+                                        "summary": "CONTACT_NOT_FOUND",
+                                        "value": {
+                                            "detail": "CONTACT_NOT_FOUND"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
             }
         },
         "/profile/v1/diets": {
@@ -14045,6 +14502,24 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -14078,24 +14553,6 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 },
@@ -14146,6 +14603,24 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -14182,24 +14657,6 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 }
@@ -14269,6 +14726,24 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -14302,24 +14777,6 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 },
@@ -14385,6 +14842,24 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -14418,24 +14893,6 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 },
@@ -14501,6 +14958,24 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -14534,24 +15009,6 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 },
@@ -15709,6 +16166,24 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -15745,24 +16220,6 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 }
@@ -15803,6 +16260,24 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -15839,24 +16314,6 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 }
@@ -15907,6 +16364,24 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -15943,24 +16418,6 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 }
@@ -16105,7 +16562,8 @@
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "format": "uuid"
+                            "format": "uuid",
+                            "title": "Person Id"
                         }
                     }
                 ],
@@ -16114,7 +16572,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/PersonPut"
+                                "$ref": "#/components/schemas/PersonPutData"
                             }
                         }
                     }
@@ -16220,7 +16678,8 @@
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "format": "uuid"
+                            "format": "uuid",
+                            "title": "Person Id"
                         }
                     }
                 ],
@@ -16229,7 +16688,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/PersonPatch"
+                                "$ref": "#/components/schemas/PersonPatchData"
                             }
                         }
                     }
@@ -16908,6 +17367,24 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -16944,24 +17421,6 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 }
@@ -17002,6 +17461,24 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -17038,24 +17515,6 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 }
@@ -17106,6 +17565,24 @@
                             }
                         }
                     },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -17142,24 +17619,6 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 }
@@ -17309,7 +17768,8 @@
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "format": "uuid"
+                            "format": "uuid",
+                            "title": "Profile Id"
                         }
                     }
                 ],
@@ -17318,7 +17778,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/ProfilePut"
+                                "$ref": "#/components/schemas/ProfilePutData"
                             }
                         }
                     }
@@ -17424,7 +17884,8 @@
                         "required": true,
                         "schema": {
                             "type": "string",
-                            "format": "uuid"
+                            "format": "uuid",
+                            "title": "Profile Id"
                         }
                     }
                 ],
@@ -17433,7 +17894,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/ProfilePatch"
+                                "$ref": "#/components/schemas/ProfilePatchData"
                             }
                         }
                     }
@@ -19592,9 +20053,6 @@
                             }
                         }
                     },
-                    "401": {
-                        "description": "Missing token or inactive user."
-                    },
                     "400": {
                         "description": "Bad Request",
                         "content": {
@@ -19621,6 +20079,9 @@
                                 }
                             }
                         }
+                    },
+                    "401": {
+                        "description": "Missing token or inactive user."
                     },
                     "422": {
                         "description": "Validation Error",
@@ -19738,15 +20199,6 @@
                             }
                         }
                     },
-                    "401": {
-                        "description": "Missing token or inactive user."
-                    },
-                    "403": {
-                        "description": "Not a superuser."
-                    },
-                    "404": {
-                        "description": "The user does not exist."
-                    },
                     "400": {
                         "content": {
                             "application/json": {
@@ -19773,6 +20225,15 @@
                             }
                         },
                         "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Missing token or inactive user."
+                    },
+                    "403": {
+                        "description": "Not a superuser."
+                    },
+                    "404": {
+                        "description": "The user does not exist."
                     },
                     "422": {
                         "description": "Validation Error",
@@ -19910,7 +20371,7 @@
                                 },
                                 "examples": {
                                     "VERIFY_USER_BAD_TOKEN": {
-                                        "summary": "Bad token, not existing user ornot the e-mail currently set for the user.",
+                                        "summary": "Bad token, not existing user or not the e-mail currently set for the user.",
                                         "value": {
                                             "detail": "VERIFY_USER_BAD_TOKEN"
                                         }
@@ -19960,36 +20421,12 @@
                     "200": {
                         "description": "Successful Response",
                         "content": {
-                            "application/json": {
+                            "text/html": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/UserRead"
+                                    "type": "string"
                                 }
                             }
                         }
-                    },
-                    "400": {
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "VERIFY_USER_BAD_TOKEN": {
-                                        "summary": "Bad token, not existing user ornot the e-mail currently set for the user.",
-                                        "value": {
-                                            "detail": "VERIFY_USER_BAD_TOKEN"
-                                        }
-                                    },
-                                    "VERIFY_USER_ALREADY_VERIFIED": {
-                                        "summary": "The user is already verified.",
-                                        "value": {
-                                            "detail": "VERIFY_USER_ALREADY_VERIFIED"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        },
-                        "description": "Bad Request"
                     },
                     "422": {
                         "description": "Validation Error",
@@ -20143,6 +20580,18 @@
                                         "summary": "User is inactive.",
                                         "value": {
                                             "detail": "LOGIN_BAD_CREDENTIALS"
+                                        }
+                                    },
+                                    "ACCESS_TOKEN_DECODE_ERROR": {
+                                        "summary": "Access token is error.",
+                                        "value": {
+                                            "detail": "ACCESS_TOKEN_DECODE_ERROR"
+                                        }
+                                    },
+                                    "ACCESS_TOKEN_ALREADY_EXPIRED": {
+                                        "summary": "Access token is already expired.",
+                                        "value": {
+                                            "detail": "ACCESS_TOKEN_ALREADY_EXPIRED"
                                         }
                                     }
                                 },
@@ -20312,6 +20761,18 @@
                                 "examples": {
                                     "INVALID_STATE_TOKEN": {
                                         "summary": "Invalid state token."
+                                    },
+                                    "ACCESS_TOKEN_DECODE_ERROR": {
+                                        "summary": "Access token is error.",
+                                        "value": {
+                                            "detail": "ACCESS_TOKEN_DECODE_ERROR"
+                                        }
+                                    },
+                                    "ACCESS_TOKEN_ALREADY_EXPIRED": {
+                                        "summary": "Access token is already expired.",
+                                        "value": {
+                                            "detail": "ACCESS_TOKEN_ALREADY_EXPIRED"
+                                        }
                                     }
                                 },
                                 "schema": {
@@ -20551,6 +21012,156 @@
                     }
                 ]
             }
+        },
+        "/asyncapi": {
+            "get": {
+                "tags": [
+                    "asyncapi"
+                ],
+                "summary": "Serve Asyncapi Schema",
+                "description": "Serve the AsyncAPI schema as an HTML response.",
+                "operationId": "serve_asyncapi_schema_asyncapi_get",
+                "parameters": [
+                    {
+                        "name": "sidebar",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": true,
+                            "title": "Sidebar"
+                        }
+                    },
+                    {
+                        "name": "info",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": true,
+                            "title": "Info"
+                        }
+                    },
+                    {
+                        "name": "servers",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": true,
+                            "title": "Servers"
+                        }
+                    },
+                    {
+                        "name": "operations",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": true,
+                            "title": "Operations"
+                        }
+                    },
+                    {
+                        "name": "messages",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": true,
+                            "title": "Messages"
+                        }
+                    },
+                    {
+                        "name": "schemas",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": true,
+                            "title": "Schemas"
+                        }
+                    },
+                    {
+                        "name": "errors",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": true,
+                            "title": "Errors"
+                        }
+                    },
+                    {
+                        "name": "expandMessageExamples",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": true,
+                            "title": "Expandmessageexamples"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/asyncapi.json": {
+            "get": {
+                "tags": [
+                    "asyncapi"
+                ],
+                "summary": "Download App Json Schema",
+                "operationId": "download_app_json_schema_asyncapi_json_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/asyncapi.yaml": {
+            "get": {
+                "tags": [
+                    "asyncapi"
+                ],
+                "summary": "Download App Yaml Schema",
+                "operationId": "download_app_yaml_schema_asyncapi_yaml_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -20595,8 +21206,7 @@
                 },
                 "type": "object",
                 "required": [
-                    "city_id",
-                    "parsed"
+                    "city_id"
                 ],
                 "title": "AddressCreate"
             },
@@ -20753,9 +21363,6 @@
                     }
                 },
                 "type": "object",
-                "required": [
-                    "parsed"
-                ],
                 "title": "AddressPatchData"
             },
             "AddressPutData": {
@@ -20798,8 +21405,7 @@
                 },
                 "type": "object",
                 "required": [
-                    "city_id",
-                    "parsed"
+                    "city_id"
                 ],
                 "title": "AddressPutData"
             },
@@ -20843,8 +21449,7 @@
                 "required": [
                     "id",
                     "city_id",
-                    "name",
-                    "parsed"
+                    "name"
                 ],
                 "title": "AddressRead"
             },
@@ -21114,7 +21719,7 @@
                 "properties": {
                     "file": {
                         "type": "string",
-                        "format": "binary",
+                        "contentMediaType": "application/octet-stream",
                         "title": "File"
                     }
                 },
@@ -21189,7 +21794,7 @@
                         "anyOf": [
                             {
                                 "type": "string",
-                                "format": "binary"
+                                "contentMediaType": "application/octet-stream"
                             },
                             {
                                 "type": "null"
@@ -21287,8 +21892,15 @@
                         "title": "Name"
                     },
                     "acronym": {
-                        "type": "string",
-                        "maxLength": 16,
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 16
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "Acronym"
                     },
                     "principal_id": {
@@ -21330,9 +21942,7 @@
                 },
                 "type": "object",
                 "required": [
-                    "name",
-                    "acronym",
-                    "university_id"
+                    "name"
                 ],
                 "title": "CollectiveCreate"
             },
@@ -21410,8 +22020,15 @@
                         "title": "Name"
                     },
                     "acronym": {
-                        "type": "string",
-                        "maxLength": 16,
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 16
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "Acronym"
                     },
                     "principal_id": {
@@ -21453,9 +22070,7 @@
                 },
                 "type": "object",
                 "required": [
-                    "name",
-                    "acronym",
-                    "university_id"
+                    "name"
                 ],
                 "title": "CollectivePutData"
             },
@@ -21472,8 +22087,15 @@
                         "title": "Name"
                     },
                     "acronym": {
-                        "type": "string",
-                        "maxLength": 16,
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 16
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "Acronym"
                     },
                     "principal_id": {
@@ -21521,11 +22143,38 @@
                 "type": "object",
                 "required": [
                     "id",
-                    "name",
-                    "acronym",
-                    "university_id"
+                    "name"
                 ],
                 "title": "CollectiveRead"
+            },
+            "ContactCreate": {
+                "properties": {
+                    "type": {
+                        "$ref": "#/components/schemas/ContactType"
+                    },
+                    "value": {
+                        "type": "string",
+                        "maxLength": 256,
+                        "title": "Value"
+                    },
+                    "is_main": {
+                        "type": "boolean",
+                        "title": "Is Main",
+                        "default": false
+                    },
+                    "person_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Person Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type",
+                    "value",
+                    "person_id"
+                ],
+                "title": "ContactCreate"
             },
             "ContactItemCreate": {
                 "properties": {
@@ -21895,8 +22544,32 @@
                         "title": "Organizer Id"
                     },
                     "status": {
-                        "$ref": "#/components/schemas/EventStatus",
+                        "$ref": "#/components/schemas/EventStatusEnumV1",
                         "default": "draft"
+                    },
+                    "level": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/EventLevelEnumV1"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "type": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/EventTypeEnumV1"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "format": {
+                        "$ref": "#/components/schemas/EventFormatEnumV1",
+                        "default": "offline"
                     }
                 },
                 "type": "object",
@@ -21905,7 +22578,25 @@
                 ],
                 "title": "EventCreate"
             },
-            "EventLinkType": {
+            "EventFormatEnumV1": {
+                "type": "string",
+                "enum": [
+                    "online",
+                    "offline"
+                ],
+                "title": "EventFormatEnumV1"
+            },
+            "EventLevelEnumV1": {
+                "type": "string",
+                "enum": [
+                    "internal",
+                    "regional",
+                    "national",
+                    "international"
+                ],
+                "title": "EventLevelEnumV1"
+            },
+            "EventLinkTypeEnumV1": {
                 "type": "string",
                 "enum": [
                     "reward",
@@ -21914,7 +22605,7 @@
                     "publication",
                     "doc"
                 ],
-                "title": "EventLinkType"
+                "title": "EventLinkTypeEnumV1"
             },
             "EventPatchData": {
                 "properties": {
@@ -21977,12 +22668,51 @@
                         "title": "Organizer Id"
                     },
                     "status": {
-                        "$ref": "#/components/schemas/EventStatus",
+                        "$ref": "#/components/schemas/EventStatusEnumV1",
                         "default": "draft"
+                    },
+                    "level": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/EventLevelEnumV1"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "type": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/EventTypeEnumV1"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "format": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/EventFormatEnumV1"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
                     }
                 },
                 "type": "object",
                 "title": "EventPatchData"
+            },
+            "EventPriorityEnumV1": {
+                "type": "string",
+                "enum": [
+                    "hight",
+                    "medium",
+                    "low"
+                ],
+                "title": "EventPriorityEnumV1"
             },
             "EventPutData": {
                 "properties": {
@@ -22038,8 +22768,32 @@
                         "title": "Organizer Id"
                     },
                     "status": {
-                        "$ref": "#/components/schemas/EventStatus",
+                        "$ref": "#/components/schemas/EventStatusEnumV1",
                         "default": "draft"
+                    },
+                    "level": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/EventLevelEnumV1"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "type": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/EventTypeEnumV1"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "format": {
+                        "$ref": "#/components/schemas/EventFormatEnumV1",
+                        "default": "offline"
                     }
                 },
                 "type": "object",
@@ -22124,8 +22878,32 @@
                         "title": "Organizer Id"
                     },
                     "status": {
-                        "$ref": "#/components/schemas/EventStatus",
+                        "$ref": "#/components/schemas/EventStatusEnumV1",
                         "default": "draft"
+                    },
+                    "level": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/EventLevelEnumV1"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "type": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/EventTypeEnumV1"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "format": {
+                        "$ref": "#/components/schemas/EventFormatEnumV1",
+                        "default": "offline"
                     }
                 },
                 "type": "object",
@@ -22137,7 +22915,7 @@
                 ],
                 "title": "EventRead"
             },
-            "EventStatus": {
+            "EventStatusEnumV1": {
                 "type": "string",
                 "enum": [
                     "draft",
@@ -22145,7 +22923,19 @@
                     "active",
                     "archived"
                 ],
-                "title": "EventStatus"
+                "title": "EventStatusEnumV1"
+            },
+            "EventTypeEnumV1": {
+                "type": "string",
+                "enum": [
+                    "rehearsal",
+                    "competition",
+                    "concert",
+                    "festival",
+                    "play",
+                    "performance"
+                ],
+                "title": "EventTypeEnumV1"
             },
             "FacultyCreate": {
                 "properties": {
@@ -22155,8 +22945,15 @@
                         "title": "Name"
                     },
                     "acronym": {
-                        "type": "string",
-                        "maxLength": 16,
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 16
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "Acronym"
                     },
                     "principal_id": {
@@ -22198,9 +22995,7 @@
                 },
                 "type": "object",
                 "required": [
-                    "name",
-                    "acronym",
-                    "university_id"
+                    "name"
                 ],
                 "title": "FacultyCreate"
             },
@@ -22278,8 +23073,15 @@
                         "title": "Name"
                     },
                     "acronym": {
-                        "type": "string",
-                        "maxLength": 16,
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 16
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "Acronym"
                     },
                     "principal_id": {
@@ -22321,9 +23123,7 @@
                 },
                 "type": "object",
                 "required": [
-                    "name",
-                    "acronym",
-                    "university_id"
+                    "name"
                 ],
                 "title": "FacultyPutData"
             },
@@ -22340,8 +23140,15 @@
                         "title": "Name"
                     },
                     "acronym": {
-                        "type": "string",
-                        "maxLength": 16,
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 16
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "Acronym"
                     },
                     "principal_id": {
@@ -22389,9 +23196,7 @@
                 "type": "object",
                 "required": [
                     "id",
-                    "name",
-                    "acronym",
-                    "university_id"
+                    "name"
                 ],
                 "title": "FacultyRead"
             },
@@ -22458,7 +23263,7 @@
                         "title": "Url"
                     },
                     "type": {
-                        "$ref": "#/components/schemas/EventLinkType"
+                        "$ref": "#/components/schemas/EventLinkTypeEnumV1"
                     },
                     "description": {
                         "anyOf": [
@@ -22544,7 +23349,7 @@
                         "title": "Url"
                     },
                     "type": {
-                        "$ref": "#/components/schemas/EventLinkType"
+                        "$ref": "#/components/schemas/EventLinkTypeEnumV1"
                     },
                     "description": {
                         "anyOf": [
@@ -22578,7 +23383,7 @@
                         "title": "Url"
                     },
                     "type": {
-                        "$ref": "#/components/schemas/EventLinkType"
+                        "$ref": "#/components/schemas/EventLinkTypeEnumV1"
                     },
                     "description": {
                         "anyOf": [
@@ -22632,7 +23437,6 @@
                 "type": "object",
                 "required": [
                     "name",
-                    "address_id",
                     "spot"
                 ],
                 "title": "LocationCreate"
@@ -22703,7 +23507,6 @@
                 "type": "object",
                 "required": [
                     "name",
-                    "address_id",
                     "spot"
                 ],
                 "title": "LocationPutData"
@@ -22740,7 +23543,6 @@
                 "required": [
                     "id",
                     "name",
-                    "address_id",
                     "spot"
                 ],
                 "title": "LocationRead"
@@ -22849,8 +23651,32 @@
                         "title": "Organizer Id"
                     },
                     "status": {
-                        "$ref": "#/components/schemas/EventStatus",
+                        "$ref": "#/components/schemas/EventStatusEnumV1",
                         "default": "draft"
+                    },
+                    "level": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/EventLevelEnumV1"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "type": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/EventTypeEnumV1"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "format": {
+                        "$ref": "#/components/schemas/EventFormatEnumV1",
+                        "default": "offline"
                     },
                     "collective_id": {
                         "type": "string",
@@ -22948,8 +23774,32 @@
                         "title": "Organizer Id"
                     },
                     "status": {
-                        "$ref": "#/components/schemas/EventStatus",
+                        "$ref": "#/components/schemas/EventStatusEnumV1",
                         "default": "draft"
+                    },
+                    "level": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/EventLevelEnumV1"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "type": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/EventTypeEnumV1"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "format": {
+                        "$ref": "#/components/schemas/EventFormatEnumV1",
+                        "default": "offline"
                     },
                     "id": {
                         "type": "string",
@@ -22983,10 +23833,10 @@
                         "format": "uuid",
                         "title": "Event Id"
                     },
-                    "priority": {
+                    "EventPriorityEnumV1": {
                         "anyOf": [
                             {
-                                "$ref": "#/components/schemas/Priority"
+                                "$ref": "#/components/schemas/EventPriorityEnumV1"
                             },
                             {
                                 "type": "null"
@@ -23103,7 +23953,14 @@
                         "title": "Roles"
                     },
                     "is_active": {
-                        "type": "boolean",
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "Is Active"
                     }
                 },
@@ -23132,7 +23989,14 @@
                         "title": "Roles"
                     },
                     "is_active": {
-                        "type": "boolean",
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "Is Active"
                     }
                 },
@@ -23209,15 +24073,15 @@
             },
             "NameVariantCreate": {
                 "properties": {
-                    "name": {
-                        "type": "string",
-                        "maxLength": 128,
-                        "title": "Name"
-                    },
                     "surname": {
                         "type": "string",
                         "maxLength": 128,
                         "title": "Surname"
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "title": "Name"
                     },
                     "patronymic": {
                         "anyOf": [
@@ -23234,25 +24098,13 @@
                 },
                 "type": "object",
                 "required": [
-                    "name",
-                    "surname"
+                    "surname",
+                    "name"
                 ],
                 "title": "NameVariantCreate"
             },
             "NameVariantPatchData": {
                 "properties": {
-                    "name": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "maxLength": 128
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Name"
-                    },
                     "surname": {
                         "anyOf": [
                             {
@@ -23264,6 +24116,18 @@
                             }
                         ],
                         "title": "Surname"
+                    },
+                    "name": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 128
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Name"
                     },
                     "patronymic": {
                         "anyOf": [
@@ -23283,15 +24147,15 @@
             },
             "NameVariantPutData": {
                 "properties": {
-                    "name": {
-                        "type": "string",
-                        "maxLength": 128,
-                        "title": "Name"
-                    },
                     "surname": {
                         "type": "string",
                         "maxLength": 128,
                         "title": "Surname"
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "title": "Name"
                     },
                     "patronymic": {
                         "anyOf": [
@@ -23308,8 +24172,8 @@
                 },
                 "type": "object",
                 "required": [
-                    "name",
-                    "surname"
+                    "surname",
+                    "name"
                 ],
                 "title": "NameVariantPutData"
             },
@@ -23320,15 +24184,15 @@
                         "format": "uuid",
                         "title": "Id"
                     },
-                    "name": {
-                        "type": "string",
-                        "maxLength": 128,
-                        "title": "Name"
-                    },
                     "surname": {
                         "type": "string",
                         "maxLength": 128,
                         "title": "Surname"
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "title": "Name"
                     },
                     "patronymic": {
                         "anyOf": [
@@ -23346,8 +24210,8 @@
                 "type": "object",
                 "required": [
                     "id",
-                    "name",
-                    "surname"
+                    "surname",
+                    "name"
                 ],
                 "title": "NameVariantRead"
             },
@@ -23376,8 +24240,15 @@
                         "title": "Name"
                     },
                     "acronym": {
-                        "type": "string",
-                        "maxLength": 16,
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 16
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "Acronym"
                     },
                     "principal_id": {
@@ -23408,8 +24279,7 @@
                 "type": "object",
                 "required": [
                     "type",
-                    "name",
-                    "acronym"
+                    "name"
                 ],
                 "title": "OrganizationCreate"
             },
@@ -23503,8 +24373,15 @@
                         "title": "Name"
                     },
                     "acronym": {
-                        "type": "string",
-                        "maxLength": 16,
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 16
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "Acronym"
                     },
                     "principal_id": {
@@ -23536,8 +24413,7 @@
                 "required": [
                     "id",
                     "type",
-                    "name",
-                    "acronym"
+                    "name"
                 ],
                 "title": "OrganizationPut"
             },
@@ -23548,10 +24424,10 @@
                         "format": "uuid",
                         "title": "Event Id"
                     },
-                    "priority": {
+                    "EventPriorityEnumV1": {
                         "anyOf": [
                             {
-                                "$ref": "#/components/schemas/Priority"
+                                "$ref": "#/components/schemas/EventPriorityEnumV1"
                             },
                             {
                                 "type": "null"
@@ -23585,10 +24461,10 @@
                         ],
                         "title": "Event Id"
                     },
-                    "priority": {
+                    "EventPriorityEnumV1": {
                         "anyOf": [
                             {
-                                "$ref": "#/components/schemas/Priority"
+                                "$ref": "#/components/schemas/EventPriorityEnumV1"
                             },
                             {
                                 "type": "null"
@@ -23606,10 +24482,10 @@
                         "format": "uuid",
                         "title": "Event Id"
                     },
-                    "priority": {
+                    "EventPriorityEnumV1": {
                         "anyOf": [
                             {
-                                "$ref": "#/components/schemas/Priority"
+                                "$ref": "#/components/schemas/EventPriorityEnumV1"
                             },
                             {
                                 "type": "null"
@@ -23635,10 +24511,10 @@
                         "format": "uuid",
                         "title": "Event Id"
                     },
-                    "priority": {
+                    "EventPriorityEnumV1": {
                         "anyOf": [
                             {
-                                "$ref": "#/components/schemas/Priority"
+                                "$ref": "#/components/schemas/EventPriorityEnumV1"
                             },
                             {
                                 "type": "null"
@@ -24005,15 +24881,15 @@
             },
             "PersonCreate": {
                 "properties": {
-                    "name": {
-                        "type": "string",
-                        "maxLength": 128,
-                        "title": "Name"
-                    },
                     "surname": {
                         "type": "string",
                         "maxLength": 128,
                         "title": "Surname"
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "title": "Name"
                     },
                     "patronymic": {
                         "anyOf": [
@@ -24030,8 +24906,8 @@
                 },
                 "type": "object",
                 "required": [
-                    "name",
-                    "surname"
+                    "surname",
+                    "name"
                 ],
                 "title": "PersonCreate"
             },
@@ -24042,15 +24918,15 @@
                         "format": "uuid",
                         "title": "Id"
                     },
-                    "name": {
-                        "type": "string",
-                        "maxLength": 128,
-                        "title": "Name"
-                    },
                     "surname": {
                         "type": "string",
                         "maxLength": 128,
                         "title": "Surname"
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "title": "Name"
                     },
                     "patronymic": {
                         "anyOf": [
@@ -24068,76 +24944,14 @@
                 "type": "object",
                 "required": [
                     "id",
-                    "name",
                     "surname",
+                    "name",
                     "patronymic"
                 ],
                 "title": "PersonItemRead"
             },
-            "PersonPatch": {
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "title": "Id"
-                    },
-                    "name": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "maxLength": 128
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Name"
-                    },
-                    "surname": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "maxLength": 128
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Surname"
-                    },
-                    "patronymic": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "maxLength": 128
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Patronymic"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "id"
-                ],
-                "title": "PersonPatch"
-            },
             "PersonPatchData": {
                 "properties": {
-                    "name": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "maxLength": 128
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Name"
-                    },
                     "surname": {
                         "anyOf": [
                             {
@@ -24149,6 +24963,18 @@
                             }
                         ],
                         "title": "Surname"
+                    },
+                    "name": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 128
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Name"
                     },
                     "patronymic": {
                         "anyOf": [
@@ -24166,55 +24992,17 @@
                 "type": "object",
                 "title": "PersonPatchData"
             },
-            "PersonPut": {
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "title": "Id"
-                    },
-                    "name": {
-                        "type": "string",
-                        "maxLength": 128,
-                        "title": "Name"
-                    },
-                    "surname": {
-                        "type": "string",
-                        "maxLength": 128,
-                        "title": "Surname"
-                    },
-                    "patronymic": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "maxLength": 128
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Patronymic"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "id",
-                    "name",
-                    "surname"
-                ],
-                "title": "PersonPut"
-            },
             "PersonPutData": {
                 "properties": {
-                    "name": {
-                        "type": "string",
-                        "maxLength": 128,
-                        "title": "Name"
-                    },
                     "surname": {
                         "type": "string",
                         "maxLength": 128,
                         "title": "Surname"
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "title": "Name"
                     },
                     "patronymic": {
                         "anyOf": [
@@ -24231,8 +25019,8 @@
                 },
                 "type": "object",
                 "required": [
-                    "name",
-                    "surname"
+                    "surname",
+                    "name"
                 ],
                 "title": "PersonPutData"
             },
@@ -24243,15 +25031,15 @@
                         "format": "uuid",
                         "title": "Id"
                     },
-                    "name": {
-                        "type": "string",
-                        "maxLength": 128,
-                        "title": "Name"
-                    },
                     "surname": {
                         "type": "string",
                         "maxLength": 128,
                         "title": "Surname"
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "title": "Name"
                     },
                     "patronymic": {
                         "anyOf": [
@@ -24269,8 +25057,8 @@
                 "type": "object",
                 "required": [
                     "id",
-                    "name",
                     "surname",
+                    "name",
                     "patronymic"
                 ],
                 "title": "PersonRead"
@@ -24279,14 +25067,14 @@
                 "properties": {
                     "lat": {
                         "type": "number",
-                        "maximum": 90.0,
-                        "minimum": -90.0,
+                        "maximum": 90,
+                        "minimum": -90,
                         "title": "Lat"
                     },
                     "lon": {
                         "type": "number",
-                        "maximum": 180.0,
-                        "minimum": -180.0,
+                        "maximum": 180,
+                        "minimum": -180,
                         "title": "Lon"
                     }
                 },
@@ -24296,15 +25084,6 @@
                     "lon"
                 ],
                 "title": "Point"
-            },
-            "Priority": {
-                "type": "string",
-                "enum": [
-                    "hight",
-                    "medium",
-                    "low"
-                ],
-                "title": "Priority"
             },
             "ProfileCreate": {
                 "properties": {
@@ -24404,6 +25183,47 @@
                 ],
                 "title": "ProfilePatch"
             },
+            "ProfilePatchData": {
+                "properties": {
+                    "birthdate": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Birthdate"
+                    },
+                    "workplace_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Workplace Id"
+                    },
+                    "diet_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Diet Id"
+                    }
+                },
+                "type": "object",
+                "title": "ProfilePatchData"
+            },
             "ProfilePut": {
                 "properties": {
                     "id": {
@@ -24452,6 +25272,55 @@
                     "id"
                 ],
                 "title": "ProfilePut"
+            },
+            "ProfilePutData": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "birthdate": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Birthdate"
+                    },
+                    "workplace_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Workplace Id"
+                    },
+                    "diet_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Diet Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id"
+                ],
+                "title": "ProfilePutData"
             },
             "ProfileRead": {
                 "properties": {
@@ -25127,8 +25996,8 @@
                     },
                     "limit": {
                         "type": "integer",
-                        "maximum": 100.0,
-                        "exclusiveMinimum": 0.0,
+                        "maximum": 100,
+                        "exclusiveMinimum": 0,
                         "title": "Limit",
                         "default": 10
                     },
@@ -25522,7 +26391,8 @@
                         "title": "Degree Id"
                     },
                     "faculty_id": {
-                        "type": "integer",
+                        "type": "string",
+                        "format": "uuid",
                         "title": "Faculty Id"
                     },
                     "grade": {
@@ -25567,7 +26437,8 @@
                     "faculty_id": {
                         "anyOf": [
                             {
-                                "type": "integer"
+                                "type": "string",
+                                "format": "uuid"
                             },
                             {
                                 "type": "null"
@@ -25602,7 +26473,8 @@
                         "title": "Degree Id"
                     },
                     "faculty_id": {
-                        "type": "integer",
+                        "type": "string",
+                        "format": "uuid",
                         "title": "Faculty Id"
                     },
                     "grade": {
@@ -25635,7 +26507,8 @@
                         "title": "Degree Id"
                     },
                     "faculty_id": {
-                        "type": "integer",
+                        "type": "string",
+                        "format": "uuid",
                         "title": "Faculty Id"
                     },
                     "grade": {
@@ -25893,8 +26766,15 @@
                         "title": "Name"
                     },
                     "acronym": {
-                        "type": "string",
-                        "maxLength": 16,
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 16
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "Acronym"
                     },
                     "principal_id": {
@@ -25924,8 +26804,7 @@
                 },
                 "type": "object",
                 "required": [
-                    "name",
-                    "acronym"
+                    "name"
                 ],
                 "title": "UniversityCreate"
             },
@@ -25991,8 +26870,15 @@
                         "title": "Name"
                     },
                     "acronym": {
-                        "type": "string",
-                        "maxLength": 16,
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 16
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "Acronym"
                     },
                     "principal_id": {
@@ -26022,8 +26908,7 @@
                 },
                 "type": "object",
                 "required": [
-                    "name",
-                    "acronym"
+                    "name"
                 ],
                 "title": "UniversityPutData"
             },
@@ -26040,8 +26925,15 @@
                         "title": "Name"
                     },
                     "acronym": {
-                        "type": "string",
-                        "maxLength": 16,
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 16
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "Acronym"
                     },
                     "principal_id": {
@@ -26077,8 +26969,7 @@
                 "type": "object",
                 "required": [
                     "id",
-                    "name",
-                    "acronym"
+                    "name"
                 ],
                 "title": "UniversityRead"
             },
@@ -26298,6 +27189,13 @@
                     "type": {
                         "type": "string",
                         "title": "Error Type"
+                    },
+                    "input": {
+                        "title": "Input"
+                    },
+                    "ctx": {
+                        "type": "object",
+                        "title": "Context"
                     }
                 },
                 "type": "object",
@@ -26325,8 +27223,15 @@
                         "title": "Name"
                     },
                     "acronym": {
-                        "type": "string",
-                        "maxLength": 16,
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 16
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "Acronym"
                     },
                     "principal_id": {
@@ -26358,8 +27263,7 @@
                 "required": [
                     "id",
                     "type",
-                    "name",
-                    "acronym"
+                    "name"
                 ],
                 "title": "OrganizationRead"
             },

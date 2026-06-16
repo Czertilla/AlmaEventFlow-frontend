@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'io.ionic.starter',
+  appId: 'ru.czertilla.aef',
   appName: 'Alma Event Flow',
   webDir: 'dist'
 };

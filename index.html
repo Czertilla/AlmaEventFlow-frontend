@@ -20,6 +20,22 @@
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Alma Event Flow" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black" />
+
+    <!-- Paint the themed background before the app mounts to avoid a white flash on reload -->
+    <style>
+      html, body { background-color: #f8f9fe; }
+      html.ion-palette-dark, html.ion-palette-dark body { background-color: #0f0f23; }
+    </style>
+    <script>
+      (function () {
+        try {
+          var t = localStorage.getItem('theme');
+          if (t && t.indexOf('dark') !== -1) {
+            document.documentElement.classList.add('ion-palette-dark');
+          }
+        } catch (e) { /* ignore */ }
+      })();
+    </script>
   </head>
 
   <body>

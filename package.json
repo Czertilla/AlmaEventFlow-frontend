@@ -1,7 +1,7 @@
 {
   "name": "alma-event-flow",
   "private": true,
-  "version": "0.0.1",
+  "version": "0.2.1",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -9,7 +9,9 @@
     "preview": "vite preview",
     "test:e2e": "cypress run",
     "test:unit": "vitest",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "schema": "node scripts/fetch-schema.mjs",
+    "generate": "node scripts/fetch-schema.mjs && orval"
   },
   "dependencies": {
     "@capacitor/app": "8.1.0",
