@@ -36,6 +36,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { IonModal } from '@ionic/vue'
+import { useRouter } from 'vue-router'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import { getManyUserV1UsersGet } from '@/api/generated/almaEventFlow'
 import type { ExtraAction } from '@/components/admin/ResourceTable.vue'
@@ -48,6 +49,7 @@ import type { ColumnDef, SortOption } from '@/components/admin/ResourceTable.vue
 import type { FormField } from '@/components/admin/ResourceFormModal.vue'
 
 const tableRef = ref()
+const router = useRouter()
 
 const columns: ColumnDef[] = [
   { key: 'surname', label: 'Фамилия', sortable: true },
@@ -100,10 +102,10 @@ async function fetchPersons(params: Record<string, any>) {
   return searchPersonProfileV1PersonsGet(params as any)
 }
 
+// Редактирование персоны открывает полное «личное дело» (досье) со всеми
+// связанными сущностями (профиль, студент, контакты).
 function openEdit(item: any) {
-  isCreating.value = false
-  editingItem.value = item
-  editModal.value = true
+  router.push(`/admin/persons/${item.id}`)
 }
 
 function openCreate() {

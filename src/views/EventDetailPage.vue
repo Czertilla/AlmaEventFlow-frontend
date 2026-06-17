@@ -81,9 +81,19 @@
                   <span class="collective-dot" :style="{ background: getCollectiveColor(p.collectiveId) }" />
                   <span class="collective-name">{{ p.collectiveName }}</span>
                 </div>
-                <span v-if="p.attendances.length" class="collective-counter">
-                  {{ p.attendances.filter((a) => a.is_attended).length }}/{{ p.attendances.length }}
-                </span>
+                <div class="collective-card-head-right">
+                  <span v-if="p.attendances.length" class="collective-counter">
+                    {{ p.attendances.filter((a) => a.is_attended).length }}/{{ p.attendances.length }}
+                  </span>
+                  <button
+                    v-if="p.isPrincipal"
+                    class="row-icon-btn row-icon-btn--danger"
+                    title="Отменить участие"
+                    @click="cancelParticipation(p)"
+                  >
+                    <ion-icon :icon="exitOutline" />
+                  </button>
+                </div>
               </div>
 
               <!-- Own attendance pinned for quick access -->
@@ -113,7 +123,9 @@
                 </button>
 
                 <div v-if="expanded[p.participationId]" class="attendance-list">
-                  <div v-for="a in p.attendances" :key="a.id" class="attendance-row">
+                  <template v-for="g in attendanceGroups(p)" :key="g.key">
+                  <div v-if="g.label" class="attendance-divider">{{ g.label }}</div>
+                  <div v-for="a in g.items" :key="a.id" class="attendance-row">
                     <span class="attendance-member">{{ memberLabel(a.member_id) }}</span>
                     <div class="attendance-row-chips">
                       <EventAttendanceChip
@@ -148,6 +160,7 @@
                       </template>
                     </div>
                   </div>
+                  </template>
 
                   <!-- Добавление attendance участнику без отметки -->
                   <div v-if="p.isPrincipal && availableMembers(p).length" class="add-attendance">
@@ -181,7 +194,7 @@
               expand="block"
               fill="outline"
               class="join-btn"
-              @click="joinEvent"
+              @click="openJoinModal"
             >
               <ion-icon slot="start" :icon="addOutline" />
               Создать участие своего коллектива
@@ -356,13 +369,64 @@
           </div>
         </ion-content>
       </ion-modal>
+
+      <!-- Создание участия — модальное окно с заполненным мероприятием -->
+      <ion-modal :is-open="showJoinModal" @ion-modal-did-dismiss="showJoinModal = false">
+        <ion-header>
+          <ion-toolbar>
+            <ion-title>Участие в мероприятии</ion-title>
+            <ion-buttons slot="end">
+              <ion-button aria-label="Закрыть" @click="showJoinModal = false">
+                <ion-icon slot="icon-only" :icon="closeOutline" />
+              </ion-button>
+            </ion-buttons>
+          </ion-toolbar>
+        </ion-header>
+        <ion-content class="ion-padding">
+          <div class="form">
+            <div class="form-field">
+              <label>Мероприятие</label>
+              <p class="form-static">{{ event?.name }}</p>
+              <p v-if="event?.date" class="form-hint">
+                {{ formatDate(event.date, settings.dateFormat) }}
+              </p>
+            </div>
+
+            <div class="form-field">
+              <label>Коллектив</label>
+              <ion-select
+                v-if="joinableCollectives.length > 1"
+                v-model="joinForm.collectiveId"
+                interface="popover"
+                placeholder="Выберите коллектив"
+              >
+                <ion-select-option v-for="c in joinableCollectives" :key="c.id" :value="c.id">
+                  {{ c.name }}
+                </ion-select-option>
+              </ion-select>
+              <p v-else class="form-static">{{ joinableCollectives[0]?.name }}</p>
+            </div>
+
+            <div class="form-field">
+              <label>Приоритет</label>
+              <ion-select v-model="joinForm.priority" placeholder="Не выбран" interface="popover">
+                <ion-select-option v-for="[v, l] in priorityOptions" :key="v" :value="v">{{ l }}</ion-select-option>
+              </ion-select>
+            </div>
+
+            <ion-button expand="block" :disabled="joining || !joinForm.collectiveId" @click="submitJoin">
+              {{ joining ? 'Создание...' : 'Создать участие' }}
+            </ion-button>
+          </div>
+        </ion-content>
+      </ion-modal>
     </ion-content>
   </ion-page>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import {
   IonPage, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonContent,
   IonButton, IonIcon, IonModal, IonInput, IonTextarea, IonSelect, IonSelectOption,
@@ -371,7 +435,7 @@ import {
 import {
   calendarOutline, timeOutline, chevronDownOutline, chevronUpOutline,
   shieldCheckmarkOutline, shieldCheckmark, shieldOutline, trashOutline,
-  addOutline, alertCircleOutline, createOutline, closeOutline, locationOutline,
+  addOutline, alertCircleOutline, createOutline, closeOutline, locationOutline, exitOutline,
 } from 'ionicons/icons'
 import { usePrincipalStore } from '@/stores/principal'
 import { useSettingsStore } from '@/stores/settings'
@@ -392,6 +456,7 @@ import {
   deleteMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdAttendanceAttendanceIdDelete,
   verifyMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdParticipationParticipationIdAttendanceVerifyPost,
   createMyCollectiveParticipationEventV1MeCollectivesCollectiveIdParticipationsPost,
+  cancelMyCollectiveParticipationEventV1MeCollectivesCollectiveIdParticipationsEventIdDelete,
   patchMyCollectiveEventEventV1MeCollectivesCollectiveIdEventsEventIdPatch,
   createMyCollectiveEventStageEventV1MeCollectivesCollectiveIdEventsEventIdStagesPost,
   patchMyCollectiveEventStageEventV1MeCollectivesCollectiveIdStagesStageIdPatch,
@@ -401,9 +466,11 @@ import {
 } from '@/api/generated/almaEventFlow'
 import { format as fnsFormat } from 'date-fns'
 import { resolveMemberName, rememberMemberPerson, shortId, shortenName } from '@/utils/names'
+import { loadStoredRoleOrder, loadSortMode } from '@/utils/roleSort'
 import UuidBadge from '@/components/common/UuidBadge.vue'
 import EventAttendanceChip from '@/components/event/EventAttendanceChip.vue'
 import EventCommentChip from '@/components/event/EventCommentChip.vue'
+import { EventPriorityEnumV1 } from '@/api/generated/almaEventFlow'
 import type {
   EventRead, EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1,
   StageRead, AttendanceRead, MemberRead,
@@ -421,6 +488,7 @@ interface ParticipationItem {
 }
 
 const route = useRoute()
+const router = useRouter()
 const principal = usePrincipalStore()
 const settings = useSettingsStore()
 const { withPending, pending } = useAttendancePending()
@@ -715,6 +783,58 @@ function memberLabel(memberId: string): string {
   return full ? shortenName(full) : `#${shortId(memberId)}`
 }
 
+// Группы отметок присутствия для отображения с разделителями по ролям.
+// label=null — группа без подписи (алфавитный режим или участники без роли).
+interface AttendanceGroup {
+  key: string
+  label: string | null
+  items: AttendanceRead[]
+}
+
+// Сортировка/группировка отметок по тому же порядку ролей, что задан руководителем
+// в панели (localStorage, отдельно на коллектив). Роли участников берём из загруженного
+// списка членов коллектива — доступно для своих (principal) коллективов.
+// В режиме «по ролям» каждый участник попадает только в свою высшую по приоритету роль;
+// роли без участников (или чьи участники уже перечислены выше) разделитель не получают.
+function attendanceGroups(p: ParticipationItem): AttendanceGroup[] {
+  const byName = (a: AttendanceRead, b: AttendanceRead) =>
+    memberLabel(a.member_id).localeCompare(memberLabel(b.member_id), 'ru')
+  const flat = (): AttendanceGroup[] => [
+    { key: 'all', label: null, items: p.attendances.slice().sort(byName) },
+  ]
+
+  const members = collectiveMembers[p.collectiveId]
+  const order = loadStoredRoleOrder(p.collectiveId)
+  if (loadSortMode(p.collectiveId) === 'alpha' || !members?.length || !order.length) {
+    return flat()
+  }
+
+  const rolesByMember = new Map(members.map((m) => [m.id, m.roles.map((r) => r.id)]))
+  const roleNames = new Map<string, string>()
+  for (const m of members) for (const r of m.roles) roleNames.set(r.id, r.name)
+
+  const byRole = new Map<string, AttendanceRead[]>()
+  const noRole: AttendanceRead[] = []
+  for (const a of p.attendances) {
+    let bestIdx = Number.POSITIVE_INFINITY
+    let bestRole: string | null = null
+    for (const rid of rolesByMember.get(a.member_id) || []) {
+      const idx = order.indexOf(rid)
+      if (idx >= 0 && idx < bestIdx) { bestIdx = idx; bestRole = rid }
+    }
+    if (bestRole === null) noRole.push(a)
+    else (byRole.get(bestRole) ?? byRole.set(bestRole, []).get(bestRole)!).push(a)
+  }
+
+  const groups: AttendanceGroup[] = []
+  for (const rid of order) {
+    const items = byRole.get(rid)
+    if (items?.length) groups.push({ key: rid, label: roleNames.get(rid) || '—', items: items.sort(byName) })
+  }
+  if (noRole.length) groups.push({ key: '__none', label: null, items: noRole.sort(byName) })
+  return groups
+}
+
 async function loadMemberNames(items: ParticipationItem[]) {
   // For own (principal) collectives the member list gives member→person mapping in one request
   await Promise.all(
@@ -836,18 +956,72 @@ async function verifyAll(p: ParticipationItem) {
   }
 }
 
-async function joinEvent() {
-  const collective = joinableCollectives.value[0]
+// ---- Создание участия через модальное окно ----
+const showJoinModal = ref(false)
+const joining = ref(false)
+const joinForm = reactive({
+  collectiveId: '',
+  priority: null as EventPriorityEnumV1 | null,
+})
+const priorityLabels: Record<EventPriorityEnumV1, string> = {
+  hight: 'Высокий',
+  medium: 'Средний',
+  low: 'Низкий',
+}
+const priorityOptions = Object.entries(priorityLabels) as [EventPriorityEnumV1, string][]
+
+function openJoinModal() {
+  joinForm.collectiveId = joinableCollectives.value[0]?.id ?? ''
+  joinForm.priority = null
+  showJoinModal.value = true
+}
+
+async function submitJoin() {
+  const collective = joinableCollectives.value.find((c) => c.id === joinForm.collectiveId)
   if (!collective) return
+  joining.value = true
   try {
     await createMyCollectiveParticipationEventV1MeCollectivesCollectiveIdParticipationsPost(collective.id, {
       event_id: eventId,
+      EventPriorityEnumV1: joinForm.priority,
     })
+    showJoinModal.value = false
     await loadParticipations()
     const toast = await toastController.create({ message: `Участие «${collective.name}» создано`, duration: 2000, color: 'success' })
     toast.present()
   } catch (err) {
     showError(err, 'Не удалось создать участие')
+  } finally {
+    joining.value = false
+  }
+}
+
+// Руководитель отменяет участие своего коллектива. Если это последний
+// участвующий коллектив — мероприятие удаляется (бизнес-логика на бэке).
+async function cancelParticipation(p: ParticipationItem) {
+  const isLast = participationItems.value.length === 1
+  const message = isLast
+    ? `«${p.collectiveName}» — единственный участник. Мероприятие будет удалено вместе с участием.`
+    : `Участие «${p.collectiveName}» будет отменено.`
+  const ok = await confirmAction('Отменить участие?', message)
+  if (!ok) return
+  try {
+    await cancelMyCollectiveParticipationEventV1MeCollectivesCollectiveIdParticipationsEventIdDelete(
+      p.collectiveId, eventId,
+    )
+    const toast = await toastController.create({
+      message: isLast ? 'Мероприятие удалено' : 'Участие отменено',
+      duration: 2000,
+      color: 'success',
+    })
+    toast.present()
+    if (isLast) {
+      router.replace('/')
+    } else {
+      await loadParticipations()
+    }
+  } catch (err) {
+    showError(err, 'Не удалось отменить участие')
   }
 }
 
@@ -876,7 +1050,10 @@ async function loadParticipations() {
       return {
         participationId: part.id,
         collectiveId: part.collective_id,
-        collectiveName: collectiveNames.get(part.collective_id) || `Коллектив ${part.collective_id.slice(0, 8)}`,
+        collectiveName:
+          part.collective_name
+          || collectiveNames.get(part.collective_id)
+          || `Коллектив ${part.collective_id.slice(0, 8)}`,
         attendances,
         myAttendance,
         isPrincipal,
@@ -1383,6 +1560,26 @@ onMounted(async () => {
   font-weight: 600;
 }
 
+.collective-card-head-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.form-static {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ion-text-color);
+}
+
+.form-hint {
+  margin: 2px 0 0;
+  font-size: 12px;
+  color: var(--ion-color-medium);
+}
+
 .my-attendance {
   margin-top: 12px;
   padding: 10px 12px;
@@ -1426,6 +1623,16 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.attendance-divider {
+  margin: 6px 0 2px;
+  padding: 0 2px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--ion-color-medium);
 }
 
 .attendance-row {

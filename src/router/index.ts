@@ -82,6 +82,21 @@ const routes: Array<RouteRecordRaw> = [
     meta: { auth: true, sup: true },
   },
   {
+    path: '/admin/persons/:id',
+    component: () => import('@/views/admin/AdminPersonFile.vue'),
+    meta: { auth: true, sup: true },
+  },
+  {
+    path: '/admin/students',
+    component: () => import('@/views/admin/AdminStudents.vue'),
+    meta: { auth: true, sup: true },
+  },
+  {
+    path: '/admin/diets',
+    component: () => import('@/views/admin/AdminDiets.vue'),
+    meta: { auth: true, sup: true },
+  },
+  {
     path: '/admin/geo',
     component: () => import('@/views/admin/AdminGeo.vue'),
     meta: { auth: true, sup: true },
@@ -89,6 +104,26 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/admin/events',
     component: () => import('@/views/admin/AdminEvents.vue'),
+    meta: { auth: true, sup: true },
+  },
+  {
+    path: '/admin/participation',
+    component: () => import('@/views/admin/AdminParticipation.vue'),
+    meta: { auth: true, sup: true },
+  },
+  {
+    path: '/admin/attendance',
+    component: () => import('@/views/admin/AdminAttendance.vue'),
+    meta: { auth: true, sup: true },
+  },
+  {
+    path: '/admin/members',
+    component: () => import('@/views/admin/AdminMembers.vue'),
+    meta: { auth: true, sup: true },
+  },
+  {
+    path: '/admin/roles',
+    component: () => import('@/views/admin/AdminRoles.vue'),
     meta: { auth: true, sup: true },
   },
   // Settings & Profile

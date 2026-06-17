@@ -1,9 +1,15 @@
 <template>
   <PrincipalLayout title="Участники" add-label="Добавить участника" @add="openAdd">
       <div class="page-body">
-        <ion-searchbar v-model="searchQuery" placeholder="Поиск по имени или роли..." />
+        <div class="toolbar-row">
+          <ion-searchbar v-model="searchQuery" placeholder="Поиск по имени или роли..." />
+          <button v-if="roles.length" class="sort-btn" title="Сортировка по ролям" @click="openSort">
+            <ion-icon :icon="swapVerticalOutline" />
+            <span>Сортировка</span>
+          </button>
+        </div>
         <div class="member-cards">
-          <div v-for="m in filteredMembers" :key="m.id" class="member-card">
+          <div v-for="m in displayMembers" :key="m.id" class="member-card">
             <div class="member-avatar">{{ initials(m) }}</div>
             <div class="member-info">
               <span class="member-name">{{ displayName(m) }}</span>
@@ -21,9 +27,40 @@
               </button>
             </div>
           </div>
-          <p v-if="!filteredMembers.length" class="empty-text">Участники не найдены</p>
+          <p v-if="!displayMembers.length" class="empty-text">Участники не найдены</p>
         </div>
       </div>
+
+    <!-- Role sort order -->
+    <ion-modal :is-open="sortOpen" @ion-modal-did-dismiss="sortOpen = false">
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Сортировка по ролям</ion-title>
+          <ion-buttons slot="end">
+            <ion-button aria-label="Закрыть" @click="sortOpen = false">
+              <ion-icon slot="icon-only" :icon="closeOutline" />
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+        <ion-segment :value="sortMode" class="sort-mode" @ionChange="onSortModeChange">
+          <ion-segment-button value="roles"><ion-label>По ролям</ion-label></ion-segment-button>
+          <ion-segment-button value="alpha"><ion-label>По алфавиту</ion-label></ion-segment-button>
+        </ion-segment>
+        <template v-if="sortMode === 'roles'">
+          <p class="form-hint">Перетащите роли, чтобы задать порядок участников. Настройка сохраняется для этого коллектива.</p>
+          <ion-reorder-group :disabled="false" @ionItemReorder="handleReorder">
+            <ion-item v-for="roleId in roleOrder" :key="roleId" lines="full">
+              <ion-label>{{ roleName(roleId) }}</ion-label>
+              <ion-reorder slot="end" />
+            </ion-item>
+          </ion-reorder-group>
+          <p v-if="!roleOrder.length" class="form-hint">Роли ещё не созданы.</p>
+        </template>
+        <p v-else class="form-hint">Участники отсортированы по фамилии.</p>
+      </ion-content>
+    </ion-modal>
 
     <!-- Add / edit member -->
     <ion-modal :is-open="editorOpen" @ion-modal-did-dismiss="editorOpen = false">
@@ -103,11 +140,14 @@
 import { ref, computed, reactive, watch } from 'vue'
 import {
   IonHeader, IonToolbar, IonButtons, IonTitle, IonContent, IonSearchbar,
-  IonButton, IonIcon, IonModal, IonToggle, IonAlert, toastController,
+  IonButton, IonIcon, IonModal, IonToggle, IonAlert, IonReorderGroup, IonReorder,
+  IonItem, IonLabel, IonSegment, IonSegmentButton, toastController,
 } from '@ionic/vue'
+import type { ItemReorderEventDetail } from '@ionic/vue'
 import PrincipalLayout from '@/components/layout/PrincipalLayout.vue'
-import { addOutline, pencilOutline, trashOutline, closeOutline } from 'ionicons/icons'
+import { pencilOutline, trashOutline, closeOutline, swapVerticalOutline } from 'ionicons/icons'
 import { usePrincipalStore } from '@/stores/principal'
+import { reconcileRoleOrder, saveRoleOrder as persistRoleOrder, rankByRoleIds, loadSortMode, saveSortMode, type SortMode } from '@/utils/roleSort'
 import {
   getMyCollectiveMembersEventV1MeCollectivesCollectiveIdMembersGet,
   getMyCollectiveRolesEventV1MeCollectivesCollectiveIdRolesGet,
@@ -126,6 +166,57 @@ const searchQuery = ref('')
 const members = ref<MemberRead[]>([])
 const roles = ref<RoleRead[]>([])
 const personNames = reactive<Record<string, string>>({})
+
+// ---- Сортировка участников по ролям (порядок настраивается руководителем) ----
+// Общая логика порядка/ключей в @/utils/roleSort — тот же порядок применяется
+// и на странице мероприятия.
+const sortOpen = ref(false)
+const roleOrder = ref<string[]>([])
+const sortMode = ref<SortMode>('roles')
+
+function roleName(roleId: string): string {
+  return roles.value.find((r) => r.id === roleId)?.name || '—'
+}
+
+function loadRoleOrder(collectiveId: string) {
+  roleOrder.value = reconcileRoleOrder(collectiveId, roles.value.map((r) => r.id))
+  sortMode.value = loadSortMode(collectiveId)
+}
+
+function onSortModeChange(event: CustomEvent) {
+  const mode = (event.detail.value as SortMode) || 'roles'
+  sortMode.value = mode
+  const collectiveId = principal.activePrincipalCollectiveId
+  if (collectiveId) saveSortMode(collectiveId, mode)
+}
+
+function saveRoleOrder() {
+  const collectiveId = principal.activePrincipalCollectiveId
+  if (!collectiveId) return
+  persistRoleOrder(collectiveId, roleOrder.value)
+}
+
+function handleReorder(event: CustomEvent<ItemReorderEventDetail>) {
+  roleOrder.value = event.detail.complete(roleOrder.value)
+  saveRoleOrder()
+}
+
+function openSort() {
+  sortOpen.value = true
+}
+
+// Минимальный индекс роли участника в заданном порядке; без ролей/неизвестные — в конец.
+function memberRoleRank(m: MemberRead): number {
+  return rankByRoleIds(roleOrder.value, m.roles.map((r) => r.id))
+}
+
+const displayMembers = computed(() => {
+  const byName = (a: MemberRead, b: MemberRead) =>
+    displayName(a).localeCompare(displayName(b), 'ru')
+  const sorted = filteredMembers.value.slice()
+  if (sortMode.value === 'alpha') return sorted.sort(byName)
+  return sorted.sort((a, b) => memberRoleRank(a) - memberRoleRank(b) || byName(a, b))
+})
 
 const editorOpen = ref(false)
 const editingMember = ref<MemberRead | null>(null)
@@ -260,6 +351,7 @@ async function loadMembers(collectiveId: string) {
     ])
     members.value = membersRes.data.items
     roles.value = rolesRes.data.items
+    loadRoleOrder(collectiveId)
     await Promise.all(membersRes.data.items.map(async (m) => {
       const name = await resolvePersonName(m.person_id)
       if (name) personNames[m.person_id] = name
@@ -282,6 +374,39 @@ watch(() => principal.activePrincipalCollectiveId, async (collectiveId) => {
 <style scoped>
 .page-body {
   padding-bottom: 32px;
+}
+
+.toolbar-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolbar-row ion-searchbar {
+  flex: 1;
+  padding: 0;
+}
+
+.sort-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border: 1.5px solid var(--ion-border-color);
+  border-radius: 12px;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ion-color-medium);
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+
+.sort-btn:hover {
+  border-color: var(--ion-color-primary);
+  color: var(--ion-color-primary);
 }
 
 .member-cards {

@@ -679,6 +679,7 @@ export interface ParticipationRead {
   event_id: string;
   EventPriorityEnumV1?: EventPriorityEnumV1 | null;
   collective_id: string;
+  collective_name?: string | null;
 }
 
 export interface PassportCreate {
@@ -1969,6 +1970,19 @@ export const createMyCollectiveParticipationEventV1MeCollectivesCollectiveIdPart
     return axios.post(
       `/event/v1/me/collectives/${collectiveId}/participations`,
       meParticipationCreate,options
+    );
+  }
+
+/**
+ * Отменить участие своего коллектива; удалить мероприятие, если коллектив был последним.
+ * @summary Cancel My Collective Participation
+ */
+export const cancelMyCollectiveParticipationEventV1MeCollectivesCollectiveIdParticipationsEventIdDelete = (
+    collectiveId: string,
+    eventId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<unknown>> => {
+    return axios.delete(
+      `/event/v1/me/collectives/${collectiveId}/participations/${eventId}`,options
     );
   }
 
@@ -3568,6 +3582,76 @@ export const deleteProfileProfileV1ProfilesProfileIdDelete = (
  ): Promise<AxiosResponse<unknown>> => {
     return axios.delete(
       `/profile/v1/profiles/${profileId}`,options
+    );
+  }
+
+/**
+ * Список студентов (для администрирования).
+ * @summary Get Students
+ */
+export const getStudentsProfileV1StudentsGet = (
+    params?: Record<string, any>, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<{ items: StudentRead[]; pagination: { total: number; page?: number; limit?: number } }>> => {
+    return axios.get(
+      `/profile/v1/students`,{
+    ...options,
+        params: {...params, ...options?.params},}
+    );
+  }
+
+/**
+ * Список учебных групп (для администрирования).
+ * @summary Get Student Groups
+ */
+export const getStudentGroupsProfileV1StudentsGroupsGet = (
+    params?: Record<string, any>, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<{ items: StudentGroupRead[]; pagination: { total: number; page?: number; limit?: number } }>> => {
+    return axios.get(
+      `/profile/v1/students/groups`,{
+    ...options,
+        params: {...params, ...options?.params},}
+    );
+  }
+
+/**
+ * Список степеней обучения (для администрирования).
+ * @summary Get Student Degrees
+ */
+export const getStudentDegreesProfileV1StudentsDegreesGet = (
+    params?: Record<string, any>, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<{ items: StudentDegreeRead[]; pagination: { total: number; page?: number; limit?: number } }>> => {
+    return axios.get(
+      `/profile/v1/students/degrees`,{
+    ...options,
+        params: {...params, ...options?.params},}
+    );
+  }
+
+/**
+ * Список контактов (для администрирования). Фильтр по person_id.
+ * @summary Get Contacts
+ */
+export const getContactsProfileV1ContactsGet = (
+    params?: Record<string, any>, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<{ items: ContactItemRead[]; pagination: { total: number; page?: number; limit?: number } }>> => {
+    return axios.get(
+      `/profile/v1/contacts`,{
+    ...options,
+        params: {...params, ...options?.params},}
+    );
+  }
+
+/**
+ * Список паспортов (для администрирования). Фильтр по profile_id.
+ * @summary Get Passports
+ */
+export const getPassportsProfileV1PassportsGet = (
+    params?: Record<string, any>, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<{ items: PassportItemRead[]; pagination: { total: number; page?: number; limit?: number } }>> => {
+    return axios.get(
+      `/profile/v1/passports`,{
+    ...options,
+        params: {...params, ...options?.params},}
     );
   }
 

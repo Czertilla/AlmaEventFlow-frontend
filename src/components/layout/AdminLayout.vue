@@ -81,6 +81,8 @@ import {
 import {
   peopleOutline, personOutline, businessOutline, peopleCircleOutline,
   idCardOutline, mapOutline, calendarOutline, homeOutline,
+  schoolOutline, restaurantOutline, ribbonOutline, checkmarkDoneOutline,
+  personAddOutline,
 } from 'ionicons/icons'
 import { useRoute } from 'vue-router'
 import { usePlatform } from '@/composables/usePlatform'
@@ -103,12 +105,18 @@ const NAV_GROUPS = [
   { label: 'Profile', items: [
     { path: '/admin/persons', label: 'Персоны', icon: personOutline },
     { path: '/admin/profiles', label: 'Профили', icon: idCardOutline },
+    { path: '/admin/students', label: 'Студенты', icon: schoolOutline },
+    { path: '/admin/diets', label: 'Диеты', icon: restaurantOutline },
   ]},
   { label: 'Geo', items: [
     { path: '/admin/geo', label: 'Гео', icon: mapOutline },
   ]},
   { label: 'Event', items: [
     { path: '/admin/events', label: 'Мероприятия', icon: calendarOutline },
+    { path: '/admin/participation', label: 'Участия', icon: personAddOutline },
+    { path: '/admin/attendance', label: 'Посещаемость', icon: checkmarkDoneOutline },
+    { path: '/admin/members', label: 'Участники', icon: peopleOutline },
+    { path: '/admin/roles', label: 'Роли', icon: ribbonOutline },
   ]},
 ]
 

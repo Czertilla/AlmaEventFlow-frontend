@@ -28,17 +28,25 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { IonModal } from '@ionic/vue'
 import AdminLayout from '@/components/layout/AdminLayout.vue'
 import ResourceTable from '@/components/admin/ResourceTable.vue'
 import ResourceFormModal from '@/components/admin/ResourceFormModal.vue'
 import { getManyProfileV1ProfilesGet, createProfileProfileV1ProfilesPost, patchProfileProfileV1ProfilesProfileIdPatch, deleteProfileProfileV1ProfilesProfileIdDelete, searchPersonProfileV1PersonsGet } from '@/api/generated/almaEventFlow'
-import { listOrganizationsOrgV1OrganizationsGet } from '@/api/generated/almaEventFlow'
+import { listOrganizationsOrgV1OrganizationsGet, getManyProfileV1DietsGet } from '@/api/generated/almaEventFlow'
+import type { DietRead } from '@/api/generated/almaEventFlow'
 import type { ColumnDef, SortOption } from '@/components/admin/ResourceTable.vue'
 import type { FormField } from '@/components/admin/ResourceFormModal.vue'
 
 const tableRef = ref()
+const diets = ref<DietRead[]>([])
+
+onMounted(async () => {
+  try {
+    diets.value = (await getManyProfileV1DietsGet({ limit: 200 })).data.items
+  } catch { diets.value = [] }
+})
 
 const columns: ColumnDef[] = [
   { key: 'person', label: 'Персона', render: (p) => p.person ? `${p.person.surname} ${p.person.name}` : '—' },
@@ -50,8 +58,8 @@ const sortOptions: SortOption[] = [
   { value: 'created_at', label: 'Дате создания' },
 ]
 
-// Схема ProfileCreate: id = id персоны (обязателен), birthdate, workplace_id
-const baseFields: FormField[] = [
+// Схема ProfileCreate: id = id персоны (обязателен), birthdate, workplace_id, diet_id
+const baseFields = computed<FormField[]>(() => [
   { key: 'birthdate', label: 'Дата рождения', type: 'text', placeholder: 'YYYY-MM-DD' },
   {
     key: 'workplace_id',
@@ -63,9 +71,15 @@ const baseFields: FormField[] = [
     },
     displayField: 'name',
   },
-]
+  {
+    key: 'diet_id',
+    label: 'Диета',
+    type: 'select',
+    options: diets.value.map((d) => ({ value: d.id, label: d.name })),
+  },
+])
 
-const createFields: FormField[] = [
+const createFields = computed<FormField[]>(() => [
   {
     key: 'id',
     label: 'Персона',
@@ -77,8 +91,8 @@ const createFields: FormField[] = [
     },
     displayFn: (p) => [p.surname, p.name, p.patronymic].filter(Boolean).join(' '),
   },
-  ...baseFields,
-]
+  ...baseFields.value,
+])
 
 const editModal = ref(false)
 const editingItem = ref<any>(null)
