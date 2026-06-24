@@ -68,6 +68,22 @@
         </div>
 
         <div class="settings-section">
+          <h3 class="settings-section-title">Уведомления</h3>
+          <div class="settings-card">
+            <button class="settings-row settings-row--link" @click="router.push('/notifications')">
+              <div class="settings-row-icon" style="background: rgba(108, 99, 255, 0.1); color: #6C63FF;">
+                <ion-icon :icon="notificationsOutline" />
+              </div>
+              <div class="settings-row-text">
+                <span class="settings-row-label">Способы доставки</span>
+                <span class="settings-row-hint">Email, web-push и другие каналы уведомлений</span>
+              </div>
+              <ion-icon :icon="chevronForwardOutline" class="settings-row-arrow" />
+            </button>
+          </div>
+        </div>
+
+        <div class="settings-section">
           <h3 class="settings-section-title">Календарь</h3>
           <div class="settings-card">
             <button class="settings-row settings-row--link" @click="router.push('/calendar-subscriptions')">
@@ -110,7 +126,7 @@ import {
 } from '@ionic/vue'
 import {
   moonOutline, calendarOutline, todayOutline, calendarNumberOutline,
-  chevronForwardOutline,
+  chevronForwardOutline, notificationsOutline,
 } from 'ionicons/icons'
 import { usePlatform } from '@/composables/usePlatform'
 

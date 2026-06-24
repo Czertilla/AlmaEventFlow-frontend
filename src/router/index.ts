@@ -138,6 +138,11 @@ const routes: Array<RouteRecordRaw> = [
     meta: { auth: true },
   },
   {
+    path: '/notifications',
+    component: () => import('@/views/NotificationsPage.vue'),
+    meta: { auth: true },
+  },
+  {
     path: '/profile',
     component: () => import('@/views/ProfilePage.vue'),
     meta: { auth: true },
