@@ -2,7 +2,7 @@
     "openapi": "3.1.0",
     "info": {
         "title": "Alma Event Flow",
-        "version": "0.1.2"
+        "version": "0.1.4-beta"
     },
     "paths": {
         "/event/v1/attendances": {
