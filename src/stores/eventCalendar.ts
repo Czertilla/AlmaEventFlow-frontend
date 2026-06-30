@@ -4,6 +4,7 @@ import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, addMonths, isSameDay,
 import { getParticipationsEventV1ParticipationsGet, getAttendancesEventV1AttendancesGet } from '@/api/generated/almaEventFlow'
 import type { EventRead, AttendanceRead } from '@/api/generated/almaEventFlow'
 import type { CollectiveInfo } from './principal'
+import { fetchAllPages } from '@/api/pagination'
 
 export interface EventAttendanceItem {
   collectiveId: string
@@ -71,17 +72,21 @@ export const useEventCalendarStore = defineStore('eventCalendar', () => {
     if (collectives.length === 0 || eventIds.length === 0) return
 
     const collectiveMap = new Map(collectives.map((c) => [c.id, c.name]))
+    const collectiveIds = collectives.map((c) => c.id)
+    // Собственные членства — по ним отличаем «свою» запись среди всех отметок участия
+    const myMemberIds = new Set(userMemberIds.values())
 
-    // memberIds может быть пустым (руководитель без собственного членства) — участия всё равно нужны
-    const memberIds = Array.from(userMemberIds.values())
-
-    const participationsResp = await getParticipationsEventV1ParticipationsGet({
-      event_id__in: eventIds.join(','),
-      limit: 100,
-    })
-    const allParticipations = ((participationsResp.data as any)?.items || []) as Array<{ id: string; event_id: string; collective_id: string }>
-    // Интересуют только участия коллективов пользователя — чужие не показываем и не считаем
-    const participations = allParticipations.filter((p) => collectiveMap.has(p.collective_id))
+    // 1. Участия пользовательских коллективов в этих мероприятиях.
+    //    Фильтр по коллективу — серверный (collective_id__in), а не клиентский.
+    const participations = await fetchAllPages<{ id: string; event_id: string; collective_id: string }>(
+      (page, limit) =>
+        getParticipationsEventV1ParticipationsGet({
+          event_id__in: eventIds.join(','),
+          collective_id__in: collectiveIds.join(','),
+          page,
+          limit,
+        }),
+    )
 
     const participationByEvent = new Map<string, Array<{ id: string; collective_id: string }>>()
     for (const p of participations) {
@@ -89,32 +94,20 @@ export const useEventCalendarStore = defineStore('eventCalendar', () => {
       participationByEvent.get(p.event_id)!.push(p)
     }
 
-    // Fetch all attendances for the user's member IDs
-    const attendancePromises = memberIds.map((memberId) =>
-      getAttendancesEventV1AttendancesGet({ member_id: memberId, limit: 100 }).catch(() => null),
-    )
-    const attendanceResults = await Promise.all(attendancePromises)
-    const attendanceByParticipation = new Map<string, AttendanceRead>()
-    for (const result of attendanceResults) {
-      if (!result) continue
-      const items = ((result.data as any)?.items || []) as AttendanceRead[]
-      for (const a of items) {
-        if (a.participation_id) {
-          attendanceByParticipation.set(a.participation_id, a)
-        }
-      }
-    }
-
-    // Count attendances per participation using participation_id filter
+    // 2. Все отметки этих участий — одним запросом по participation_id__in.
+    //    Из них же берём собственную запись (member_id ∈ userMemberIds) и считаем счётчики.
     const participationIds = participations.map((p) => p.id)
+    const attendanceByParticipation = new Map<string, AttendanceRead>()
     const countByParticipation = new Map<string, { attended: number; total: number }>()
     if (participationIds.length > 0) {
       try {
-        const countResp = await getAttendancesEventV1AttendancesGet(
-          { limit: 100 },
-          { params: { participation_id__in: participationIds.join(',') } },
+        const allAttendances = await fetchAllPages<AttendanceRead>(
+          (page, limit) =>
+            getAttendancesEventV1AttendancesGet(
+              { page, limit },
+              { params: { participation_id__in: participationIds.join(',') } },
+            ),
         )
-        const allAttendances = ((countResp.data as any)?.items || []) as AttendanceRead[]
         for (const a of allAttendances) {
           const pid = a.participation_id
           if (!pid) continue
@@ -122,8 +115,11 @@ export const useEventCalendarStore = defineStore('eventCalendar', () => {
           cur.total++
           if (a.is_attended) cur.attended++
           countByParticipation.set(pid, cur)
+          if (a.member_id && myMemberIds.has(a.member_id)) attendanceByParticipation.set(pid, a)
         }
-      } catch { /* counts not critical */ }
+      } catch (e) {
+        console.warn('attendance fetch failed:', e)
+      }
     }
 
     const result = new Map<string, EventAttendanceItem[]>()

@@ -1,9 +1,11 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { getMyCollectivesEventV1MeCollectivesGet, getMembersEventV1MembersGet } from '@/api/generated/almaEventFlow'
+import { getMyCollectivesEventV1MeCollectivesGet } from '@/api/generated/almaEventFlow'
 import { getCollectiveOrgV1CollectivesCollectiveIdGet } from '@/api/generated/almaEventFlow'
+import { getMyMembersEventV1MeMembersGet } from '@/api/me'
 import { useAuthStore } from './auth'
 import { getCollectiveColor } from '@/utils/colors'
+import { unwrapList } from '@/api/pagination'
 
 export interface CollectiveInfo {
   id: string
@@ -104,37 +106,24 @@ export const usePrincipalStore = defineStore('principal', () => {
   async function doFetchCollectives() {
     loading.value = true
     try {
-      const personId = auth.user?.person_id
-
       const myResp = await getMyCollectivesEventV1MeCollectivesGet()
-      const myRaw = myResp.data as any
-      let myIds: string[] = []
-      if (Array.isArray(myRaw)) {
-        myIds = myRaw.map((i: any) => i.id)
-      } else if (Array.isArray(myRaw?.items)) {
-        myIds = myRaw.items.map((i: any) => i.id)
-      }
+      const myIds = unwrapList<{ id: string }>(myResp.data).map((i) => i.id)
 
-      // Get user memberships across all collectives
+      // Членства пользователя (роль участника) — отдельная ручка me/members,
+      // backend сам резолвит person из JWT
       const memberMap = new Map<string, string>()
       const collectiveIdsFromMembers = new Set<string>()
 
-      if (personId) {
-        try {
-          const membersResp = await getMembersEventV1MembersGet(
-            { limit: 100 },
-            { params: { person_id: personId } },
-          )
-          const membersRaw = membersResp.data as any
-          const memberList: Array<{ id: string; collective_id: string }> =
-            Array.isArray(membersRaw) ? membersRaw :
-            Array.isArray(membersRaw?.items) ? membersRaw.items :
-            []
-          for (const m of memberList) {
-            memberMap.set(m.collective_id, m.id)
-            collectiveIdsFromMembers.add(m.collective_id)
-          }
-        } catch { /* members endpoint may not support person_id filter yet */ }
+      try {
+        const memberList = unwrapList<{ id: string; collective_id: string }>(
+          (await getMyMembersEventV1MeMembersGet()).data,
+        )
+        for (const m of memberList) {
+          memberMap.set(m.collective_id, m.id)
+          collectiveIdsFromMembers.add(m.collective_id)
+        }
+      } catch (e) {
+        console.warn('fetch memberships failed:', e)
       }
 
       userMemberIds.value = memberMap

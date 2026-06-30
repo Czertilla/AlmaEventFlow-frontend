@@ -64,8 +64,9 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       const response = await usersCurrentUserUserV1UsersMeGet()
       user.value = response.data
-    } catch {
-      // user not critical
+    } catch (e) {
+      // профиль не критичен для рендера, но молча глотать ошибку не стоит
+      console.warn('fetchUser failed:', e)
     }
   }
 
