@@ -1,37 +1,15 @@
 import { createRouter, createWebHistory } from '@ionic/vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { usePrincipalStore } from '@/stores/principal'
 
-const routes: Array<RouteRecordRaw> = [
-  // Auth pages
-  {
-    path: '/auth/login',
-    component: () => import('@/views/auth/LoginPage.vue'),
-    meta: { guest: true },
-  },
-  {
-    path: '/auth/register',
-    component: () => import('@/views/auth/RegisterPage.vue'),
-    meta: { guest: true },
-  },
-  {
-    path: '/auth/verify',
-    component: () => import('@/views/auth/VerifyPage.vue'),
-    meta: { guest: true },
-  },
-  {
-    path: '/auth/forgot-password',
-    component: () => import('@/views/auth/ForgotPasswordPage.vue'),
-    meta: { guest: true },
-  },
-  {
-    path: '/auth/reset-password',
-    component: () => import('@/views/auth/ResetPasswordPage.vue'),
-    meta: { guest: true },
-  },
+// Аутентифицированные страницы живут детьми TabsShell, поэтому их рендерит
+// внутренний ion-router-outlet внутри ion-tabs (отдельные стеки на вкладку,
+// корректная аппаратная кнопка «Назад»). Пути абсолютные — публичные URL не меняются.
+const appRoutes: Array<RouteRecordRaw> = [
   // Main
   {
-    path: '/',
+    path: '',
     component: () => import('@/views/main/HomePage.vue'),
     meta: { auth: true },
   },
@@ -167,6 +145,41 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('@/views/SessionsPage.vue'),
     meta: { auth: true },
   },
+]
+
+const routes: Array<RouteRecordRaw> = [
+  // Auth pages — вне оболочки вкладок (полноэкранные, без таб-бара)
+  {
+    path: '/auth/login',
+    component: () => import('@/views/auth/LoginPage.vue'),
+    meta: { guest: true },
+  },
+  {
+    path: '/auth/register',
+    component: () => import('@/views/auth/RegisterPage.vue'),
+    meta: { guest: true },
+  },
+  {
+    path: '/auth/verify',
+    component: () => import('@/views/auth/VerifyPage.vue'),
+    meta: { guest: true },
+  },
+  {
+    path: '/auth/forgot-password',
+    component: () => import('@/views/auth/ForgotPasswordPage.vue'),
+    meta: { guest: true },
+  },
+  {
+    path: '/auth/reset-password',
+    component: () => import('@/views/auth/ResetPasswordPage.vue'),
+    meta: { guest: true },
+  },
+  // Authenticated app shell with tab navigation
+  {
+    path: '/',
+    component: () => import('@/components/layout/TabsShell.vue'),
+    children: appRoutes,
+  },
   // Fallback
   {
     path: '/:pathMatch(.*)*',
@@ -179,21 +192,22 @@ const router = createRouter({
   routes,
 })
 
+// Попытку refresh делаем один раз за загрузку приложения: иначе аноним дёргает
+// /auth/jwt/refresh на каждой навигации (после первой неудачи токена так и нет).
+let refreshAttempted = false
+
 router.beforeEach(async (to, _from, next) => {
   const auth = useAuthStore()
-  // Try to refresh token on first load
-  if (!auth.isAuthenticated && !auth.accessToken) {
+  if (!auth.isAuthenticated && !auth.accessToken && !refreshAttempted) {
+    refreshAttempted = true
     await auth.tryRefresh()
-  }
-  // Check principal status
-  if (to.meta.principal && !auth.user) {
-    await auth.fetchUser()
   }
   const isAuthenticated = auth.isAuthenticated
   const isSuperuser = auth.isSuperuser
   const guestOnly = to.meta.guest
   const needsAuth = to.meta.auth
   const needsSup = to.meta.sup
+  const needsPrincipal = to.meta.principal
   if (guestOnly && isAuthenticated) {
     return next('/')
   }
@@ -202,6 +216,14 @@ router.beforeEach(async (to, _from, next) => {
   }
   if (needsSup && !isSuperuser) {
     return next('/')
+  }
+  // Панель руководителя доступна только пользователям с членством-руководителем.
+  // fetchCollectives дедуплицирован (inFlight) — повторно сеть не дёргает.
+  if (needsPrincipal) {
+    const principal = usePrincipalStore()
+    if (!auth.user) await auth.fetchUser()
+    await principal.fetchCollectives()
+    if (!principal.isPrincipal) return next('/')
   }
   next()
 })

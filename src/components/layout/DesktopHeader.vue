@@ -66,43 +66,36 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePrincipalStore } from '@/stores/principal'
-import { IonIcon } from '@ionic/vue'
+import { useSectionNav } from '@/composables/useSectionNav'
+import { getInitials } from '@/utils/names'
+import { IonIcon, menuController } from '@ionic/vue'
 import { homeOutline, shieldCheckmarkOutline, settingsOutline, chevronDownOutline } from 'ionicons/icons'
 
-const route = useRoute()
-const router = useRouter()
 const auth = useAuthStore()
 const principal = usePrincipalStore()
 
+// Подсветка разделов и переходы — общие с оболочкой вкладок (useSectionNav).
+const { isAdminActive, isPrincipalActive, goToPrincipal: navPrincipal, selectCollective: navSelectCollective } = useSectionNav()
+
 const showPrincipalDropdown = ref(false)
 
-// Подсветка раздела активна на всём его поддереве, а не только на стартовом пути.
-const isAdminActive = computed(() => route.path.startsWith('/admin'))
-const isPrincipalActive = computed(() => route.path.startsWith('/principal'))
-
-const initials = computed(() => {
-  const u = auth.user?.username || auth.user?.email || ''
-  return u.slice(0, 2).toUpperCase()
-})
+const initials = computed(() => getInitials(auth.user))
 
 // Клик по «Руководитель» открывает последний выбранный коллектив (он восстановлен из хранилища по jwt sub)
 function goToPrincipal() {
   showPrincipalDropdown.value = false
-  router.push('/principal/members')
+  navPrincipal()
 }
 
 function selectCollective(id: string) {
-  principal.setActivePrincipalCollective(id)
   showPrincipalDropdown.value = false
-  router.push('/principal/members')
+  navSelectCollective(id)
 }
 
 function toggleProfileMenu() {
-  const menu = document.querySelector('ion-menu[menu-id="profileMenu"]') as any
-  if (menu) menu.open()
+  menuController.open('profileMenu')
 }
 </script>
 
@@ -204,7 +197,7 @@ function toggleProfileMenu() {
 
 .nav-link--active {
   color: var(--ion-color-primary);
-  background: rgba(108, 99, 255, 0.08);
+  background: rgba(var(--ion-color-primary-rgb), 0.08);
 }
 
 .nav-link--login {
@@ -216,7 +209,7 @@ function toggleProfileMenu() {
 }
 
 .nav-link--login:hover {
-  box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(var(--ion-color-primary-rgb), 0.3);
   color: white;
 }
 
@@ -269,7 +262,7 @@ function toggleProfileMenu() {
 .dropdown-item--active {
   color: var(--ion-color-primary);
   font-weight: 600;
-  background: rgba(108, 99, 255, 0.08);
+  background: rgba(var(--ion-color-primary-rgb), 0.08);
 }
 
 .header-right {
@@ -304,50 +297,6 @@ function toggleProfileMenu() {
 .dropdown-enter-from, .dropdown-leave-to {
   opacity: 0;
   transform: translateY(-8px);
-}
-
-/* Profile menu */
-.profile-header {
-  padding: 24px 20px 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: 12px;
-  border-bottom: 1px solid var(--ion-border-color);
-}
-
-.avatar-lg {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
-  color: white;
-  font-size: 20px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.profile-info h3 {
-  margin: 0;
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.profile-info p {
-  margin: 2px 0 0;
-  font-size: 13px;
-  color: var(--ion-color-medium);
-}
-
-.profile-menu-list {
-  padding: 8px 0;
-}
-
-.logout-item {
-  --color: var(--ion-color-danger);
 }
 
 .avatar-sm {

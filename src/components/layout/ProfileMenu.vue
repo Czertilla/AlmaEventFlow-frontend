@@ -7,7 +7,7 @@
     </ion-header>
     <ion-content>
       <div class="profile-header">
-        <div class="avatar-lg">{{ initials }}</div>
+        <div class="avatar-shadow"><UserAvatar :user="auth.user" :size="64" /></div>
         <div class="profile-info">
           <h3>{{ auth.user?.username || 'Пользователь' }}</h3>
           <p>{{ auth.user?.email || '' }}</p>
@@ -37,19 +37,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonIcon, menuController } from '@ionic/vue'
 import { settingsOutline, personCircleOutline, logOutOutline, chevronForwardOutline } from 'ionicons/icons'
+import UserAvatar from '@/components/common/UserAvatar.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
-
-const initials = computed(() => {
-  const u = auth.user?.username || auth.user?.email || ''
-  return u.slice(0, 2).toUpperCase()
-})
 
 function closeMenu() {
   menuController.close('profileMenu')
@@ -73,18 +68,9 @@ async function logout() {
   border-bottom: 1px solid var(--ion-border-color);
 }
 
-.avatar-lg {
-  width: 64px;
-  height: 64px;
+.avatar-shadow {
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
-  color: white;
-  font-size: 22px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 16px rgba(108, 99, 255, 0.3);
+  box-shadow: 0 4px 16px rgba(var(--ion-color-primary-rgb), 0.3);
 }
 
 .profile-info h3 {

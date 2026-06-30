@@ -209,7 +209,7 @@ async function go(path: string) {
 
 .admin-nav-link--active {
   color: var(--ion-color-primary);
-  background: rgba(108, 99, 255, 0.08);
+  background: rgba(var(--ion-color-primary-rgb), 0.08);
   font-weight: 600;
 }
 
