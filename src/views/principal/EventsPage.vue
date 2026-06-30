@@ -1,7 +1,48 @@
 <template>
   <PrincipalLayout title="Мероприятия" add-label="Новое мероприятие" @add="openCreate">
       <div class="page-body">
-        <ion-searchbar v-model="searchQuery" placeholder="Поиск мероприятий..." />
+        <div class="ev-toolbar">
+          <div class="ev-search">
+            <ion-icon :icon="searchOutline" class="ev-search-icon" />
+            <input
+              v-model="searchQuery"
+              class="ev-search-input"
+              placeholder="Поиск мероприятий..."
+            />
+            <button v-if="searchQuery" class="ev-search-clear" aria-label="Очистить" @click="searchQuery = ''">
+              <ion-icon :icon="closeOutline" />
+            </button>
+          </div>
+
+          <div class="ev-toolbar-actions">
+            <div class="ev-sort">
+              <ion-icon :icon="funnelOutline" class="ev-sort-icon" />
+              <select v-model="statusFilter" class="ev-sort-select" aria-label="Фильтр по статусу">
+                <option value="">Все статусы</option>
+                <option value="active">Активные</option>
+                <option value="draft">Черновики</option>
+                <option value="template">Шаблоны</option>
+                <option value="archived">Архив</option>
+              </select>
+            </div>
+
+            <div class="ev-sort">
+              <ion-icon :icon="swapVerticalOutline" class="ev-sort-icon" />
+              <select v-model="sortKey" class="ev-sort-select" aria-label="Сортировка">
+                <option value="date">По дате</option>
+                <option value="name">По названию</option>
+                <option value="status">По статусу</option>
+              </select>
+              <button
+                class="ev-sort-dir"
+                :aria-label="sortOrder === 'asc' ? 'По возрастанию' : 'По убыванию'"
+                @click="sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'"
+              >
+                <ion-icon :icon="sortOrder === 'asc' ? arrowUpOutline : arrowDownOutline" />
+              </button>
+            </div>
+          </div>
+        </div>
 
         <div v-if="loading" class="page-state">
           <div class="loading-spinner" />
@@ -377,19 +418,25 @@ import { ref, computed, reactive, watch } from 'vue'
 import {
   IonHeader, IonToolbar, IonButtons, IonTitle, IonContent,
   IonButton, IonIcon, IonModal, IonInput, IonTextarea,
-  IonSelect, IonSelectOption, IonSearchbar, toastController,
+  IonSelect, IonSelectOption, IonSearchbar,
 } from '@ionic/vue'
 import PrincipalLayout from '@/components/layout/PrincipalLayout.vue'
 import {
   addOutline, calendarOutline, closeOutline, trashOutline,
   optionsOutline, copyOutline, locationOutline, searchOutline,
+  swapVerticalOutline, arrowUpOutline, arrowDownOutline, funnelOutline,
 } from 'ionicons/icons'
 import { format as fnsFormat } from 'date-fns'
 import { listOrganizationsOrgV1OrganizationsGet } from '@/api/generated/almaEventFlow'
 import { getLocationsGeoV1LocationsGet } from '@/api/generated/almaEventFlow'
 import { usePrincipalStore } from '@/stores/principal'
 import { useSettingsStore } from '@/stores/settings'
+import { useToast } from '@/composables/useToast'
+import { useEntityPicker } from '@/composables/useEntityPicker'
 import { formatDate } from '@/utils/date'
+import {
+  statusColor, statusLabel, levelOptions, typeOptions, formatOptions,
+} from '@/utils/eventLabels'
 import {
   getEventsEventV1EventsGet,
   getParticipationsEventV1ParticipationsGet,
@@ -401,20 +448,6 @@ import {
 } from '@/api/generated/almaEventFlow'
 import { resolvePersonName, rememberMemberPerson, shortId } from '@/utils/names'
 import type { EventRead, EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1, MemberRead, RoleRead } from '@/api/generated/almaEventFlow'
-
-const levelLabels: Record<EventLevelEnumV1, string> = {
-  internal: 'Внутренний', regional: 'Региональный', national: 'Национальный', international: 'Международный',
-}
-const typeLabels: Record<EventTypeEnumV1, string> = {
-  rehearsal: 'Репетиция', competition: 'Конкурс', concert: 'Концерт',
-  festival: 'Фестиваль', play: 'Спектакль', performance: 'Выступление',
-}
-const formatLabels: Record<EventFormatEnumV1, string> = {
-  online: 'Онлайн', offline: 'Офлайн',
-}
-const levelOptions = Object.entries(levelLabels) as [EventLevelEnumV1, string][]
-const typeOptions = Object.entries(typeLabels) as [EventTypeEnumV1, string][]
-const formatOptions = Object.entries(formatLabels) as [EventFormatEnumV1, string][]
 
 // Редактируемый этап формы: даты в формате datetime-local, fromTemplate помечает
 // стадии, перенесённые из шаблона (их даты пересчитываются при смене даты мероприятия)
@@ -438,6 +471,7 @@ function toTzIso(localInput: string): string {
 
 const principal = usePrincipalStore()
 const settings = useSettingsStore()
+const { showSuccess, showError } = useToast()
 
 const events = ref<EventRead[]>([])
 const templates = ref<EventRead[]>([])
@@ -447,6 +481,9 @@ const roles = ref<RoleRead[]>([])
 const loading = ref(false)
 const creating = ref(false)
 const searchQuery = ref('')
+const statusFilter = ref<'' | EventStatusEnumV1>('')
+const sortKey = ref<'date' | 'name' | 'status'>('date')
+const sortOrder = ref<'asc' | 'desc'>('desc')
 
 const showCreateModal = ref(false)
 const statusTouched = ref(false)
@@ -469,63 +506,22 @@ const form = ref({
   stages: [] as StageForm[],
 })
 
-// Организатор — поиск по всем организациям
-interface OrganizerOption { id: string; name: string }
-const organizerSearch = ref('')
-const organizerOptions = ref<OrganizerOption[]>([])
-const selectedOrganizer = ref<OrganizerOption | null>(null)
+// Организатор и локация — поиск по справочникам (общий useEntityPicker).
+// Алиасы сохраняют прежние имена для шаблона.
+type OrganizerOption = { id: string; name: string }
+type LocationOption = { id: string; name: string }
 
-async function searchOrganizers() {
-  if (!organizerSearch.value) {
-    organizerOptions.value = []
-    return
-  }
-  try {
-    const res = await listOrganizationsOrgV1OrganizationsGet({ search: organizerSearch.value, limit: 10 })
-    organizerOptions.value = (res.data.items as OrganizerOption[]) || []
-  } catch {
-    organizerOptions.value = []
-  }
-}
+const {
+  search: organizerSearch, options: organizerOptions, selected: selectedOrganizer,
+  runSearch: searchOrganizers, select: selectOrganizer, clear: clearOrganizer,
+  reset: resetOrganizer,
+} = useEntityPicker((params) => listOrganizationsOrgV1OrganizationsGet(params))
 
-function selectOrganizer(o: OrganizerOption) {
-  selectedOrganizer.value = o
-  organizerSearch.value = ''
-  organizerOptions.value = []
-}
-
-function clearOrganizer() {
-  selectedOrganizer.value = null
-}
-
-// Локация — поиск по справочнику локаций
-interface LocationOption { id: string; name: string }
-const locationSearch = ref('')
-const locationOptions = ref<LocationOption[]>([])
-const selectedLocation = ref<LocationOption | null>(null)
-
-async function searchLocations() {
-  if (!locationSearch.value) {
-    locationOptions.value = []
-    return
-  }
-  try {
-    const res = await getLocationsGeoV1LocationsGet({ search: locationSearch.value, limit: 10 })
-    locationOptions.value = (res.data.items as LocationOption[]) || []
-  } catch {
-    locationOptions.value = []
-  }
-}
-
-function selectLocation(l: LocationOption) {
-  selectedLocation.value = l
-  locationSearch.value = ''
-  locationOptions.value = []
-}
-
-function clearLocation() {
-  selectedLocation.value = null
-}
+const {
+  search: locationSearch, options: locationOptions, selected: selectedLocation,
+  runSearch: searchLocations, select: selectLocation, clear: clearLocation,
+  reset: resetLocation,
+} = useEntityPicker((params) => getLocationsGeoV1LocationsGet(params))
 
 // Комбобокс выбора шаблона / существующего мероприятия как поисковая строка
 const sourceSearch = ref('')
@@ -659,25 +655,36 @@ const allSelected = computed(() =>
   activeMembers.value.length > 0 && activeMembers.value.every((m) => selectedMemberIds.value.has(m.id)),
 )
 
+// Порядок статусов для сортировки «по статусу»
+const STATUS_RANK: Record<EventStatusEnumV1, number> = {
+  active: 0, draft: 1, template: 2, archived: 3,
+}
+
 const filteredEvents = computed(() => {
-  if (!searchQuery.value) return events.value
-  const q = searchQuery.value.toLowerCase()
-  return events.value.filter((e) => e.name.toLowerCase().includes(q))
+  let list = events.value
+  const q = searchQuery.value.trim().toLowerCase()
+  if (q) list = list.filter((e) => e.name.toLowerCase().includes(q))
+  if (statusFilter.value) list = list.filter((e) => e.status === statusFilter.value)
+
+  const dir = sortOrder.value === 'asc' ? 1 : -1
+  return list.slice().sort((a, b) => {
+    let cmp = 0
+    if (sortKey.value === 'name') {
+      cmp = a.name.localeCompare(b.name, 'ru')
+    } else if (sortKey.value === 'status') {
+      cmp = STATUS_RANK[a.status ?? 'draft'] - STATUS_RANK[b.status ?? 'draft']
+    } else {
+      // date: события без даты — в конец независимо от направления
+      const da = a.date ? new Date(a.date).getTime() : null
+      const db = b.date ? new Date(b.date).getTime() : null
+      if (da === null && db === null) cmp = 0
+      else if (da === null) return 1
+      else if (db === null) return -1
+      else cmp = da - db
+    }
+    return cmp * dir
+  })
 })
-
-function statusColor(status?: EventStatusEnumV1): string {
-  const map: Record<EventStatusEnumV1, string> = {
-    draft: '#92949c', template: '#6C63FF', active: '#00D9A6', archived: '#FF4757',
-  }
-  return map[status ?? 'draft']
-}
-
-function statusLabel(status?: EventStatusEnumV1): string {
-  const map: Record<EventStatusEnumV1, string> = {
-    draft: 'Черновик', template: 'Шаблон', active: 'Активно', archived: 'Архив',
-  }
-  return map[status ?? 'draft']
-}
 
 function membersOfRole(roleId: string): MemberRead[] {
   return activeMembers.value.filter((m) => m.roles.some((r) => r.id === roleId))
@@ -723,12 +730,8 @@ function openCreate() {
   templateBase = null
   sourceFilters.type = ''
   sourceFilters.level = ''
-  selectedOrganizer.value = null
-  organizerSearch.value = ''
-  organizerOptions.value = []
-  selectedLocation.value = null
-  locationSearch.value = ''
-  locationOptions.value = []
+  resetOrganizer()
+  resetLocation()
   sourceSearch.value = ''
   sourceDropdownOpen.value = false
   sourceFilterOpen.value = false
@@ -841,12 +844,7 @@ async function submit() {
   if (!collectiveId) return
   // Бизнес-правило: мероприятие не может быть active без даты
   if (!isJoinMode.value && form.value.status === 'active' && !form.value.date) {
-    const toast = await toastController.create({
-      message: 'Активное мероприятие должно иметь дату',
-      duration: 3000,
-      color: 'danger',
-    })
-    toast.present()
+    showError(null, 'Активное мероприятие должно иметь дату')
     return
   }
   creating.value = true
@@ -901,15 +899,9 @@ async function submit() {
     }
     showCreateModal.value = false
     await loadEvents(collectiveId)
-    const toast = await toastController.create({ message: 'Успешно создано', duration: 2000, color: 'success' })
-    toast.present()
-  } catch (err: any) {
-    const toast = await toastController.create({
-      message: err?.response?.data?.detail || 'Ошибка при создании',
-      duration: 3000,
-      color: 'danger',
-    })
-    toast.present()
+    showSuccess('Успешно создано')
+  } catch (err) {
+    showError(err, 'Ошибка при создании')
   } finally {
     creating.value = false
   }
@@ -963,6 +955,125 @@ watch(() => principal.activePrincipalCollectiveId, async (collectiveId) => {
 <style scoped>
 .page-body {
   padding-bottom: 32px;
+}
+
+/* Тулбар списка: поиск · фильтр · сортировка (единый язык с admin-таблицами) */
+.ev-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.ev-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 220px;
+}
+
+.ev-search-icon {
+  position: absolute;
+  left: 14px;
+  font-size: 18px;
+  color: var(--ion-color-medium);
+  pointer-events: none;
+}
+
+.ev-search-input {
+  width: 100%;
+  height: 44px;
+  padding: 0 38px;
+  border: 1.5px solid var(--ion-border-color);
+  border-radius: 12px;
+  background: var(--ion-card-background);
+  font-family: inherit;
+  font-size: 14px;
+  color: var(--ion-text-color);
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.ev-search-input:focus {
+  border-color: var(--ion-color-primary);
+  box-shadow: 0 0 0 3px rgba(var(--ion-color-primary-rgb), 0.12);
+}
+
+.ev-search-clear {
+  position: absolute;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ion-color-medium);
+  font-size: 15px;
+  cursor: pointer;
+}
+
+.ev-search-clear:hover {
+  background: var(--ion-background-color);
+}
+
+.ev-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ev-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 44px;
+  padding: 0 6px 0 12px;
+  border: 1.5px solid var(--ion-border-color);
+  border-radius: 12px;
+  background: var(--ion-card-background);
+}
+
+.ev-sort-icon {
+  font-size: 17px;
+  color: var(--ion-color-medium);
+}
+
+.ev-sort-select {
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ion-text-color);
+  outline: none;
+  cursor: pointer;
+  padding: 0 4px;
+}
+
+.ev-sort-dir {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ion-color-medium);
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.ev-sort-dir:hover {
+  background: rgba(var(--ion-color-primary-rgb), 0.1);
+  color: var(--ion-color-primary);
 }
 
 .page-state {
@@ -1020,7 +1131,7 @@ watch(() => principal.activePrincipalCollectiveId, async (collectiveId) => {
 
 .event-row:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 20px rgba(108, 99, 255, 0.12);
+  box-shadow: 0 4px 20px rgba(var(--ion-color-primary-rgb), 0.12);
 }
 
 .event-row-status {
@@ -1088,13 +1199,13 @@ watch(() => principal.activePrincipalCollectiveId, async (collectiveId) => {
   letter-spacing: 0.5px;
   padding: 2px 8px;
   border-radius: 999px;
-  background: rgba(108, 99, 255, 0.12);
+  background: rgba(var(--ion-color-primary-rgb), 0.12);
   color: var(--ion-color-primary);
 }
 
 .status-auto {
   --highlight-color: var(--ion-color-primary);
-  border: 1.5px dashed rgba(108, 99, 255, 0.4);
+  border: 1.5px dashed rgba(var(--ion-color-primary-rgb), 0.4);
   border-radius: 10px;
   padding-left: 8px;
 }
@@ -1169,7 +1280,7 @@ watch(() => principal.activePrincipalCollectiveId, async (collectiveId) => {
   letter-spacing: 0.4px;
   padding: 1px 8px;
   border-radius: 999px;
-  background: rgba(108, 99, 255, 0.12);
+  background: rgba(var(--ion-color-primary-rgb), 0.12);
   color: var(--ion-color-primary);
 }
 
@@ -1332,7 +1443,7 @@ watch(() => principal.activePrincipalCollectiveId, async (collectiveId) => {
 
 .role-chip--active {
   border-color: var(--ion-color-primary);
-  background: rgba(108, 99, 255, 0.1);
+  background: rgba(var(--ion-color-primary-rgb), 0.1);
   color: var(--ion-color-primary);
 }
 
@@ -1425,7 +1536,7 @@ watch(() => principal.activePrincipalCollectiveId, async (collectiveId) => {
 
 .source-filter-btn:hover,
 .source-filter-btn--active {
-  background: rgba(108, 99, 255, 0.1);
+  background: rgba(var(--ion-color-primary-rgb), 0.1);
   color: var(--ion-color-primary);
 }
 
@@ -1457,7 +1568,7 @@ watch(() => principal.activePrincipalCollectiveId, async (collectiveId) => {
 
 .source-filter-chip--active {
   border-color: var(--ion-color-primary);
-  background: rgba(108, 99, 255, 0.1);
+  background: rgba(var(--ion-color-primary-rgb), 0.1);
   color: var(--ion-color-primary);
 }
 
@@ -1557,7 +1668,7 @@ watch(() => principal.activePrincipalCollectiveId, async (collectiveId) => {
   padding: 10px 14px;
   border: 1.5px solid var(--ion-color-primary);
   border-radius: 10px;
-  background: rgba(108, 99, 255, 0.06);
+  background: rgba(var(--ion-color-primary-rgb), 0.06);
   font-size: 14px;
   color: var(--ion-text-color);
 }

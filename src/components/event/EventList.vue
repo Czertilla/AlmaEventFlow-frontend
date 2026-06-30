@@ -80,9 +80,8 @@ const emit = defineEmits<{
 }>()
 
 const LOAD_EDGE = 150
-// Сколько места оставить под нижней кромкой списка: на мобильном — высота BottomNav
+// Сколько места оставить под нижней кромкой списка на мобильном — высота таб-бара
 const BOTTOM_RESERVE_MOBILE = 72
-const BOTTOM_RESERVE_DESKTOP = 24
 
 const { isDesktop } = usePlatform()
 

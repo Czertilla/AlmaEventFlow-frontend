@@ -426,11 +426,11 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, reactive } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import {
   IonPage, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonContent,
   IonButton, IonIcon, IonModal, IonInput, IonTextarea, IonSelect, IonSelectOption,
-  IonSearchbar, toastController,
+  IonSearchbar,
 } from '@ionic/vue'
 import {
   calendarOutline, timeOutline, chevronDownOutline, chevronUpOutline,
@@ -439,24 +439,20 @@ import {
 } from 'ionicons/icons'
 import { usePrincipalStore } from '@/stores/principal'
 import { useSettingsStore } from '@/stores/settings'
-import { useAttendancePending } from '@/composables/useAttendancePending'
 import { usePlatform } from '@/composables/usePlatform'
+import { useToast } from '@/composables/useToast'
+import { useEventParticipations } from '@/composables/useEventParticipations'
 import { confirmAction } from '@/utils/confirm'
 import { formatDate, formatTime } from '@/utils/date'
 import { getCollectiveColor } from '@/utils/colors'
 import {
+  statusColor as statusColorOf, statusLabel as statusLabelOf,
+  statusOptions, levelOptions, typeOptions, formatOptions, priorityOptions,
+} from '@/utils/eventLabels'
+import {
   getEventEventV1EventsEventIdGet,
   getEventStagesEventV1EventsEventIdStagesGet,
-  getParticipationsEventV1ParticipationsGet,
-  getAttendancesEventV1AttendancesGet,
-  getMyCollectiveMembersEventV1MeCollectivesCollectiveIdMembersGet,
-  patchMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdAttendanceAttendanceIdPatch,
-  patchMyAttendanceEventV1MeMembersMemberIdAttendanceAttendanceIdPatch,
-  createMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdParticipationParticipationIdAttendancePost,
-  deleteMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdAttendanceAttendanceIdDelete,
-  verifyMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdParticipationParticipationIdAttendanceVerifyPost,
   createMyCollectiveParticipationEventV1MeCollectivesCollectiveIdParticipationsPost,
-  cancelMyCollectiveParticipationEventV1MeCollectivesCollectiveIdParticipationsEventIdDelete,
   patchMyCollectiveEventEventV1MeCollectivesCollectiveIdEventsEventIdPatch,
   createMyCollectiveEventStageEventV1MeCollectivesCollectiveIdEventsEventIdStagesPost,
   patchMyCollectiveEventStageEventV1MeCollectivesCollectiveIdStagesStageIdPatch,
@@ -465,41 +461,33 @@ import {
   getLocationsGeoV1LocationsGet,
 } from '@/api/generated/almaEventFlow'
 import { format as fnsFormat } from 'date-fns'
-import { resolveMemberName, rememberMemberPerson, shortId, shortenName } from '@/utils/names'
-import { loadStoredRoleOrder, loadSortMode } from '@/utils/roleSort'
 import UuidBadge from '@/components/common/UuidBadge.vue'
 import EventAttendanceChip from '@/components/event/EventAttendanceChip.vue'
 import EventCommentChip from '@/components/event/EventCommentChip.vue'
-import { EventPriorityEnumV1 } from '@/api/generated/almaEventFlow'
 import type {
   EventRead, EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1,
-  StageRead, AttendanceRead, MemberRead,
+  EventPriorityEnumV1, StageRead,
 } from '@/api/generated/almaEventFlow'
 
-interface ParticipationItem {
-  participationId: string
-  collectiveId: string
-  collectiveName: string
-  attendances: AttendanceRead[]
-  myAttendance: AttendanceRead | null
-  isPrincipal: boolean
-  isMember: boolean
-  canExpand: boolean
-}
-
 const route = useRoute()
-const router = useRouter()
 const principal = usePrincipalStore()
 const settings = useSettingsStore()
-const { withPending, pending } = useAttendancePending()
 const { isDesktop } = usePlatform()
+const { showError, showSuccess, showMessage } = useToast()
 
 const eventId = route.params.id as string
 const event = ref<EventRead | null>(null)
 const stages = ref<StageRead[]>([])
-const participationItems = ref<ParticipationItem[]>([])
-const expanded = reactive<Record<string, boolean>>({})
 const loading = ref(true)
+
+// Доменная логика участий/посещаемости вынесена в composable
+const {
+  participationItems, expanded, addMemberSel, pending,
+  joinableCollectives, editableCollectiveId,
+  availableMembers, memberLabel, attendanceGroups, loadParticipations,
+  toggleAttendance, saveComment, deleteComment, toggleVerify,
+  addAttendance, removeAttendance, verifyAll, cancelParticipation,
+} = useEventParticipations(eventId)
 
 const eventTime = computed(() => {
   const d = event.value?.date
@@ -508,51 +496,8 @@ const eventTime = computed(() => {
   return t === '00:00' ? '' : t
 })
 
-const statusColor = computed(() => {
-  const map: Record<EventStatusEnumV1, string> = {
-    draft: '#92949c', template: '#6C63FF', active: '#00D9A6', archived: '#FF4757',
-  }
-  return map[event.value?.status ?? 'draft']
-})
-
-const statusLabel = computed(() => {
-  const map: Record<EventStatusEnumV1, string> = {
-    draft: 'Черновик', template: 'Шаблон', active: 'Активно', archived: 'Архив',
-  }
-  return map[event.value?.status ?? 'draft']
-})
-
-// Principal's collectives that are not in the event yet
-const joinableCollectives = computed(() =>
-  principal.principalCollectives.filter(
-    (c) => !participationItems.value.some((p) => p.collectiveId === c.id),
-  ),
-)
-
-// Руководитель может редактировать мероприятие, если его коллектив в нём участвует.
-// Бэкенд проверяет ту же связку (verify_collective_principal + ParticipationORM);
-// здесь берём любой участвующий коллектив, где пользователь — руководитель.
-const editableCollectiveId = computed(
-  () => participationItems.value.find((p) => p.isPrincipal)?.collectiveId ?? null,
-)
-
-const statusLabels: Record<EventStatusEnumV1, string> = {
-  draft: 'Черновик', active: 'Активно', template: 'Шаблон', archived: 'Архив',
-}
-const levelLabels: Record<EventLevelEnumV1, string> = {
-  internal: 'Внутренний', regional: 'Региональный', national: 'Национальный', international: 'Международный',
-}
-const typeLabels: Record<EventTypeEnumV1, string> = {
-  rehearsal: 'Репетиция', competition: 'Конкурс', concert: 'Концерт',
-  festival: 'Фестиваль', play: 'Спектакль', performance: 'Выступление',
-}
-const formatLabels: Record<EventFormatEnumV1, string> = {
-  online: 'Онлайн', offline: 'Офлайн',
-}
-const statusOptions = Object.entries(statusLabels) as [EventStatusEnumV1, string][]
-const levelOptions = Object.entries(levelLabels) as [EventLevelEnumV1, string][]
-const typeOptions = Object.entries(typeLabels) as [EventTypeEnumV1, string][]
-const formatOptions = Object.entries(formatLabels) as [EventFormatEnumV1, string][]
+const statusColor = computed(() => statusColorOf(event.value?.status))
+const statusLabel = computed(() => statusLabelOf(event.value?.status))
 
 // ---- Редактирование мероприятия ----
 const showEditModal = ref(false)
@@ -639,12 +584,7 @@ async function submitEdit() {
   if (!collectiveId || !editForm.name) return
   // Бизнес-правило: мероприятие не может быть active без даты
   if (editForm.status === 'active' && !editForm.date) {
-    const toast = await toastController.create({
-      message: 'Активное мероприятие должно иметь дату',
-      duration: 3000,
-      color: 'danger',
-    })
-    toast.present()
+    showMessage('Активное мероприятие должно иметь дату', 'danger')
     return
   }
   saving.value = true
@@ -664,8 +604,7 @@ async function submitEdit() {
     )
     event.value = resp.data
     showEditModal.value = false
-    const toast = await toastController.create({ message: 'Мероприятие обновлено', duration: 2000, color: 'success' })
-    toast.present()
+    showSuccess('Мероприятие обновлено')
   } catch (err) {
     showError(err, 'Не удалось сохранить изменения')
   } finally {
@@ -737,8 +676,7 @@ async function saveStage(i: number) {
     }
     await reloadStages()
     mapStagesToForms()
-    const toast = await toastController.create({ message: 'Этап сохранён', duration: 1500, color: 'success' })
-    toast.present()
+    showSuccess('Этап сохранён', 1500)
   } catch (err) {
     showError(err, 'Не удалось сохранить этап')
   } finally {
@@ -765,197 +703,6 @@ async function deleteStage(i: number) {
   }
 }
 
-// member_id → ФИО; пока имя не загрузилось, показываем сокращённый id
-const memberNames = reactive<Record<string, string>>({})
-// Участники коллективов руководителя (для добавления attendance)
-const collectiveMembers = reactive<Record<string, MemberRead[]>>({})
-const addMemberSel = reactive<Record<string, string>>({})
-
-function availableMembers(p: ParticipationItem): MemberRead[] {
-  const members = collectiveMembers[p.collectiveId] || []
-  const withAttendance = new Set(p.attendances.map((a) => a.member_id))
-  return members.filter((m) => m.is_active !== false && !withAttendance.has(m.id))
-}
-
-// Формат «Фамилия И.О.»
-function memberLabel(memberId: string): string {
-  const full = memberNames[memberId]
-  return full ? shortenName(full) : `#${shortId(memberId)}`
-}
-
-// Группы отметок присутствия для отображения с разделителями по ролям.
-// label=null — группа без подписи (алфавитный режим или участники без роли).
-interface AttendanceGroup {
-  key: string
-  label: string | null
-  items: AttendanceRead[]
-}
-
-// Сортировка/группировка отметок по тому же порядку ролей, что задан руководителем
-// в панели (localStorage, отдельно на коллектив). Роли участников берём из загруженного
-// списка членов коллектива — доступно для своих (principal) коллективов.
-// В режиме «по ролям» каждый участник попадает только в свою высшую по приоритету роль;
-// роли без участников (или чьи участники уже перечислены выше) разделитель не получают.
-function attendanceGroups(p: ParticipationItem): AttendanceGroup[] {
-  const byName = (a: AttendanceRead, b: AttendanceRead) =>
-    memberLabel(a.member_id).localeCompare(memberLabel(b.member_id), 'ru')
-  const flat = (): AttendanceGroup[] => [
-    { key: 'all', label: null, items: p.attendances.slice().sort(byName) },
-  ]
-
-  const members = collectiveMembers[p.collectiveId]
-  const order = loadStoredRoleOrder(p.collectiveId)
-  if (loadSortMode(p.collectiveId) === 'alpha' || !members?.length || !order.length) {
-    return flat()
-  }
-
-  const rolesByMember = new Map(members.map((m) => [m.id, m.roles.map((r) => r.id)]))
-  const roleNames = new Map<string, string>()
-  for (const m of members) for (const r of m.roles) roleNames.set(r.id, r.name)
-
-  const byRole = new Map<string, AttendanceRead[]>()
-  const noRole: AttendanceRead[] = []
-  for (const a of p.attendances) {
-    let bestIdx = Number.POSITIVE_INFINITY
-    let bestRole: string | null = null
-    for (const rid of rolesByMember.get(a.member_id) || []) {
-      const idx = order.indexOf(rid)
-      if (idx >= 0 && idx < bestIdx) { bestIdx = idx; bestRole = rid }
-    }
-    if (bestRole === null) noRole.push(a)
-    else (byRole.get(bestRole) ?? byRole.set(bestRole, []).get(bestRole)!).push(a)
-  }
-
-  const groups: AttendanceGroup[] = []
-  for (const rid of order) {
-    const items = byRole.get(rid)
-    if (items?.length) groups.push({ key: rid, label: roleNames.get(rid) || '—', items: items.sort(byName) })
-  }
-  if (noRole.length) groups.push({ key: '__none', label: null, items: noRole.sort(byName) })
-  return groups
-}
-
-async function loadMemberNames(items: ParticipationItem[]) {
-  // For own (principal) collectives the member list gives member→person mapping in one request
-  await Promise.all(
-    items
-      .filter((p) => p.isPrincipal)
-      .map(async (p) => {
-        try {
-          const resp = await getMyCollectiveMembersEventV1MeCollectivesCollectiveIdMembersGet(p.collectiveId, { limit: 100 })
-          collectiveMembers[p.collectiveId] = resp.data.items
-          for (const m of resp.data.items) rememberMemberPerson(m.id, m.person_id)
-        } catch { /* ignore */ }
-      }),
-  )
-  const memberIds = new Set([
-    ...items.flatMap((p) => p.attendances.map((a) => a.member_id)),
-    ...Object.values(collectiveMembers).flat().map((m) => m.id),
-  ])
-  await Promise.all(
-    Array.from(memberIds).map(async (id) => {
-      const name = await resolveMemberName(id)
-      if (name) memberNames[id] = name
-    }),
-  )
-}
-
-async function showError(err: any, fallback: string) {
-  const toast = await toastController.create({
-    message: err?.response?.data?.detail || fallback,
-    duration: 3000,
-    color: 'danger',
-  })
-  toast.present()
-}
-
-// Руководитель меняет attendance через эндпоинт своего коллектива, участник — только свою запись.
-// Перезагрузка данных идёт внутри withPending — спиннер исчезает одновременно с обновлением чипа
-async function patchAttendance(p: ParticipationItem, a: AttendanceRead, body: { is_attended?: boolean; comment?: string }) {
-  await withPending(a.id, async () => {
-    if (p.isPrincipal) {
-      await patchMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdAttendanceAttendanceIdPatch(p.collectiveId, a.id, body)
-    } else {
-      await patchMyAttendanceEventV1MeMembersMemberIdAttendanceAttendanceIdPatch(a.member_id, a.id, body)
-    }
-    await loadParticipations()
-  })
-}
-
-async function toggleAttendance(p: ParticipationItem, a: AttendanceRead, value: boolean) {
-  try {
-    await patchAttendance(p, a, { is_attended: value })
-  } catch (err) {
-    showError(err, 'Не удалось изменить отметку')
-  }
-}
-
-async function saveComment(p: ParticipationItem, a: AttendanceRead, comment: string) {
-  try {
-    await patchAttendance(p, a, { comment })
-  } catch (err) {
-    showError(err, 'Не удалось сохранить комментарий')
-  }
-}
-
-async function deleteComment(p: ParticipationItem, a: AttendanceRead) {
-  await saveComment(p, a, '')
-}
-
-// Заверение/снятие заверения отдельной отметки — отдельный ключ pending,
-// чтобы спиннер появлялся на кнопке-щите, а не на чипе отметки
-async function toggleVerify(p: ParticipationItem, a: AttendanceRead) {
-  try {
-    await withPending(`verify:${a.id}`, async () => {
-      await patchMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdAttendanceAttendanceIdPatch(
-        p.collectiveId, a.id, { is_verified: !a.is_verified },
-      )
-      await loadParticipations()
-    })
-  } catch (err) {
-    showError(err, 'Не удалось изменить заверение')
-  }
-}
-
-async function addAttendance(p: ParticipationItem) {
-  const memberId = addMemberSel[p.participationId]
-  if (!memberId) return
-  try {
-    await createMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdParticipationParticipationIdAttendancePost(
-      p.collectiveId, p.participationId, { member_id: memberId },
-    )
-    addMemberSel[p.participationId] = ''
-    await loadParticipations()
-  } catch (err) {
-    showError(err, 'Не удалось добавить отметку')
-  }
-}
-
-async function removeAttendance(p: ParticipationItem, a: AttendanceRead) {
-  const ok = await confirmAction('Удалить отметку?', `Запись присутствия «${memberLabel(a.member_id)}» будет удалена.`)
-  if (!ok) return
-  try {
-    await deleteMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdAttendanceAttendanceIdDelete(p.collectiveId, a.id)
-    await loadParticipations()
-  } catch (err) {
-    showError(err, 'Не удалось удалить отметку')
-  }
-}
-
-async function verifyAll(p: ParticipationItem) {
-  try {
-    await verifyMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdParticipationParticipationIdAttendanceVerifyPost(
-      p.collectiveId,
-      p.participationId,
-    )
-    await loadParticipations()
-    const toast = await toastController.create({ message: 'Присутствия заверены', duration: 2000, color: 'success' })
-    toast.present()
-  } catch (err) {
-    showError(err, 'Не удалось заверить присутствия')
-  }
-}
-
 // ---- Создание участия через модальное окно ----
 const showJoinModal = ref(false)
 const joining = ref(false)
@@ -963,12 +710,6 @@ const joinForm = reactive({
   collectiveId: '',
   priority: null as EventPriorityEnumV1 | null,
 })
-const priorityLabels: Record<EventPriorityEnumV1, string> = {
-  hight: 'Высокий',
-  medium: 'Средний',
-  low: 'Низкий',
-}
-const priorityOptions = Object.entries(priorityLabels) as [EventPriorityEnumV1, string][]
 
 function openJoinModal() {
   joinForm.collectiveId = joinableCollectives.value[0]?.id ?? ''
@@ -987,94 +728,12 @@ async function submitJoin() {
     })
     showJoinModal.value = false
     await loadParticipations()
-    const toast = await toastController.create({ message: `Участие «${collective.name}» создано`, duration: 2000, color: 'success' })
-    toast.present()
+    showSuccess(`Участие «${collective.name}» создано`)
   } catch (err) {
     showError(err, 'Не удалось создать участие')
   } finally {
     joining.value = false
   }
-}
-
-// Руководитель отменяет участие своего коллектива. Если это последний
-// участвующий коллектив — мероприятие удаляется (бизнес-логика на бэке).
-async function cancelParticipation(p: ParticipationItem) {
-  const isLast = participationItems.value.length === 1
-  const message = isLast
-    ? `«${p.collectiveName}» — единственный участник. Мероприятие будет удалено вместе с участием.`
-    : `Участие «${p.collectiveName}» будет отменено.`
-  const ok = await confirmAction('Отменить участие?', message)
-  if (!ok) return
-  try {
-    await cancelMyCollectiveParticipationEventV1MeCollectivesCollectiveIdParticipationsEventIdDelete(
-      p.collectiveId, eventId,
-    )
-    const toast = await toastController.create({
-      message: isLast ? 'Мероприятие удалено' : 'Участие отменено',
-      duration: 2000,
-      color: 'success',
-    })
-    toast.present()
-    if (isLast) {
-      router.replace('/')
-    } else {
-      await loadParticipations()
-    }
-  } catch (err) {
-    showError(err, 'Не удалось отменить участие')
-  }
-}
-
-async function loadParticipations() {
-  const resp = await getParticipationsEventV1ParticipationsGet({ event_id__in: eventId, limit: 100 })
-  const participations = resp.data.items
-
-  const myMemberIds = new Set(principal.userMemberIds.values())
-  const collectiveNames = new Map(principal.collectives.map((c) => [c.id, c.name]))
-
-  const items: ParticipationItem[] = await Promise.all(
-    participations.map(async (part) => {
-      const isPrincipal = principal.principalCollectiveIds.has(part.collective_id)
-      const isMember = principal.userMemberIds.has(part.collective_id)
-      let attendances: AttendanceRead[] = []
-      if (isPrincipal || isMember) {
-        try {
-          const aResp = await getAttendancesEventV1AttendancesGet({ participation_id: part.id, limit: 100 })
-          // Стабильный порядок: иначе записи перемешиваются после каждого изменения
-          attendances = aResp.data.items
-            .slice()
-            .sort((a, b) => (memberNames[a.member_id] || a.member_id).localeCompare(memberNames[b.member_id] || b.member_id, 'ru'))
-        } catch { /* not allowed to see attendances */ }
-      }
-      const myAttendance = attendances.find((a) => myMemberIds.has(a.member_id)) || null
-      return {
-        participationId: part.id,
-        collectiveId: part.collective_id,
-        collectiveName:
-          part.collective_name
-          || collectiveNames.get(part.collective_id)
-          || `Коллектив ${part.collective_id.slice(0, 8)}`,
-        attendances,
-        myAttendance,
-        isPrincipal,
-        isMember,
-        canExpand: isPrincipal || isMember,
-      }
-    }),
-  )
-
-  // Свои коллективы первыми, далее стабильно по названию
-  items.sort((a, b) =>
-    Number(b.canExpand) - Number(a.canExpand) ||
-    a.collectiveName.localeCompare(b.collectiveName, 'ru'))
-  participationItems.value = items
-  loadMemberNames(items).then(() => {
-    // Когда ФИО загрузились — пересортировать списки по именам
-    for (const p of participationItems.value) {
-      p.attendances.sort((a, b) =>
-        (memberNames[a.member_id] || a.member_id).localeCompare(memberNames[b.member_id] || b.member_id, 'ru'))
-    }
-  })
 }
 
 onMounted(async () => {
@@ -1554,7 +1213,7 @@ onMounted(async () => {
   flex-shrink: 0;
   padding: 3px 10px;
   border-radius: 8px;
-  background: rgba(108, 99, 255, 0.08);
+  background: rgba(var(--ion-color-primary-rgb), 0.08);
   color: var(--ion-color-primary);
   font-size: 12px;
   font-weight: 600;
@@ -1722,7 +1381,7 @@ onMounted(async () => {
 
 .row-icon-btn--verified {
   border-color: var(--ion-color-primary);
-  background: rgba(108, 99, 255, 0.1);
+  background: rgba(var(--ion-color-primary-rgb), 0.1);
   color: var(--ion-color-primary);
 }
 
