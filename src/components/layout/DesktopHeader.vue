@@ -19,7 +19,11 @@
               @mouseenter="showPrincipalDropdown = true"
               @mouseleave="showPrincipalDropdown = false"
             >
-              <button class="nav-link nav-dropdown-trigger" @click="goToPrincipal">
+              <button
+                class="nav-link nav-dropdown-trigger"
+                :class="{ 'nav-link--active': isPrincipalActive }"
+                @click="goToPrincipal"
+              >
                 <ion-icon :icon="shieldCheckmarkOutline" />
                 Руководитель
                 <ion-icon :icon="chevronDownOutline" :class="{ rotated: showPrincipalDropdown }" />
@@ -39,7 +43,12 @@
                 </div>
               </Transition>
             </div>
-            <router-link v-if="auth.isSuperuser" to="/admin/users" class="nav-link" active-class="nav-link--active">
+            <router-link
+              v-if="auth.isSuperuser"
+              to="/admin/users"
+              class="nav-link"
+              :class="{ 'nav-link--active': isAdminActive }"
+            >
               <ion-icon :icon="settingsOutline" />
               Администрирование
             </router-link>
@@ -57,17 +66,22 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePrincipalStore } from '@/stores/principal'
 import { IonIcon } from '@ionic/vue'
 import { homeOutline, shieldCheckmarkOutline, settingsOutline, chevronDownOutline } from 'ionicons/icons'
 
+const route = useRoute()
 const router = useRouter()
 const auth = useAuthStore()
 const principal = usePrincipalStore()
 
 const showPrincipalDropdown = ref(false)
+
+// Подсветка раздела активна на всём его поддереве, а не только на стартовом пути.
+const isAdminActive = computed(() => route.path.startsWith('/admin'))
+const isPrincipalActive = computed(() => route.path.startsWith('/principal'))
 
 const initials = computed(() => {
   const u = auth.user?.username || auth.user?.email || ''

@@ -24,6 +24,25 @@
               </div>
               <ion-toggle :checked="settings.theme === 'dark'" @ion-change="settings.toggleTheme()" />
             </div>
+            <div class="settings-divider" />
+            <div class="settings-row">
+              <div class="settings-row-icon" style="background: rgba(0, 217, 166, 0.1); color: #00BF92;">
+                <ion-icon :icon="sparklesOutline" />
+              </div>
+              <div class="settings-row-text">
+                <span class="settings-row-label">Анимации</span>
+                <span class="settings-row-hint">Переходы и эффекты. «Авто» учитывает системную экономию движения</span>
+              </div>
+              <ion-select
+                :value="settings.animations"
+                interface="popover"
+                @ion-change="settings.animations = $event.detail.value"
+              >
+                <ion-select-option value="auto">Авто</ion-select-option>
+                <ion-select-option value="on">Включены</ion-select-option>
+                <ion-select-option value="off">Выключены</ion-select-option>
+              </ion-select>
+            </div>
           </div>
         </div>
 
@@ -126,7 +145,7 @@ import {
 } from '@ionic/vue'
 import {
   moonOutline, calendarOutline, todayOutline, calendarNumberOutline,
-  chevronForwardOutline, notificationsOutline,
+  chevronForwardOutline, notificationsOutline, sparklesOutline,
 } from 'ionicons/icons'
 import { usePlatform } from '@/composables/usePlatform'
 

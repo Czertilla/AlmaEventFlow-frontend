@@ -6,7 +6,12 @@
         <span class="nav-label">Главная</span>
       </router-link>
 
-      <div v-if="principal.isPrincipal" class="nav-item nav-item--dropdown" @click="handlePrincipalClick">
+      <div
+        v-if="principal.isPrincipal"
+        class="nav-item nav-item--dropdown"
+        :class="{ 'nav-item--active': isPrincipalActive }"
+        @click="handlePrincipalClick"
+      >
         <ion-icon :icon="shieldCheckmarkOutline" />
         <span class="nav-label">
           Руководитель
@@ -18,7 +23,7 @@
         v-if="auth.isSuperuser"
         to="/admin/users"
         class="nav-item"
-        active-class="nav-item--active"
+        :class="{ 'nav-item--active': isAdminActive }"
       >
         <ion-icon :icon="settingsOutline" />
         <span class="nav-label">Админ</span>
@@ -52,18 +57,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { usePrincipalStore } from '@/stores/principal'
 import { useAuthStore } from '@/stores/auth'
 import { IonIcon } from '@ionic/vue'
 import { homeOutline, shieldCheckmarkOutline, personOutline, chevronUpOutline, settingsOutline } from 'ionicons/icons'
 
+const route = useRoute()
 const router = useRouter()
 const principal = usePrincipalStore()
 const auth = useAuthStore()
 
 const showDropdown = ref(false)
+
+// Подсветка активна на всём поддереве раздела, а не только на стартовом пути.
+const isAdminActive = computed(() => route.path.startsWith('/admin'))
+const isPrincipalActive = computed(() => route.path.startsWith('/principal'))
 
 function handlePrincipalClick() {
   showDropdown.value = !showDropdown.value

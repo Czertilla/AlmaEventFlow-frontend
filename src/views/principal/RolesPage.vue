@@ -36,9 +36,9 @@
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { IonButton, IonIcon, IonAlert, toastController } from '@ionic/vue'
+import { IonIcon, IonAlert, toastController } from '@ionic/vue'
 import PrincipalLayout from '@/components/layout/PrincipalLayout.vue'
-import { addOutline, pencilOutline, trashOutline } from 'ionicons/icons'
+import { pencilOutline, trashOutline } from 'ionicons/icons'
 import { usePrincipalStore } from '@/stores/principal'
 import {
   getMyCollectiveRolesEventV1MeCollectivesCollectiveIdRolesGet,

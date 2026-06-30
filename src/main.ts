@@ -35,9 +35,20 @@ import '@ionic/vue/css/palettes/dark.class.css';
 /* Theme variables */
 import './theme/variables.css';
 
+// Согласуем анимации переходов Ionic с пользовательской настройкой ещё до
+// инициализации: 'off' (или системное reduced-motion при 'auto') отключает их.
+function resolveAnimated(): boolean {
+  try {
+    const mode = JSON.parse(localStorage.getItem('animations') ?? '"auto"')
+    if (mode === 'on') return true
+    if (mode === 'off') return false
+  } catch { /* ignore */ }
+  return !(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false)
+}
+
 const pinia = createPinia()
 const app = createApp(App)
-  .use(IonicVue)
+  .use(IonicVue, { animated: resolveAnimated() })
   .use(pinia)
   .use(router);
 

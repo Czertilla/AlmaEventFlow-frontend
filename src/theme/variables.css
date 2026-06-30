@@ -240,7 +240,31 @@ ion-tab-bar {
   border-radius: 3px;
 }
 
+/* Резервируем место под вертикальный скроллбар у всех прокручиваемых областей,
+   чтобы его появление/исчезновение (смена раздела, догрузка данных, короткий
+   контент во время загрузки) не сдвигало по горизонтали центрированные layout'ы.
+   Глобально, т.к. Vue некорректно компилирует ::part() в scoped-стилях. */
+ion-content::part(scroll) {
+  scrollbar-gutter: stable;
+}
+
 /* Transitions */
 ion-router-outlet {
   --page-transition-duration: 300ms;
+}
+
+/* Ручное/автоматическое отключение анимаций (производительность, энергосбережение).
+   Класс вешается на <html> из settings store. Гасим CSS-переходы и анимации,
+   а также схлопываем длительность переходов страниц Ionic. */
+.no-animations *,
+.no-animations *::before,
+.no-animations *::after {
+  transition-duration: 0s !important;
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+  transition-delay: 0s !important;
+}
+
+.no-animations ion-router-outlet {
+  --page-transition-duration: 0ms;
 }
