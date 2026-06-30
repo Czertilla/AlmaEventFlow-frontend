@@ -1172,6 +1172,16 @@ export interface UserUpdate {
   is_superuser?: boolean | null;
   is_verified?: boolean | null;
   username: string;
+  current_password?: string | null;
+}
+
+export interface SessionRead {
+  id: string;
+  device_info?: string | null;
+  ip_address?: string | null;
+  created_at: string;
+  last_used_at: string;
+  is_current?: boolean;
 }
 
 export type CalendarSubscriptionTypeEnum = typeof CalendarSubscriptionTypeEnum[keyof typeof CalendarSubscriptionTypeEnum];
@@ -3942,6 +3952,39 @@ export const usersPatchCurrentUserUserV1UsersMePatch = (
     return axios.patch(
       `/user/v1/users/me`,
       userUpdate,options
+    );
+  }
+
+/**
+ * @summary List My Sessions
+ */
+export const listMySessionsUserV1UsersMeSessionsGet = (
+     options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<SessionRead[]>> => {
+    return axios.get(
+      `/user/v1/users/me/sessions`,options
+    );
+  }
+
+/**
+ * @summary Revoke Other Sessions
+ */
+export const revokeOtherSessionsUserV1UsersMeSessionsDelete = (
+     options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<void>> => {
+    return axios.delete(
+      `/user/v1/users/me/sessions`,options
+    );
+  }
+
+/**
+ * @summary Revoke Session
+ */
+export const revokeSessionUserV1UsersMeSessionsSessionIdDelete = (
+    sessionId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<void>> => {
+    return axios.delete(
+      `/user/v1/users/me/sessions/${sessionId}`,options
     );
   }
 
