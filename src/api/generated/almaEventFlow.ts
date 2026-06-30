@@ -1331,6 +1331,7 @@ limit?: number;
 export type GetParticipationsEventV1ParticipationsGetParams = {
 order_by?: string | null;
 collective_id?: string | null;
+collective_id__in?: string | null;
 event_id__in?: string | null;
 page?: number;
 /**

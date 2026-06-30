@@ -2,7 +2,7 @@
     "openapi": "3.1.0",
     "info": {
         "title": "Alma Event Flow",
-        "version": "0.1.4-beta"
+        "version": "0.2.1-beta"
     },
     "paths": {
         "/event/v1/attendances": {
@@ -66,6 +66,22 @@
                                 }
                             ],
                             "title": "Participation Id"
+                        }
+                    },
+                    {
+                        "name": "participation_id__in",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Participation Id  In"
                         }
                     },
                     {
@@ -927,6 +943,22 @@
                                 }
                             ],
                             "title": "Participant Id"
+                        }
+                    },
+                    {
+                        "name": "participant_id__in",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Participant Id  In"
                         }
                     },
                     {
@@ -2449,6 +2481,79 @@
                 ]
             }
         },
+        "/event/v1/me/members": {
+            "get": {
+                "tags": [
+                    "me"
+                ],
+                "summary": "Get My Members",
+                "description": "Членства текущего пользователя во всех коллективах (для роли участника).",
+                "operationId": "get_my_members_event_v1_me_members_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/MemberRead"
+                                    },
+                                    "type": "array",
+                                    "title": "Response Get My Members Event V1 Me Members Get"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
         "/event/v1/me/collectives/{collective_id}/members": {
             "get": {
                 "tags": [
@@ -3400,6 +3505,104 @@
                                 "schema": {
                                     "$ref": "#/components/schemas/ParticipationRead"
                                 }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/event/v1/me/collectives/{collective_id}/participations/{event_id}": {
+            "delete": {
+                "tags": [
+                    "me"
+                ],
+                "summary": "Cancel My Collective Participation",
+                "operationId": "cancel_my_collective_participation_event_v1_me_collectives__collective_id__participations__event_id__delete",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "collective_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Collective Id"
+                        }
+                    },
+                    {
+                        "name": "event_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Event Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
                             }
                         }
                     },
@@ -5542,6 +5745,22 @@
                                 }
                             ],
                             "title": "Collective Id"
+                        }
+                    },
+                    {
+                        "name": "collective_id__in",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Collective Id  In"
                         }
                     },
                     {
@@ -8477,6 +8696,462 @@
                 }
             }
         },
+        "/event/v2/calendar/available-feeds": {
+            "get": {
+                "tags": [
+                    "calendar"
+                ],
+                "summary": "Get Available Feeds",
+                "operationId": "get_available_feeds_event_v2_calendar_available_feeds_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AvailableFeeds"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/event/v2/calendar/subscriptions": {
+            "get": {
+                "tags": [
+                    "calendar"
+                ],
+                "summary": "List Subscriptions",
+                "operationId": "list_subscriptions_event_v2_calendar_subscriptions_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/SubscriptionRead"
+                                    },
+                                    "type": "array",
+                                    "title": "Response List Subscriptions Event V2 Calendar Subscriptions Get"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "calendar"
+                ],
+                "summary": "Create Subscription",
+                "operationId": "create_subscription_event_v2_calendar_subscriptions_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SubscriptionCreate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SubscriptionCreated"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/event/v2/calendar/subscriptions/{subscription_id}/rotate-token": {
+            "post": {
+                "tags": [
+                    "calendar"
+                ],
+                "summary": "Rotate Subscription Token",
+                "operationId": "rotate_subscription_token_event_v2_calendar_subscriptions__subscription_id__rotate_token_post",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "subscription_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Subscription Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SubscriptionCreated"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/event/v2/calendar/subscriptions/{subscription_id}": {
+            "delete": {
+                "tags": [
+                    "calendar"
+                ],
+                "summary": "Delete Subscription",
+                "operationId": "delete_subscription_event_v2_calendar_subscriptions__subscription_id__delete",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "subscription_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Subscription Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Successful Response"
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/event/v2/calendar/feed/{token}.ics": {
+            "get": {
+                "tags": [
+                    "calendar"
+                ],
+                "summary": "Get Calendar Feed",
+                "description": "Public ICS feed — no Authorization header (external calendar clients\nsubscribe by URL only). Security relies on the unguessable token.",
+                "operationId": "get_calendar_feed_event_v2_calendar_feed__token__ics_get",
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Token"
+                        }
+                    },
+                    {
+                        "name": "if-none-match",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "If-None-Match"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/geo/v1/addresses": {
             "get": {
                 "tags": [
@@ -9834,6 +10509,677 @@
                         }
                     }
                 }
+            }
+        },
+        "/notify/v1/clients/my": {
+            "get": {
+                "tags": [
+                    "notify"
+                ],
+                "summary": "List My Clients",
+                "operationId": "list_my_clients_notify_v1_clients_my_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/ClientRead"
+                                    },
+                                    "type": "array",
+                                    "title": "Response List My Clients Notify V1 Clients My Get"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "notify"
+                ],
+                "summary": "Register My Client",
+                "description": "Registers a delivery endpoint (e.g. a browser web-push subscription).",
+                "operationId": "register_my_client_notify_v1_clients_my_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ClientCreate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ClientRead"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "WEBPUSH_CLIENT_INVALID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "WEBPUSH_CLIENT_INVALID": {
+                                        "summary": "WEBPUSH_CLIENT_INVALID",
+                                        "value": {
+                                            "detail": "WEBPUSH_CLIENT_INVALID"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/notify/v1/clients/my/{client_id}": {
+            "delete": {
+                "tags": [
+                    "notify"
+                ],
+                "summary": "Delete My Client",
+                "operationId": "delete_my_client_notify_v1_clients_my__client_id__delete",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "client_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Client Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "NOTIFY_CLIENT_NOT_FOUND",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOTIFY_CLIENT_NOT_FOUND": {
+                                        "summary": "NOTIFY_CLIENT_NOT_FOUND",
+                                        "value": {
+                                            "detail": "NOTIFY_CLIENT_NOT_FOUND"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/notify/v1/preferences/my": {
+            "get": {
+                "tags": [
+                    "notify"
+                ],
+                "summary": "Get My Preferences",
+                "operationId": "get_my_preferences_notify_v1_preferences_my_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PreferencesRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "notify"
+                ],
+                "summary": "Set My Preferences",
+                "description": "Full replace of preferences. Email is forced on (guaranteed transport).",
+                "operationId": "set_my_preferences_notify_v1_preferences_my_put",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PreferencesUpdate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PreferencesRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/notify/v1/test": {
+            "post": {
+                "tags": [
+                    "notify"
+                ],
+                "summary": "Send Test Notification",
+                "description": "Sends a test notification to the current user via all enabled transports.",
+                "operationId": "send_test_notification_notify_v1_test_post",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    },
+                                    "type": "object",
+                                    "title": "Response Send Test Notification Notify V1 Test Post"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/notify/v1/transports": {
+            "get": {
+                "tags": [
+                    "notify"
+                ],
+                "summary": "List Transports",
+                "description": "Available transports with metadata for the control panel.",
+                "operationId": "list_transports_notify_v1_transports_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/TransportInfo"
+                                    },
+                                    "type": "array",
+                                    "title": "Response List Transports Notify V1 Transports Get"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/notify/v1/webpush/vapid-public-key": {
+            "get": {
+                "tags": [
+                    "notify"
+                ],
+                "summary": "Get Vapid Public Key",
+                "description": "``applicationServerKey`` for ``PushManager.subscribe`` in the browser,\nderived from the VAPID public key.",
+                "operationId": "get_vapid_public_key_notify_v1_webpush_vapid_public_key_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VapidPublicKey"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "WEBPUSH_NOT_CONFIGURED",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "WEBPUSH_NOT_CONFIGURED": {
+                                        "summary": "WEBPUSH_NOT_CONFIGURED",
+                                        "value": {
+                                            "detail": "WEBPUSH_NOT_CONFIGURED"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
             }
         },
         "/org/v1/collectives": {
@@ -12592,6 +13938,23 @@
                         }
                     },
                     {
+                        "name": "person_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Person Id"
+                        }
+                    },
+                    {
                         "name": "page",
                         "in": "query",
                         "required": false,
@@ -13140,6 +14503,262 @@
                 }
             }
         },
+        "/profile/v1/contacts": {
+            "get": {
+                "tags": [
+                    "contact"
+                ],
+                "summary": "Get Contacts",
+                "operationId": "get_contacts_profile_v1_contacts_get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "order_by",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "default": "type,value",
+                            "title": "Order By"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Search"
+                        }
+                    },
+                    {
+                        "name": "person_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Person Id"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 0,
+                            "title": "Page"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
+                            "exclusiveMinimum": 0,
+                            "default": 10,
+                            "title": "Limit"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SPage_ContactItemRead_"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "contact"
+                ],
+                "summary": "Create Contact",
+                "operationId": "create_contact_profile_v1_contacts_post",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ContactCreate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ContactRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "CONTACT_NOT_FOUND",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "CONTACT_NOT_FOUND": {
+                                        "summary": "CONTACT_NOT_FOUND",
+                                        "value": {
+                                            "detail": "CONTACT_NOT_FOUND"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/profile/v1/contacts/{id}": {
             "get": {
                 "tags": [
@@ -13649,112 +15268,6 @@
                         }
                     }
                 }
-            }
-        },
-        "/profile/v1/contacts": {
-            "post": {
-                "tags": [
-                    "contact"
-                ],
-                "summary": "Create Contact",
-                "operationId": "create_contact_profile_v1_contacts_post",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/ContactCreate"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ContactRead"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Missing or invalid authentication token",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "NOT_AUTHENTICATED": {
-                                        "summary": "Missing or invalid authentication token",
-                                        "value": {
-                                            "detail": "NOT_AUTHENTICATED"
-                                        }
-                                    },
-                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
-                                        "summary": "Token decode failed",
-                                        "value": {
-                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Insufficient permissions",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "FORBIDDEN": {
-                                        "summary": "Not superuser or not verified",
-                                        "value": {
-                                            "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "CONTACT_NOT_FOUND",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "CONTACT_NOT_FOUND": {
-                                        "summary": "CONTACT_NOT_FOUND",
-                                        "value": {
-                                            "detail": "CONTACT_NOT_FOUND"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "HTTPBearer": []
-                    }
-                ]
             }
         },
         "/profile/v1/diets": {
@@ -14469,6 +15982,23 @@
                         }
                     },
                     {
+                        "name": "profile_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Profile Id"
+                        }
+                    },
+                    {
                         "name": "page",
                         "in": "query",
                         "required": false,
@@ -14972,6 +16502,158 @@
                                 },
                                 "schema": {
                                     "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/v1/passports": {
+            "get": {
+                "tags": [
+                    "passport"
+                ],
+                "summary": "Get Passports",
+                "operationId": "get_passports_profile_v1_passports_get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "order_by",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "default": "expire_date",
+                            "title": "Order By"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Search"
+                        }
+                    },
+                    {
+                        "name": "profile_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Profile Id"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 0,
+                            "title": "Page"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
+                            "exclusiveMinimum": 0,
+                            "default": 10,
+                            "title": "Limit"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SPage_PassportItemRead_"
                                 }
                             }
                         }
@@ -16901,8 +18583,15 @@
                         "in": "path",
                         "required": true,
                         "schema": {
-                            "type": "string",
-                            "format": "uuid",
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
                             "title": "Person Id"
                         }
                     },
@@ -18087,6 +19776,276 @@
                 }
             }
         },
+        "/profile/v1/students": {
+            "get": {
+                "tags": [
+                    "student"
+                ],
+                "summary": "Get Students",
+                "operationId": "get_students_profile_v1_students_get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "order_by",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "default": "student_id",
+                            "title": "Order By"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Search"
+                        }
+                    },
+                    {
+                        "name": "group_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Group Id"
+                        }
+                    },
+                    {
+                        "name": "faculty_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Faculty Id"
+                        }
+                    },
+                    {
+                        "name": "is_active",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "boolean"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Is Active"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 0,
+                            "title": "Page"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
+                            "exclusiveMinimum": 0,
+                            "default": 10,
+                            "title": "Limit"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SPage_StudentRead_"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "student"
+                ],
+                "summary": "Create Student",
+                "operationId": "create_student_profile_v1_students_post",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StudentCreate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StudentRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/profile/v1/students/{student_id}": {
             "get": {
                 "tags": [
@@ -18531,30 +20490,84 @@
                 }
             }
         },
-        "/profile/v1/students": {
-            "post": {
+        "/profile/v1/students/degrees": {
+            "get": {
                 "tags": [
-                    "student"
+                    "student",
+                    "student",
+                    "degree"
                 ],
-                "summary": "Create Student",
-                "operationId": "create_student_profile_v1_students_post",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/StudentCreate"
-                            }
+                "summary": "Get Student Degrees",
+                "operationId": "get_student_degrees_profile_v1_students_degrees_get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "order_by",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "default": "name",
+                            "title": "Order By"
                         }
                     },
-                    "required": true
-                },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Search"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 0,
+                            "title": "Page"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
+                            "exclusiveMinimum": 0,
+                            "default": 10,
+                            "title": "Limit"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Successful Response",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/StudentRead"
+                                    "$ref": "#/components/schemas/SPage_StudentDegreeRead_"
                                 }
                             }
                         }
@@ -18563,9 +20576,6 @@
                         "description": "Missing or invalid authentication token",
                         "content": {
                             "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
                                 "examples": {
                                     "NOT_AUTHENTICATED": {
                                         "summary": "Missing or invalid authentication token",
@@ -18579,6 +20589,9 @@
                                             "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
                                         }
                                     }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
                                 }
                             }
                         }
@@ -18587,9 +20600,6 @@
                         "description": "Insufficient permissions",
                         "content": {
                             "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
                                 "examples": {
                                     "FORBIDDEN": {
                                         "summary": "Not superuser or not verified",
@@ -18597,6 +20607,9 @@
                                             "detail": "FORBIDDEN"
                                         }
                                     }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
                                 }
                             }
                         }
@@ -18611,12 +20624,95 @@
                             }
                         }
                     }
-                },
+                }
+            },
+            "post": {
+                "tags": [
+                    "student",
+                    "student",
+                    "degree"
+                ],
+                "summary": "Create Student Degree",
+                "operationId": "create_student_degree_profile_v1_students_degrees_post",
                 "security": [
                     {
                         "HTTPBearer": []
                     }
-                ]
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StudentDegreeCreate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StudentDegreeRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/profile/v1/students/degrees/{degree_id}": {
@@ -19071,32 +21167,133 @@
                 }
             }
         },
-        "/profile/v1/students/degrees": {
-            "post": {
+        "/profile/v1/students/groups": {
+            "get": {
                 "tags": [
                     "student",
                     "student",
-                    "degree"
+                    "group"
                 ],
-                "summary": "Create Student Degree",
-                "operationId": "create_student_degree_profile_v1_students_degrees_post",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/StudentDegreeCreate"
-                            }
+                "summary": "Get Student Groups",
+                "operationId": "get_student_groups_profile_v1_students_groups_get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "order_by",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "default": "name",
+                            "title": "Order By"
                         }
                     },
-                    "required": true
-                },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Search"
+                        }
+                    },
+                    {
+                        "name": "degree_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Degree Id"
+                        }
+                    },
+                    {
+                        "name": "faculty_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Faculty Id"
+                        }
+                    },
+                    {
+                        "name": "grade",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Grade"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 0,
+                            "title": "Page"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
+                            "exclusiveMinimum": 0,
+                            "default": 10,
+                            "title": "Limit"
+                        }
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Successful Response",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/StudentDegreeRead"
+                                    "$ref": "#/components/schemas/SPage_StudentGroupRead_"
                                 }
                             }
                         }
@@ -19105,9 +21302,6 @@
                         "description": "Missing or invalid authentication token",
                         "content": {
                             "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
                                 "examples": {
                                     "NOT_AUTHENTICATED": {
                                         "summary": "Missing or invalid authentication token",
@@ -19121,6 +21315,9 @@
                                             "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
                                         }
                                     }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
                                 }
                             }
                         }
@@ -19129,9 +21326,6 @@
                         "description": "Insufficient permissions",
                         "content": {
                             "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
                                 "examples": {
                                     "FORBIDDEN": {
                                         "summary": "Not superuser or not verified",
@@ -19139,6 +21333,9 @@
                                             "detail": "FORBIDDEN"
                                         }
                                     }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
                                 }
                             }
                         }
@@ -19153,12 +21350,95 @@
                             }
                         }
                     }
-                },
+                }
+            },
+            "post": {
+                "tags": [
+                    "student",
+                    "student",
+                    "group"
+                ],
+                "summary": "Create Student Group",
+                "operationId": "create_student_group_profile_v1_students_groups_post",
                 "security": [
                     {
                         "HTTPBearer": []
                     }
-                ]
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StudentGroupCreate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StudentGroupRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/profile/v1/students/groups/{group_id}": {
@@ -19611,96 +21891,6 @@
                         }
                     }
                 }
-            }
-        },
-        "/profile/v1/students/groups": {
-            "post": {
-                "tags": [
-                    "student",
-                    "student",
-                    "group"
-                ],
-                "summary": "Create Student Group",
-                "operationId": "create_student_group_profile_v1_students_groups_post",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/StudentGroupCreate"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/StudentGroupRead"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Missing or invalid authentication token",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "NOT_AUTHENTICATED": {
-                                        "summary": "Missing or invalid authentication token",
-                                        "value": {
-                                            "detail": "NOT_AUTHENTICATED"
-                                        }
-                                    },
-                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
-                                        "summary": "Token decode failed",
-                                        "value": {
-                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Insufficient permissions",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "FORBIDDEN": {
-                                        "summary": "Not superuser or not verified",
-                                        "value": {
-                                            "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "HTTPBearer": []
-                    }
-                ]
             }
         },
         "/user/v1/auth/jwt/login": {
@@ -20795,6 +22985,226 @@
                 }
             }
         },
+        "/user/v1/users/me/sessions": {
+            "get": {
+                "tags": [
+                    "sessions",
+                    "sessions"
+                ],
+                "summary": "List My Sessions",
+                "description": "Lists the current user's active sessions, flagging the one in use.",
+                "operationId": "list_my_sessions_user_v1_users_me_sessions_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/SessionRead"
+                                    },
+                                    "type": "array",
+                                    "title": "Response List My Sessions User V1 Users Me Sessions Get"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "sessions",
+                    "sessions"
+                ],
+                "summary": "Revoke Other Sessions",
+                "description": "Revokes every session of the current user except the one in use.",
+                "operationId": "revoke_other_sessions_user_v1_users_me_sessions_delete",
+                "responses": {
+                    "204": {
+                        "description": "Successful Response"
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/user/v1/users/me/sessions/{session_id}": {
+            "delete": {
+                "tags": [
+                    "sessions",
+                    "sessions"
+                ],
+                "summary": "Revoke Session",
+                "description": "Revokes a single session owned by the current user.",
+                "operationId": "revoke_session_user_v1_users_me_sessions__session_id__delete",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "session_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Session Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "Successful Response"
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/user/v1/users/check/{username}": {
             "get": {
                 "tags": [
@@ -21011,612 +23421,6 @@
                         "HTTPBearer": []
                     }
                 ]
-            }
-        },
-        "/asyncapi": {
-            "get": {
-                "tags": [
-                    "asyncapi"
-                ],
-                "summary": "Serve Asyncapi Schema",
-                "description": "Serve the AsyncAPI schema as an HTML response.",
-                "operationId": "serve_asyncapi_schema_asyncapi_get",
-                "parameters": [
-                    {
-                        "name": "sidebar",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean",
-                            "default": true,
-                            "title": "Sidebar"
-                        }
-                    },
-                    {
-                        "name": "info",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean",
-                            "default": true,
-                            "title": "Info"
-                        }
-                    },
-                    {
-                        "name": "servers",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean",
-                            "default": true,
-                            "title": "Servers"
-                        }
-                    },
-                    {
-                        "name": "operations",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean",
-                            "default": true,
-                            "title": "Operations"
-                        }
-                    },
-                    {
-                        "name": "messages",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean",
-                            "default": true,
-                            "title": "Messages"
-                        }
-                    },
-                    {
-                        "name": "schemas",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean",
-                            "default": true,
-                            "title": "Schemas"
-                        }
-                    },
-                    {
-                        "name": "errors",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean",
-                            "default": true,
-                            "title": "Errors"
-                        }
-                    },
-                    {
-                        "name": "expandMessageExamples",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "type": "boolean",
-                            "default": true,
-                            "title": "Expandmessageexamples"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {}
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/asyncapi.json": {
-            "get": {
-                "tags": [
-                    "asyncapi"
-                ],
-                "summary": "Download App Json Schema",
-                "operationId": "download_app_json_schema_asyncapi_json_get",
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {}
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/asyncapi.yaml": {
-            "get": {
-                "tags": [
-                    "asyncapi"
-                ],
-                "summary": "Download App Yaml Schema",
-                "operationId": "download_app_yaml_schema_asyncapi_yaml_get",
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {}
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/event/v2/calendar/available-feeds": {
-            "get": {
-                "tags": [
-                    "calendar"
-                ],
-                "summary": "Get Available Feeds",
-                "operationId": "get_available_feeds_event_v2_calendar_available_feeds_get",
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/AvailableFeeds"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Missing or invalid authentication token",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "NOT_AUTHENTICATED": {
-                                        "summary": "Missing or invalid authentication token",
-                                        "value": {
-                                            "detail": "NOT_AUTHENTICATED"
-                                        }
-                                    },
-                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
-                                        "summary": "Token decode failed",
-                                        "value": {
-                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Insufficient permissions",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "FORBIDDEN": {
-                                        "summary": "Not superuser or not verified",
-                                        "value": {
-                                            "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "HTTPBearer": []
-                    }
-                ]
-            }
-        },
-        "/event/v2/calendar/subscriptions": {
-            "get": {
-                "tags": [
-                    "calendar"
-                ],
-                "summary": "List Subscriptions",
-                "operationId": "list_subscriptions_event_v2_calendar_subscriptions_get",
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "items": {
-                                        "$ref": "#/components/schemas/SubscriptionRead"
-                                    },
-                                    "type": "array",
-                                    "title": "Response List Subscriptions Event V2 Calendar Subscriptions Get"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Missing or invalid authentication token",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "NOT_AUTHENTICATED": {
-                                        "summary": "Missing or invalid authentication token",
-                                        "value": {
-                                            "detail": "NOT_AUTHENTICATED"
-                                        }
-                                    },
-                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
-                                        "summary": "Token decode failed",
-                                        "value": {
-                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Insufficient permissions",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "FORBIDDEN": {
-                                        "summary": "Not superuser or not verified",
-                                        "value": {
-                                            "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "HTTPBearer": []
-                    }
-                ]
-            },
-            "post": {
-                "tags": [
-                    "calendar"
-                ],
-                "summary": "Create Subscription",
-                "operationId": "create_subscription_event_v2_calendar_subscriptions_post",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/SubscriptionCreate"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/SubscriptionCreated"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Missing or invalid authentication token",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "NOT_AUTHENTICATED": {
-                                        "summary": "Missing or invalid authentication token",
-                                        "value": {
-                                            "detail": "NOT_AUTHENTICATED"
-                                        }
-                                    },
-                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
-                                        "summary": "Token decode failed",
-                                        "value": {
-                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Insufficient permissions",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "FORBIDDEN": {
-                                        "summary": "Not superuser or not verified",
-                                        "value": {
-                                            "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "HTTPBearer": []
-                    }
-                ]
-            }
-        },
-        "/event/v2/calendar/subscriptions/{subscription_id}/rotate-token": {
-            "post": {
-                "tags": [
-                    "calendar"
-                ],
-                "summary": "Rotate Subscription Token",
-                "operationId": "rotate_subscription_token_event_v2_calendar_subscriptions__subscription_id__rotate_token_post",
-                "security": [
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "subscription_id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid",
-                            "title": "Subscription Id"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/SubscriptionCreated"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Missing or invalid authentication token",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "NOT_AUTHENTICATED": {
-                                        "summary": "Missing or invalid authentication token",
-                                        "value": {
-                                            "detail": "NOT_AUTHENTICATED"
-                                        }
-                                    },
-                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
-                                        "summary": "Token decode failed",
-                                        "value": {
-                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Insufficient permissions",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "FORBIDDEN": {
-                                        "summary": "Not superuser or not verified",
-                                        "value": {
-                                            "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/event/v2/calendar/subscriptions/{subscription_id}": {
-            "delete": {
-                "tags": [
-                    "calendar"
-                ],
-                "summary": "Delete Subscription",
-                "operationId": "delete_subscription_event_v2_calendar_subscriptions__subscription_id__delete",
-                "security": [
-                    {
-                        "HTTPBearer": []
-                    }
-                ],
-                "parameters": [
-                    {
-                        "name": "subscription_id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid",
-                            "title": "Subscription Id"
-                        }
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "Successful Response"
-                    },
-                    "401": {
-                        "description": "Missing or invalid authentication token",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "NOT_AUTHENTICATED": {
-                                        "summary": "Missing or invalid authentication token",
-                                        "value": {
-                                            "detail": "NOT_AUTHENTICATED"
-                                        }
-                                    },
-                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
-                                        "summary": "Token decode failed",
-                                        "value": {
-                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Insufficient permissions",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "FORBIDDEN": {
-                                        "summary": "Not superuser or not verified",
-                                        "value": {
-                                            "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/event/v2/calendar/feed/{token}.ics": {
-            "get": {
-                "tags": [
-                    "calendar"
-                ],
-                "summary": "Get Calendar Feed",
-                "description": "Public ICS feed — no Authorization header (external calendar clients\nsubscribe by URL only). Security relies on the unguessable token.",
-                "operationId": "get_calendar_feed_event_v2_calendar_feed__token__ics_get",
-                "parameters": [
-                    {
-                        "name": "token",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "title": "Token"
-                        }
-                    },
-                    {
-                        "name": "if-none-match",
-                        "in": "header",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "If-None-Match"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {}
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
             }
         }
     },
@@ -22171,6 +23975,38 @@
                 ],
                 "title": "AttendanceRead"
             },
+            "AvailableFeeds": {
+                "properties": {
+                    "personal": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/FeedDescriptor"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "member_collectives": {
+                        "items": {
+                            "$ref": "#/components/schemas/FeedDescriptor"
+                        },
+                        "type": "array",
+                        "title": "Member Collectives",
+                        "default": []
+                    },
+                    "principal_collectives": {
+                        "items": {
+                            "$ref": "#/components/schemas/FeedDescriptor"
+                        },
+                        "type": "array",
+                        "title": "Principal Collectives",
+                        "default": []
+                    }
+                },
+                "type": "object",
+                "title": "AvailableFeeds"
+            },
             "Body_create_reward_event_v1_rewards_post": {
                 "properties": {
                     "file": {
@@ -22321,6 +24157,15 @@
                 ],
                 "title": "Body_verify_verify_user_v1_auth_verify_post"
             },
+            "CalendarSubscriptionTypeEnum": {
+                "type": "string",
+                "enum": [
+                    "personal_all",
+                    "personal_collective",
+                    "principal_collective"
+                ],
+                "title": "CalendarSubscriptionTypeEnum"
+            },
             "CheckResponse": {
                 "properties": {
                     "username": {
@@ -22339,6 +24184,89 @@
                     "exists"
                 ],
                 "title": "CheckResponse"
+            },
+            "ClientCreate": {
+                "properties": {
+                    "transport": {
+                        "$ref": "#/components/schemas/TransportTypeEnum",
+                        "default": "webpush"
+                    },
+                    "endpoint": {
+                        "type": "string",
+                        "maxLength": 512,
+                        "title": "Endpoint"
+                    },
+                    "label": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 256
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Label"
+                    },
+                    "payload": {
+                        "additionalProperties": {
+                            "type": "string"
+                        },
+                        "type": "object",
+                        "title": "Payload",
+                        "description": "Transport-specific data. Web-push: p256dh, auth."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "endpoint"
+                ],
+                "title": "ClientCreate"
+            },
+            "ClientRead": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "transport": {
+                        "$ref": "#/components/schemas/TransportTypeEnum"
+                    },
+                    "endpoint": {
+                        "type": "string",
+                        "title": "Endpoint"
+                    },
+                    "label": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Label"
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "title": "Is Active"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "transport",
+                    "endpoint",
+                    "is_active",
+                    "created_at"
+                ],
+                "title": "ClientRead"
             },
             "CollectiveCreate": {
                 "properties": {
@@ -23656,6 +25584,35 @@
                 ],
                 "title": "FacultyRead"
             },
+            "FeedDescriptor": {
+                "properties": {
+                    "type": {
+                        "$ref": "#/components/schemas/CalendarSubscriptionTypeEnum"
+                    },
+                    "title": {
+                        "type": "string",
+                        "title": "Title"
+                    },
+                    "collective_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Collective Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type",
+                    "title"
+                ],
+                "title": "FeedDescriptor"
+            },
             "HTTPValidationError": {
                 "properties": {
                     "detail": {
@@ -24032,7 +25989,7 @@
                             }
                         ],
                         "title": "Is Verified",
-                        "default": true
+                        "default": false
                     },
                     "comment": {
                         "anyOf": [
@@ -24981,6 +26938,17 @@
                         "type": "string",
                         "format": "uuid",
                         "title": "Collective Id"
+                    },
+                    "collective_name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Collective Name"
                     }
                 },
                 "type": "object",
@@ -25540,6 +27508,56 @@
                     "lon"
                 ],
                 "title": "Point"
+            },
+            "PreferenceItem": {
+                "properties": {
+                    "transport": {
+                        "$ref": "#/components/schemas/TransportTypeEnum"
+                    },
+                    "is_enabled": {
+                        "type": "boolean",
+                        "title": "Is Enabled"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "transport",
+                    "is_enabled"
+                ],
+                "title": "PreferenceItem"
+            },
+            "PreferencesRead": {
+                "properties": {
+                    "preferences": {
+                        "items": {
+                            "$ref": "#/components/schemas/PreferenceItem"
+                        },
+                        "type": "array",
+                        "title": "Preferences"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "preferences"
+                ],
+                "title": "PreferencesRead"
+            },
+            "PreferencesUpdate": {
+                "properties": {
+                    "preferences": {
+                        "items": {
+                            "$ref": "#/components/schemas/PreferenceItem"
+                        },
+                        "type": "array",
+                        "minItems": 1,
+                        "title": "Preferences"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "preferences"
+                ],
+                "title": "PreferencesUpdate"
             },
             "ProfileCreate": {
                 "properties": {
@@ -26403,6 +28421,66 @@
                 ],
                 "title": "SPage[StageRead]"
             },
+            "SPage_StudentDegreeRead_": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/StudentDegreeRead"
+                        },
+                        "type": "array",
+                        "title": "Items"
+                    },
+                    "pagination": {
+                        "$ref": "#/components/schemas/SPagination"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "items",
+                    "pagination"
+                ],
+                "title": "SPage[StudentDegreeRead]"
+            },
+            "SPage_StudentGroupRead_": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/StudentGroupRead"
+                        },
+                        "type": "array",
+                        "title": "Items"
+                    },
+                    "pagination": {
+                        "$ref": "#/components/schemas/SPagination"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "items",
+                    "pagination"
+                ],
+                "title": "SPage[StudentGroupRead]"
+            },
+            "SPage_StudentRead_": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/StudentRead"
+                        },
+                        "type": "array",
+                        "title": "Items"
+                    },
+                    "pagination": {
+                        "$ref": "#/components/schemas/SPagination"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "items",
+                    "pagination"
+                ],
+                "title": "SPage[StudentRead]"
+            },
             "SPage_UniversityRead_": {
                 "properties": {
                     "items": {
@@ -26467,6 +28545,62 @@
                     "total"
                 ],
                 "title": "SPagination"
+            },
+            "SessionRead": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "device_info": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Device Info"
+                    },
+                    "ip_address": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Ip Address"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "last_used_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Last Used At"
+                    },
+                    "is_current": {
+                        "type": "boolean",
+                        "title": "Is Current",
+                        "default": false
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "device_info",
+                    "ip_address",
+                    "created_at",
+                    "last_used_at"
+                ],
+                "title": "SessionRead",
+                "description": "A single authenticated session of the current user, as surfaced by the\nself-service session manager. ``is_current`` marks the session bound to the\nrefresh token presented in the request."
             },
             "StageCreate": {
                 "properties": {
@@ -27214,6 +29348,210 @@
                 ],
                 "title": "StudentRead"
             },
+            "SubscriptionCreate": {
+                "properties": {
+                    "type": {
+                        "$ref": "#/components/schemas/CalendarSubscriptionTypeEnum"
+                    },
+                    "collective_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Collective Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type"
+                ],
+                "title": "SubscriptionCreate"
+            },
+            "SubscriptionCreated": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/CalendarSubscriptionTypeEnum"
+                    },
+                    "title": {
+                        "type": "string",
+                        "title": "Title"
+                    },
+                    "collective_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Collective Id"
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "title": "Is Active"
+                    },
+                    "feed_url": {
+                        "type": "string",
+                        "title": "Feed Url"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "last_accessed_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Last Accessed At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "type",
+                    "title",
+                    "collective_id",
+                    "is_active",
+                    "feed_url",
+                    "created_at"
+                ],
+                "title": "SubscriptionCreated",
+                "description": "Returned by create / rotate-token — ``feed_url`` is always present."
+            },
+            "SubscriptionRead": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/CalendarSubscriptionTypeEnum"
+                    },
+                    "title": {
+                        "type": "string",
+                        "title": "Title"
+                    },
+                    "collective_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Collective Id"
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "title": "Is Active"
+                    },
+                    "feed_url": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Feed Url"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "last_accessed_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Last Accessed At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "type",
+                    "title",
+                    "collective_id",
+                    "is_active",
+                    "created_at"
+                ],
+                "title": "SubscriptionRead"
+            },
+            "TransportInfo": {
+                "properties": {
+                    "type": {
+                        "$ref": "#/components/schemas/TransportTypeEnum"
+                    },
+                    "label": {
+                        "type": "string",
+                        "title": "Label"
+                    },
+                    "requires_client": {
+                        "type": "boolean",
+                        "title": "Requires Client"
+                    },
+                    "delegated": {
+                        "type": "boolean",
+                        "title": "Delegated"
+                    },
+                    "available": {
+                        "type": "boolean",
+                        "title": "Available"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type",
+                    "label",
+                    "requires_client",
+                    "delegated",
+                    "available"
+                ],
+                "title": "TransportInfo",
+                "description": "Transport metadata for rendering the control panel."
+            },
+            "TransportTypeEnum": {
+                "type": "string",
+                "enum": [
+                    "email",
+                    "webpush",
+                    "telegram",
+                    "mobile",
+                    "realtime"
+                ],
+                "title": "TransportTypeEnum",
+                "description": "Notification delivery transport. Shared by the notify service, producers\nand the frontend (via OpenAPI)."
+            },
             "UniversityCreate": {
                 "properties": {
                     "name": {
@@ -27614,6 +29952,17 @@
                     "username": {
                         "type": "string",
                         "title": "Username"
+                    },
+                    "current_password": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Current Password"
                     }
                 },
                 "type": "object",
@@ -27661,6 +30010,19 @@
                     "type"
                 ],
                 "title": "ValidationError"
+            },
+            "VapidPublicKey": {
+                "properties": {
+                    "public_key": {
+                        "type": "string",
+                        "title": "Public Key"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "public_key"
+                ],
+                "title": "VapidPublicKey"
             },
             "org__schema__organization__OrganizationRead": {
                 "properties": {
@@ -27754,235 +30116,6 @@
                     "name"
                 ],
                 "title": "OrganizationRead"
-            },
-            "AvailableFeeds": {
-                "properties": {
-                    "personal": {
-                        "anyOf": [
-                            {
-                                "$ref": "#/components/schemas/FeedDescriptor"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ]
-                    },
-                    "member_collectives": {
-                        "items": {
-                            "$ref": "#/components/schemas/FeedDescriptor"
-                        },
-                        "type": "array",
-                        "title": "Member Collectives",
-                        "default": []
-                    },
-                    "principal_collectives": {
-                        "items": {
-                            "$ref": "#/components/schemas/FeedDescriptor"
-                        },
-                        "type": "array",
-                        "title": "Principal Collectives",
-                        "default": []
-                    }
-                },
-                "type": "object",
-                "title": "AvailableFeeds"
-            },
-            "CalendarSubscriptionTypeEnum": {
-                "type": "string",
-                "enum": [
-                    "personal_all",
-                    "personal_collective",
-                    "principal_collective"
-                ],
-                "title": "CalendarSubscriptionTypeEnum"
-            },
-            "FeedDescriptor": {
-                "properties": {
-                    "type": {
-                        "$ref": "#/components/schemas/CalendarSubscriptionTypeEnum"
-                    },
-                    "title": {
-                        "type": "string",
-                        "title": "Title"
-                    },
-                    "collective_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Collective Id"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "type",
-                    "title"
-                ],
-                "title": "FeedDescriptor"
-            },
-            "SubscriptionCreate": {
-                "properties": {
-                    "type": {
-                        "$ref": "#/components/schemas/CalendarSubscriptionTypeEnum"
-                    },
-                    "collective_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Collective Id"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "type"
-                ],
-                "title": "SubscriptionCreate"
-            },
-            "SubscriptionCreated": {
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "title": "Id"
-                    },
-                    "type": {
-                        "$ref": "#/components/schemas/CalendarSubscriptionTypeEnum"
-                    },
-                    "title": {
-                        "type": "string",
-                        "title": "Title"
-                    },
-                    "collective_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Collective Id"
-                    },
-                    "is_active": {
-                        "type": "boolean",
-                        "title": "Is Active"
-                    },
-                    "feed_url": {
-                        "type": "string",
-                        "title": "Feed Url"
-                    },
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At"
-                    },
-                    "last_accessed_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Last Accessed At"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "id",
-                    "type",
-                    "title",
-                    "collective_id",
-                    "is_active",
-                    "feed_url",
-                    "created_at"
-                ],
-                "title": "SubscriptionCreated",
-                "description": "Returned by create / rotate-token — ``feed_url`` is always present."
-            },
-            "SubscriptionRead": {
-                "properties": {
-                    "id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "title": "Id"
-                    },
-                    "type": {
-                        "$ref": "#/components/schemas/CalendarSubscriptionTypeEnum"
-                    },
-                    "title": {
-                        "type": "string",
-                        "title": "Title"
-                    },
-                    "collective_id": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "uuid"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Collective Id"
-                    },
-                    "is_active": {
-                        "type": "boolean",
-                        "title": "Is Active"
-                    },
-                    "feed_url": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Feed Url"
-                    },
-                    "created_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Created At"
-                    },
-                    "last_accessed_at": {
-                        "anyOf": [
-                            {
-                                "type": "string",
-                                "format": "date-time"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Last Accessed At"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "id",
-                    "type",
-                    "title",
-                    "collective_id",
-                    "is_active",
-                    "created_at"
-                ],
-                "title": "SubscriptionRead"
             }
         },
         "securitySchemes": {
