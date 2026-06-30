@@ -158,6 +158,11 @@ const routes: Array<RouteRecordRaw> = [
     meta: { auth: true },
   },
   {
+    path: '/profile/edit',
+    component: () => import('@/views/EditProfilePage.vue'),
+    meta: { auth: true },
+  },
+  {
     path: '/profile/sessions',
     component: () => import('@/views/SessionsPage.vue'),
     meta: { auth: true },

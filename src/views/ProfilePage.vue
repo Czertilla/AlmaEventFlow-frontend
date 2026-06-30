@@ -22,6 +22,16 @@
         </div>
 
         <div class="profile-actions">
+          <router-link to="/profile/edit" class="profile-action">
+            <ion-icon :icon="createOutline" />
+            <span>Редактировать профиль</span>
+            <ion-icon :icon="chevronForwardOutline" class="action-arrow" />
+          </router-link>
+          <router-link to="/profile/sessions" class="profile-action">
+            <ion-icon :icon="shieldCheckmarkOutline" />
+            <span>Активные сеансы</span>
+            <ion-icon :icon="chevronForwardOutline" class="action-arrow" />
+          </router-link>
           <router-link to="/settings" class="profile-action">
             <ion-icon :icon="settingsOutline" />
             <span>Настройки</span>
@@ -46,7 +56,10 @@ import UuidBadge from '@/components/common/UuidBadge.vue'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBackButton, IonIcon,
 } from '@ionic/vue'
-import { settingsOutline, logOutOutline, chevronForwardOutline } from 'ionicons/icons'
+import {
+  settingsOutline, logOutOutline, chevronForwardOutline,
+  createOutline, shieldCheckmarkOutline,
+} from 'ionicons/icons'
 
 const router = useRouter()
 const auth = useAuthStore()
