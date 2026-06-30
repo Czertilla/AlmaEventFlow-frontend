@@ -84,7 +84,7 @@
     <div v-if="error" class="form-error">{{ error }}</div>
 
     <div class="form-actions">
-      <ion-button expand="block" class="save-btn" :disabled="saving" @click="onSave" mode="md">
+      <ion-button expand="block" class="save-btn" :disabled="saving" @click="submit" mode="md">
         <ion-spinner v-if="saving" slot="start" name="crescent" />
         Сохранить
       </ion-button>
@@ -188,7 +188,7 @@ function clearSearch(field: FormField) {
   selectedItem[field.key] = null
 }
 
-async function onSave() {
+async function submit() {
   saving.value = true
   error.value = ''
   try {
