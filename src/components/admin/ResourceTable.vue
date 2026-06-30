@@ -189,14 +189,7 @@
       <ion-infinite-scroll-content loading-spinner="crescent" loading-text="Загрузка..." />
     </ion-infinite-scroll>
 
-    <button
-      v-if="addLabel"
-      class="add-fab"
-      :aria-label="addLabel"
-      @click="$emit('add')"
-    >
-      <ion-icon :icon="addOutline" />
-    </button>
+    <AppFab v-if="addLabel" :icon="addOutline" :aria-label="addLabel" @click="$emit('add')" />
 
     <ion-alert
       :is-open="deleteAlert.open"
@@ -220,6 +213,7 @@ import {
   alertCircleOutline, searchOutline, optionsOutline, closeOutline,
 } from 'ionicons/icons'
 import type { AxiosResponse } from 'axios'
+import AppFab from '@/components/common/AppFab.vue'
 
 export interface ColumnDef {
   key: string
@@ -463,7 +457,7 @@ defineExpose({ loadData: reload })
 
 .rt-search-input:focus {
   border-color: var(--ion-color-primary);
-  box-shadow: 0 0 0 3px rgba(108, 99, 255, 0.12);
+  box-shadow: 0 0 0 3px rgba(var(--ion-color-primary-rgb), 0.12);
 }
 
 .rt-search-clear {
@@ -522,7 +516,7 @@ defineExpose({ loadData: reload })
 .rt-tool-btn--active {
   border-color: var(--ion-color-primary);
   color: var(--ion-color-primary);
-  background: rgba(108, 99, 255, 0.06);
+  background: rgba(var(--ion-color-primary-rgb), 0.06);
 }
 
 .rt-tool-badge {
@@ -583,7 +577,7 @@ defineExpose({ loadData: reload })
 }
 
 .rt-sort-dir:hover {
-  background: rgba(108, 99, 255, 0.1);
+  background: rgba(var(--ion-color-primary-rgb), 0.1);
   color: var(--ion-color-primary);
 }
 
@@ -819,31 +813,6 @@ defineExpose({ loadData: reload })
   border-top: 1px solid var(--ion-color-step-100, #f0f0f0);
 }
 
-/* ── FAB (закреплён над BottomNav) ── */
-.add-fab {
-  position: fixed;
-  right: 16px;
-  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
-  z-index: 90;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 54px;
-  height: 54px;
-  border: none;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
-  color: white;
-  font-size: 26px;
-  cursor: pointer;
-  box-shadow: 0 6px 20px rgba(108, 99, 255, 0.4);
-  transition: transform 0.15s;
-}
-
-.add-fab:active {
-  transform: scale(0.94);
-}
-
 /* ── Responsive ── */
 @media (min-width: 768px) {
   .resource-desktop-table {
@@ -856,10 +825,6 @@ defineExpose({ loadData: reload })
 
   .add-btn-desktop {
     display: flex;
-  }
-
-  .add-fab {
-    display: none;
   }
 }
 </style>

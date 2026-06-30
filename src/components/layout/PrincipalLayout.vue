@@ -56,15 +56,8 @@
       </div>
     </ion-content>
 
-    <!-- Мобильный FAB над BottomNav: вне ion-content, чтобы не скроллился -->
-    <button
-      v-if="addLabel && !isDesktop"
-      class="add-fab"
-      :aria-label="addLabel"
-      @click="$emit('add')"
-    >
-      <ion-icon :icon="addOutline" />
-    </button>
+    <!-- Мобильный FAB — вне ion-content, чтобы не скроллился -->
+    <AppFab v-if="addLabel && !isDesktop" :icon="addOutline" :aria-label="addLabel" @click="$emit('add')" />
   </ion-page>
 </template>
 
@@ -77,6 +70,7 @@ import { peopleOutline, ribbonOutline, calendarOutline, chevronDownOutline, addO
 import { usePrincipalStore } from '@/stores/principal'
 import { usePlatform } from '@/composables/usePlatform'
 import { getCollectiveColor } from '@/utils/colors'
+import AppFab from '@/components/common/AppFab.vue'
 
 defineProps<{
   title: string
@@ -131,16 +125,19 @@ function onCollectiveChange(id: string) {
   display: flex;
   align-items: center;
   gap: 8px;
+  height: 44px;
   padding: 0 12px;
   border: 1.5px solid var(--ion-border-color);
   border-radius: 12px;
   background: var(--ion-card-background);
-  transition: border-color 0.15s;
+  box-shadow: var(--ion-card-shadow);
+  transition: border-color 0.15s, box-shadow 0.15s;
 }
 
 .collective-select:focus-within,
 .collective-select:hover {
   border-color: var(--ion-color-primary);
+  box-shadow: 0 0 0 3px rgba(var(--ion-color-primary-rgb), 0.12);
 }
 
 .collective-select-dot {
@@ -211,7 +208,7 @@ function onCollectiveChange(id: string) {
 }
 
 .principal-tab--active {
-  background: rgba(108, 99, 255, 0.1);
+  background: rgba(var(--ion-color-primary-rgb), 0.1);
   color: var(--ion-color-primary);
 }
 
@@ -237,35 +234,10 @@ function onCollectiveChange(id: string) {
 
 .add-btn-desktop:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(108, 99, 255, 0.3);
+  box-shadow: 0 4px 16px rgba(var(--ion-color-primary-rgb), 0.3);
 }
 
 .add-btn-desktop ion-icon {
   font-size: 17px;
-}
-
-/* Круглая кнопка добавления над BottomNav (абсолютно внутри ion-page) */
-.add-fab {
-  position: absolute;
-  right: 16px;
-  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
-  z-index: 90;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 54px;
-  height: 54px;
-  border: none;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
-  color: white;
-  font-size: 26px;
-  cursor: pointer;
-  box-shadow: 0 6px 20px rgba(108, 99, 255, 0.4);
-  transition: transform 0.15s;
-}
-
-.add-fab:active {
-  transform: scale(0.94);
 }
 </style>
