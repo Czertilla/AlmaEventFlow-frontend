@@ -157,6 +157,11 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('@/views/ProfilePage.vue'),
     meta: { auth: true },
   },
+  {
+    path: '/profile/sessions',
+    component: () => import('@/views/SessionsPage.vue'),
+    meta: { auth: true },
+  },
   // Fallback
   {
     path: '/:pathMatch(.*)*',
