@@ -19,6 +19,16 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('@/views/auth/VerifyPage.vue'),
     meta: { guest: true },
   },
+  {
+    path: '/auth/forgot-password',
+    component: () => import('@/views/auth/ForgotPasswordPage.vue'),
+    meta: { guest: true },
+  },
+  {
+    path: '/auth/reset-password',
+    component: () => import('@/views/auth/ResetPasswordPage.vue'),
+    meta: { guest: true },
+  },
   // Main
   {
     path: '/',

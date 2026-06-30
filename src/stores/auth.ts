@@ -9,6 +9,8 @@ import {
   refreshUserV1AuthJwtRefreshPost,
   usersCurrentUserUserV1UsersMeGet,
   registerRegisterUserV1AuthRegisterPost,
+  resetForgotPasswordUserV1AuthForgotPasswordPost,
+  resetResetPasswordUserV1AuthResetPasswordPost,
 } from '@/api/generated/almaEventFlow'
 import type { UserCreate, UserRead, BodyLoginUserV1AuthJwtLoginPost } from '@/api/generated/almaEventFlow'
 
@@ -71,6 +73,14 @@ export const useAuthStore = defineStore('auth', () => {
     return response.data
   }
 
+  async function forgotPassword(email: string) {
+    await resetForgotPasswordUserV1AuthForgotPasswordPost({ email })
+  }
+
+  async function resetPassword(token: string, password: string) {
+    await resetResetPasswordUserV1AuthResetPasswordPost({ token, password })
+  }
+
   async function logout() {
     try {
       await logoutUserV1AuthJwtLogoutPost()
@@ -91,6 +101,8 @@ export const useAuthStore = defineStore('auth', () => {
     tryRefresh,
     fetchUser,
     register,
+    forgotPassword,
+    resetPassword,
     logout,
     clearAuth,
   }

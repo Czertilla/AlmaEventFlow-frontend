@@ -7,50 +7,50 @@
           <div class="auth-logo">
             <img src="/aef.svg" class="logo-img" alt="Alma Event Flow" />
           </div>
-          <h1>Alma Event Flow</h1>
-          <p class="auth-subtitle">Войдите в свою учётную запись</p>
+          <h1>Восстановление пароля</h1>
+          <p class="auth-subtitle">Укажите email — мы пришлём ссылку для сброса</p>
         </div>
 
         <div class="auth-card">
           <div class="auth-card-inner">
-            <div class="auth-tabs">
-              <span class="auth-tab active">Вход</span>
-              <router-link to="/auth/register" class="auth-tab">Регистрация</router-link>
-            </div>
-
-            <div class="auth-form">
-              <div class="field-group">
-                <label class="field-label">Email</label>
-                <div class="field-input" :class="{ 'field-input--error': error && !username }">
-                  <ion-icon :icon="personOutline" class="field-icon" />
-                  <input v-model="username" type="text" placeholder="Введите email" @keyup.enter="handleLogin" />
+            <Transition name="fade" mode="out-in">
+              <div v-if="sent" key="sent" class="auth-done">
+                <div class="auth-done-icon">
+                  <ion-icon :icon="mailOutline" />
                 </div>
+                <p class="auth-done-text">
+                  Если аккаунт с таким email существует, на него отправлено письмо
+                  со ссылкой для восстановления пароля.
+                </p>
+                <router-link to="/auth/login" class="auth-btn auth-btn--link">
+                  Вернуться ко входу
+                </router-link>
               </div>
 
-              <div class="field-group">
-                <label class="field-label">Пароль</label>
-                <div class="field-input" :class="{ 'field-input--error': error && !password }">
-                  <ion-icon :icon="lockClosedOutline" class="field-icon" />
-                  <input v-model="password" type="password" placeholder="Введите пароль" @keyup.enter="handleLogin" />
+              <div v-else key="form" class="auth-form">
+                <div class="field-group">
+                  <label class="field-label">Email</label>
+                  <div class="field-input" :class="{ 'field-input--error': error && !email }">
+                    <ion-icon :icon="personOutline" class="field-icon" />
+                    <input v-model="email" type="email" placeholder="Введите email" @keyup.enter="handleSubmit" />
+                  </div>
                 </div>
+
+                <Transition name="fade">
+                  <div v-if="error" class="auth-error">
+                    <ion-icon :icon="alertCircleOutline" />
+                    <span>{{ error }}</span>
+                  </div>
+                </Transition>
+
+                <button class="auth-btn" :disabled="loading" @click="handleSubmit">
+                  <span v-if="loading" class="btn-spinner" />
+                  <span v-else>Отправить ссылку</span>
+                </button>
+
+                <router-link to="/auth/login" class="auth-back">Вернуться ко входу</router-link>
               </div>
-
-              <Transition name="fade">
-                <div v-if="error" class="auth-error">
-                  <ion-icon :icon="alertCircleOutline" />
-                  <span>{{ error }}</span>
-                </div>
-              </Transition>
-
-              <button class="auth-btn" :disabled="loading" @click="handleLogin">
-                <span v-if="loading" class="btn-spinner" />
-                <span v-else>Войти</span>
-              </button>
-
-              <router-link to="/auth/forgot-password" class="auth-forgot">
-                Забыли пароль?
-              </router-link>
-            </div>
+            </Transition>
           </div>
         </div>
       </div>
@@ -60,32 +60,37 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { IonPage, IonContent, IonIcon } from '@ionic/vue'
-import { personOutline, lockClosedOutline, alertCircleOutline } from 'ionicons/icons'
+import { IonPage, IonContent, IonIcon, onIonViewDidLeave } from '@ionic/vue'
+import { personOutline, alertCircleOutline, mailOutline } from 'ionicons/icons'
 
-const route = useRoute()
-const router = useRouter()
 const auth = useAuthStore()
 
-const username = ref((route.query.email as string) || '')
-const password = ref('')
+const email = ref('')
 const error = ref('')
 const loading = ref(false)
+const sent = ref(false)
 
-async function handleLogin() {
+// Возврат на страницу должен начинать сценарий заново, а не показывать
+// прежнее состояние «письмо отправлено».
+onIonViewDidLeave(() => {
+  email.value = ''
   error.value = ''
-  if (!username.value || !password.value) {
-    error.value = 'Заполните все поля'
+  sent.value = false
+})
+
+async function handleSubmit() {
+  error.value = ''
+  if (!email.value) {
+    error.value = 'Введите email'
     return
   }
   loading.value = true
   try {
-    await auth.login(username.value, password.value)
-    router.push('/')
+    await auth.forgotPassword(email.value)
+    sent.value = true
   } catch (err: any) {
-    error.value = err?.response?.data?.detail || 'Неверный логин или пароль'
+    error.value = err?.response?.data?.detail || 'Не удалось отправить письмо'
   } finally {
     loading.value = false
   }
@@ -97,7 +102,6 @@ async function handleLogin() {
   --background: transparent;
 }
 
-/* Центрирование формы внутри скролл-области ion-content */
 .auth-page::part(scroll) {
   display: flex;
   align-items: center;
@@ -177,35 +181,6 @@ async function handleLogin() {
 
 .auth-card-inner {
   padding: 24px;
-}
-
-.auth-tabs {
-  display: flex;
-  gap: 24px;
-  margin-bottom: 28px;
-  border-bottom: 1px solid var(--ion-border-color);
-  padding-bottom: 12px;
-}
-
-.auth-tab {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--ion-color-medium);
-  text-decoration: none;
-  padding-bottom: 12px;
-  margin-bottom: -13px;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
-  cursor: pointer;
-}
-
-.auth-tab.active {
-  color: var(--ion-color-primary);
-  border-bottom-color: var(--ion-color-primary);
-}
-
-.auth-tab:hover {
-  color: var(--ion-text-color);
 }
 
 .auth-form {
@@ -298,6 +273,7 @@ async function handleLogin() {
   align-items: center;
   justify-content: center;
   min-height: 48px;
+  text-decoration: none;
 }
 
 .auth-btn:hover:not(:disabled) {
@@ -305,21 +281,48 @@ async function handleLogin() {
   box-shadow: 0 4px 16px rgba(108, 99, 255, 0.3);
 }
 
-.auth-btn:active:not(:disabled) {
-  transform: translateY(0);
-}
-
 .auth-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.auth-forgot {
+.auth-btn--link {
+  box-sizing: border-box;
+}
+
+.auth-back {
   text-align: center;
   font-size: 14px;
   font-weight: 500;
   color: var(--ion-color-primary);
   text-decoration: none;
+}
+
+.auth-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  text-align: center;
+}
+
+.auth-done-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: rgba(108, 99, 255, 0.12);
+  color: var(--ion-color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+}
+
+.auth-done-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ion-color-medium);
 }
 
 .btn-spinner {
