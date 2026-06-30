@@ -9,6 +9,12 @@ export function shortId(id: string): string {
   return id.slice(0, 8)
 }
 
+/** Инициалы для аватара: первые 2 символа имени пользователя (или email). */
+export function getInitials(user: { username?: string | null; email?: string | null } | null | undefined): string {
+  const source = user?.username || user?.email || ''
+  return source.slice(0, 2).toUpperCase()
+}
+
 export function formatPersonName(p: { name: string; surname: string; patronymic?: string | null }): string {
   return [p.surname, p.name, p.patronymic].filter(Boolean).join(' ')
 }

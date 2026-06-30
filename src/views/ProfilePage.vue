@@ -13,7 +13,7 @@
         <h1 v-if="isDesktop" class="page-title">Профиль</h1>
 
         <div class="profile-card">
-          <div class="profile-avatar">{{ initials }}</div>
+          <UserAvatar :user="auth.user" :size="56" />
           <div class="profile-id">
             <span class="profile-name">{{ auth.user?.username || 'Пользователь' }}</span>
             <span class="profile-email">{{ auth.user?.email }}</span>
@@ -48,11 +48,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePlatform } from '@/composables/usePlatform'
 import UuidBadge from '@/components/common/UuidBadge.vue'
+import UserAvatar from '@/components/common/UserAvatar.vue'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBackButton, IonIcon,
 } from '@ionic/vue'
@@ -64,11 +64,6 @@ import {
 const router = useRouter()
 const auth = useAuthStore()
 const { isDesktop } = usePlatform()
-
-const initials = computed(() => {
-  const u = auth.user?.username || auth.user?.email || ''
-  return u.slice(0, 2).toUpperCase()
-})
 
 async function handleLogout() {
   await auth.logout()
@@ -101,20 +96,6 @@ async function handleLogout() {
   border-radius: 16px;
   background: var(--ion-card-background);
   box-shadow: var(--ion-card-shadow);
-}
-
-.profile-avatar {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
-  color: white;
-  font-size: 20px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
 }
 
 .profile-id {
