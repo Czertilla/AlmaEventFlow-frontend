@@ -168,6 +168,6 @@ async function copy() {
 }
 
 .copy-btn:hover {
-  background: rgba(108, 99, 255, 0.08);
+  background: rgba(var(--ion-color-primary-rgb), 0.08);
 }
 </style>

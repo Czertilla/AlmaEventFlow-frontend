@@ -589,7 +589,7 @@ watch(() => principal.activePrincipalCollectiveId, async (collectiveId) => {
 }
 
 .person-option--selected {
-  background: rgba(108, 99, 255, 0.1);
+  background: rgba(var(--ion-color-primary-rgb), 0.1);
   color: var(--ion-color-primary);
   font-weight: 600;
 }
@@ -615,7 +615,7 @@ watch(() => principal.activePrincipalCollectiveId, async (collectiveId) => {
 
 .role-chip--active {
   border-color: var(--ion-color-primary);
-  background: rgba(108, 99, 255, 0.1);
+  background: rgba(var(--ion-color-primary-rgb), 0.1);
   color: var(--ion-color-primary);
 }
 </style>

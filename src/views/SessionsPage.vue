@@ -238,7 +238,7 @@ onMounted(load)
 }
 
 .session-icon--current {
-  background: rgba(108, 99, 255, 0.1);
+  background: rgba(var(--ion-color-primary-rgb), 0.1);
   color: #6C63FF;
 }
 
@@ -265,7 +265,7 @@ onMounted(load)
   text-transform: uppercase;
   letter-spacing: 0.3px;
   color: #6C63FF;
-  background: rgba(108, 99, 255, 0.12);
+  background: rgba(var(--ion-color-primary-rgb), 0.12);
   padding: 2px 8px;
   border-radius: 8px;
 }

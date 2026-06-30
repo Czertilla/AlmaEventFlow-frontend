@@ -129,8 +129,8 @@ function save() {
 }
 
 .comment-chip--filled {
-  background: rgba(108, 99, 255, 0.08);
-  border-color: rgba(108, 99, 255, 0.3);
+  background: rgba(var(--ion-color-primary-rgb), 0.08);
+  border-color: rgba(var(--ion-color-primary-rgb), 0.3);
   color: var(--ion-color-primary);
 }
 
@@ -282,6 +282,6 @@ function save() {
 }
 
 .editor-btn--primary:hover {
-  box-shadow: 0 4px 12px rgba(108, 99, 255, 0.3);
+  box-shadow: 0 4px 12px rgba(var(--ion-color-primary-rgb), 0.3);
 }
 </style>

@@ -196,7 +196,7 @@ function iconFor(type: TransportType) {
 function iconStyle(type: TransportType): Record<string, string> {
   switch (type) {
     case 'email': return { background: 'rgba(0, 217, 166, 0.1)', color: '#00BF92' }
-    case 'webpush': return { background: 'rgba(108, 99, 255, 0.1)', color: '#6C63FF' }
+    case 'webpush': return { background: 'rgba(var(--ion-color-primary-rgb), 0.1)', color: '#6C63FF' }
     default: return { background: 'rgba(255, 184, 0, 0.12)', color: '#D49A00' }
   }
 }
@@ -400,7 +400,7 @@ onMounted(reload)
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.3px;
-  background: rgba(108, 99, 255, 0.12);
+  background: rgba(var(--ion-color-primary-rgb), 0.12);
   color: #6C63FF;
 }
 

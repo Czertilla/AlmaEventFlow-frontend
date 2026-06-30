@@ -188,7 +188,7 @@ function iconFor(type: CalendarSubscriptionTypeEnum) {
 
 function iconStyle(type: CalendarSubscriptionTypeEnum): Record<string, string> {
   if (type === CalendarSubscriptionTypeEnum.personal_all) {
-    return { background: 'rgba(108, 99, 255, 0.1)', color: '#6C63FF' }
+    return { background: 'rgba(var(--ion-color-primary-rgb), 0.1)', color: '#6C63FF' }
   }
   if (type === CalendarSubscriptionTypeEnum.principal_collective) {
     return { background: 'rgba(255, 184, 0, 0.12)', color: '#D49A00' }

@@ -302,7 +302,7 @@ onMounted(async () => {
   background: transparent; font-weight: 600; font-size: 13px; color: var(--ion-color-medium);
   cursor: pointer; font-family: inherit; transition: all 0.15s;
 }
-.tab--active { border-color: var(--ion-color-primary); color: var(--ion-color-primary); background: rgba(108, 99, 255, 0.08); }
+.tab--active { border-color: var(--ion-color-primary); color: var(--ion-color-primary); background: rgba(var(--ion-color-primary-rgb), 0.08); }
 .card {
   display: flex; flex-direction: column; gap: 14px; padding: 18px;
   background: var(--ion-card-background); border-radius: 16px; box-shadow: var(--ion-card-shadow);

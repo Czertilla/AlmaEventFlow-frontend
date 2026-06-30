@@ -15,7 +15,7 @@
           <h3 class="settings-section-title">Внешний вид</h3>
           <div class="settings-card">
             <div class="settings-row">
-              <div class="settings-row-icon" style="background: rgba(108, 99, 255, 0.1); color: #6C63FF;">
+              <div class="settings-row-icon" style="background: rgba(var(--ion-color-primary-rgb), 0.1); color: #6C63FF;">
                 <ion-icon :icon="moonOutline" />
               </div>
               <div class="settings-row-text">
@@ -90,7 +90,7 @@
           <h3 class="settings-section-title">Уведомления</h3>
           <div class="settings-card">
             <button class="settings-row settings-row--link" @click="router.push('/notifications')">
-              <div class="settings-row-icon" style="background: rgba(108, 99, 255, 0.1); color: #6C63FF;">
+              <div class="settings-row-icon" style="background: rgba(var(--ion-color-primary-rgb), 0.1); color: #6C63FF;">
                 <ion-icon :icon="notificationsOutline" />
               </div>
               <div class="settings-row-text">
@@ -106,7 +106,7 @@
           <h3 class="settings-section-title">Календарь</h3>
           <div class="settings-card">
             <button class="settings-row settings-row--link" @click="router.push('/calendar-subscriptions')">
-              <div class="settings-row-icon" style="background: rgba(108, 99, 255, 0.1); color: #6C63FF;">
+              <div class="settings-row-icon" style="background: rgba(var(--ion-color-primary-rgb), 0.1); color: #6C63FF;">
                 <ion-icon :icon="calendarNumberOutline" />
               </div>
               <div class="settings-row-text">

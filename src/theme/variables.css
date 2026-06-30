@@ -42,7 +42,7 @@
   --ion-border-radius: 16px;
 
   /* Shadows */
-  --ion-card-shadow: 0 2px 16px rgba(108, 99, 255, 0.08);
+  --ion-card-shadow: 0 2px 16px rgba(var(--ion-color-primary-rgb), 0.08);
 
   /* Typography */
   --ion-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;

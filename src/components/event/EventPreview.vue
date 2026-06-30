@@ -162,7 +162,7 @@ const statusLabel = computed(() => {
 
 .event-card:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 20px rgba(108, 99, 255, 0.12);
+  box-shadow: 0 4px 20px rgba(var(--ion-color-primary-rgb), 0.12);
 }
 
 /* Неотмеченное мероприятие — пульсирующее жёлтое свечение */
@@ -231,7 +231,7 @@ const statusLabel = computed(() => {
   align-items: center;
   padding: 3px 10px;
   border-radius: 8px;
-  background: rgba(108, 99, 255, 0.08);
+  background: rgba(var(--ion-color-primary-rgb), 0.08);
   color: var(--ion-color-primary);
   font-size: 12px;
   font-weight: 600;

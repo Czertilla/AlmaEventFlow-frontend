@@ -156,7 +156,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   margin: 0 auto 16px;
-  box-shadow: 0 8px 24px rgba(108, 99, 255, 0.3);
+  box-shadow: 0 8px 24px rgba(var(--ion-color-primary-rgb), 0.3);
 }
 
 .auth-logo ion-icon {
@@ -209,7 +209,7 @@ onMounted(() => {
   width: 72px;
   height: 72px;
   border-radius: 50%;
-  background: rgba(108, 99, 255, 0.1);
+  background: rgba(var(--ion-color-primary-rgb), 0.1);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -267,7 +267,7 @@ onMounted(() => {
 
 .auth-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(108, 99, 255, 0.3);
+  box-shadow: 0 4px 16px rgba(var(--ion-color-primary-rgb), 0.3);
 }
 
 .auth-btn:active:not(:disabled) {
@@ -286,7 +286,7 @@ onMounted(() => {
 }
 
 .auth-btn--outline:hover:not(:disabled) {
-  background: rgba(108, 99, 255, 0.05);
+  background: rgba(var(--ion-color-primary-rgb), 0.05);
   box-shadow: none;
 }
 </style>

@@ -300,7 +300,7 @@ async function handleRegister() {
   align-items: center;
   justify-content: center;
   margin: 0 auto 16px;
-  box-shadow: 0 8px 24px rgba(108, 99, 255, 0.3);
+  box-shadow: 0 8px 24px rgba(var(--ion-color-primary-rgb), 0.3);
 }
 
 .auth-logo .logo-img {
@@ -373,8 +373,8 @@ async function handleRegister() {
   gap: 10px;
   padding: 12px 14px;
   margin-bottom: 20px;
-  background: rgba(108, 99, 255, 0.1);
-  border: 1px solid rgba(108, 99, 255, 0.25);
+  background: rgba(var(--ion-color-primary-rgb), 0.1);
+  border: 1px solid rgba(var(--ion-color-primary-rgb), 0.25);
   border-radius: 12px;
   color: var(--ion-color-primary);
   font-size: 13px;
@@ -551,7 +551,7 @@ async function handleRegister() {
 
 .auth-btn:hover:not(:disabled) {
   transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(108, 99, 255, 0.3);
+  box-shadow: 0 4px 16px rgba(var(--ion-color-primary-rgb), 0.3);
 }
 
 .auth-btn:active:not(:disabled) {
