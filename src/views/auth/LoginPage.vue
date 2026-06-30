@@ -62,7 +62,7 @@
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { IonPage, IonContent, IonIcon } from '@ionic/vue'
+import { IonPage, IonContent, IonIcon, onIonViewDidLeave } from '@ionic/vue'
 import { personOutline, lockClosedOutline, alertCircleOutline } from 'ionicons/icons'
 
 const route = useRoute()
@@ -73,6 +73,12 @@ const username = ref((route.query.email as string) || '')
 const password = ref('')
 const error = ref('')
 const loading = ref(false)
+
+// Не оставляем пароль в памяти/кэше после ухода со страницы входа.
+onIonViewDidLeave(() => {
+  password.value = ''
+  error.value = ''
+})
 
 async function handleLogin() {
   error.value = ''

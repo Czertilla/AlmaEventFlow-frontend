@@ -53,12 +53,7 @@
                   <ion-icon :icon="lockClosedOutline" class="field-icon" />
                   <input v-model="password" type="password" placeholder="Придумайте пароль" @keyup.enter="handleRegister" />
                 </div>
-                <div v-if="password" class="strength">
-                  <div class="strength-bar">
-                    <div class="strength-fill" :style="{ width: strength.percent + '%', background: strength.color }" />
-                  </div>
-                  <span class="strength-label" :style="{ color: strength.color }">{{ strength.label }}</span>
-                </div>
+                <PasswordStrengthMeter :password="password" />
                 <span v-if="errors.password" class="field-error">{{ errors.password }}</span>
               </div>
 
@@ -99,13 +94,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { checkUsernameUserV1UsersCheckUsernameGet } from '@/api/generated/almaEventFlow'
 import { decodeJwt } from '@/utils/jwt'
 import { resolvePersonName } from '@/utils/names'
-import { IonPage, IonContent, IonIcon } from '@ionic/vue'
+import { validatePassword } from '@/utils/password'
+import PasswordStrengthMeter from '@/components/common/PasswordStrengthMeter.vue'
+import { IonPage, IonContent, IonIcon, onIonViewDidLeave } from '@ionic/vue'
 import { mailOutline, personOutline, lockClosedOutline, checkmarkOutline, alertCircleOutline, linkOutline } from 'ionicons/icons'
 
 const router = useRouter()
@@ -156,18 +153,21 @@ const errors = reactive({
 
 let checkTimer: ReturnType<typeof setTimeout> | null = null
 
-const strength = computed(() => {
-  const p = password.value
-  let score = 0
-  if (p.length >= 8) score++
-  if (p.length >= 12) score++
-  if (/[a-zа-я]/.test(p) && /[A-ZА-Я]/.test(p)) score++
-  if (/\d/.test(p)) score++
-  if (/[^a-zA-Zа-яА-Я0-9]/.test(p)) score++
-  if (score <= 1) return { percent: 20, color: '#FF4757', label: 'Слабый' }
-  if (score === 2) return { percent: 45, color: '#FFB800', label: 'Средний' }
-  if (score === 3) return { percent: 70, color: '#00BF92', label: 'Хороший' }
-  return { percent: 100, color: '#00D9A6', label: 'Надёжный' }
+// Сбрасываем форму регистрации (включая пароли) при уходе — её состояние не
+// должно сохраняться в кэше страницы.
+onIonViewDidLeave(() => {
+  email.value = ''
+  username.value = ''
+  password.value = ''
+  confirmPassword.value = ''
+  agreed.value = false
+  error.value = ''
+  usernameStatus.value = ''
+  usernameColor.value = ''
+  errors.email = ''
+  errors.username = ''
+  errors.password = ''
+  errors.confirmPassword = ''
 })
 
 function validate() {
@@ -191,14 +191,9 @@ function validate() {
     errors.username = 'Минимум 3 символа'
     valid = false
   }
-  if (!password.value) {
-    errors.password = 'Введите пароль'
-    valid = false
-  } else if (password.value.length < 8) {
-    errors.password = 'Минимум 8 символов'
-    valid = false
-  } else if (!/\d/.test(password.value) || !/[a-zA-Zа-яА-Я]/.test(password.value)) {
-    errors.password = 'Пароль должен содержать буквы и цифры'
+  const passwordError = validatePassword(password.value)
+  if (passwordError) {
+    errors.password = passwordError
     valid = false
   }
   if (!confirmPassword.value) {
@@ -458,34 +453,6 @@ async function handleRegister() {
 
 .field-input input::placeholder {
   color: var(--ion-color-step-400);
-}
-
-.strength {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 2px 4px 0;
-}
-
-.strength-bar {
-  flex: 1;
-  height: 4px;
-  border-radius: 2px;
-  background: var(--ion-border-color);
-  overflow: hidden;
-}
-
-.strength-fill {
-  height: 100%;
-  border-radius: 2px;
-  transition: width 0.3s ease, background 0.3s ease;
-}
-
-.strength-label {
-  font-size: 11px;
-  font-weight: 600;
-  min-width: 56px;
-  text-align: right;
 }
 
 .field-error {
