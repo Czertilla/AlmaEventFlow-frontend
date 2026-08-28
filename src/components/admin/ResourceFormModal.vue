@@ -17,17 +17,21 @@
           v-if="field.type === 'text' || field.type === 'email' || field.type === 'number'"
           v-model="form[field.key]"
           :type="field.type"
+          :maxlength="field.maxLength"
           :placeholder="field.placeholder"
           mode="md"
         />
+        <span v-if="(field.type === 'text' || field.type === 'email') && field.maxLength" class="char-counter">{{ (form[field.key] || '').length }} / {{ field.maxLength }}</span>
 
         <ion-textarea
           v-else-if="field.type === 'textarea'"
           v-model="form[field.key]"
           :placeholder="field.placeholder"
+          :maxlength="field.maxLength"
           :rows="3"
           mode="md"
         />
+        <span v-if="field.type === 'textarea' && field.maxLength" class="char-counter">{{ (form[field.key] || '').length }} / {{ field.maxLength }}</span>
 
         <ion-toggle
           v-else-if="field.type === 'checkbox'"
@@ -107,6 +111,7 @@ export interface FormField {
   label: string
   type: 'text' | 'email' | 'number' | 'checkbox' | 'select' | 'textarea' | 'search'
   required?: boolean
+  maxLength?: number
   options?: { value: any; label: string }[]
   placeholder?: string
   fetchOptions?: (search: string) => Promise<any[]>
@@ -275,6 +280,13 @@ async function submit() {
 .required {
   color: var(--ion-color-danger);
   margin-left: 2px;
+}
+
+.char-counter {
+  display: block;
+  text-align: right;
+  font-size: 11px;
+  color: var(--ion-color-step-400);
 }
 
 .form-actions {

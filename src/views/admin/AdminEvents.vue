@@ -52,7 +52,7 @@ const statusLabels: Record<EventStatusEnumV1, string> = {
   draft: 'Черновик', template: 'Шаблон', active: 'Активно', archived: 'Архив',
 }
 const levelLabels: Record<EventLevelEnumV1, string> = {
-  internal: 'Внутренний', regional: 'Региональный', national: 'Национальный', international: 'Международный',
+  internal: 'ВУЗовский', regional: 'Региональный', national: 'Национальный', international: 'Международный',
 }
 const typeLabels: Record<EventTypeEnumV1, string> = {
   rehearsal: 'Репетиция', competition: 'Конкурс', concert: 'Концерт',
@@ -90,7 +90,7 @@ const filters: FilterDef[] = [
 ]
 
 const formFields: FormField[] = [
-  { key: 'name', label: 'Название', type: 'text', required: true },
+  { key: 'name', label: 'Название', type: 'text', required: true, maxLength: 128 },
   { key: 'date', label: 'Дата', type: 'text', placeholder: 'YYYY-MM-DD' },
   { key: 'status', label: 'Статус', type: 'select', options: toOptions(statusLabels) },
   { key: 'type', label: 'Тип', type: 'select', options: toOptions(typeLabels) },

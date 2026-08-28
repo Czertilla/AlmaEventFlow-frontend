@@ -6,7 +6,7 @@ export const statusLabels: Record<EventStatusEnumV1, string> = {
   draft: 'Черновик', active: 'Активно', template: 'Шаблон', archived: 'Архив',
 }
 export const levelLabels: Record<EventLevelEnumV1, string> = {
-  internal: 'Внутренний', regional: 'Региональный', national: 'Национальный', international: 'Международный',
+  internal: 'ВУЗовский', regional: 'Региональный', national: 'Национальный', international: 'Международный',
 }
 export const typeLabels: Record<EventTypeEnumV1, string> = {
   rehearsal: 'Репетиция', competition: 'Конкурс', concert: 'Концерт',
