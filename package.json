@@ -48,7 +48,9 @@
   },
   "overrides": {
     "minimatch": "^9.0.7",
-    "qs": "^6.15.2"
+    "qs": "^6.15.2",
+    "@emnapi/core": "1.11.3",
+    "@emnapi/runtime": "1.11.3"
   },
   "description": "An Ionic project",
   "allowScripts": {
