@@ -176,7 +176,8 @@
           <template v-if="!isJoinMode">
             <div class="form-field">
               <label>Название</label>
-              <ion-input v-model="form.name" placeholder="Название мероприятия" />
+              <ion-input v-model="form.name" :maxlength="EVENT_NAME_MAX" placeholder="Название мероприятия" />
+              <span class="char-counter">{{ form.name.length }} / {{ EVENT_NAME_MAX }}</span>
             </div>
 
             <div class="form-field">
@@ -191,7 +192,8 @@
 
             <div class="form-field">
               <label>Описание</label>
-              <ion-textarea v-model="form.description" :rows="3" placeholder="Описание мероприятия" />
+              <ion-textarea v-model="form.description" :rows="3" :maxlength="EVENT_DESCRIPTION_MAX" placeholder="Описание мероприятия" />
+              <span class="char-counter">{{ (form.description || '').length }} / {{ EVENT_DESCRIPTION_MAX }}</span>
             </div>
 
             <div class="form-field">
@@ -326,11 +328,18 @@
               <div v-if="form.stages.length" class="stage-list">
                 <div v-for="(s, i) in form.stages" :key="i" class="stage-edit">
                   <div class="stage-edit-row">
-                    <input v-model="s.name" type="text" class="native-input stage-name-input" placeholder="Название этапа" />
+                    <input
+                      v-model="s.name"
+                      type="text"
+                      class="native-input stage-name-input"
+                      :maxlength="STAGE_NAME_MAX"
+                      :placeholder="stageNamePlaceholder(s)"
+                    />
                     <button class="row-icon-btn row-icon-btn--danger" title="Удалить этап" @click="removeStage(i)">
                       <ion-icon :icon="trashOutline" />
                     </button>
                   </div>
+                  <span class="char-counter">{{ s.name.length }} / {{ STAGE_NAME_MAX }}</span>
                   <div class="stage-edit-row">
                     <input v-model="s.start_at" type="datetime-local" class="native-input" />
                     <span class="stage-dash">—</span>
@@ -342,10 +351,14 @@
                       @focus="onEndFocus(s)"
                     />
                   </div>
+                  <p v-if="stageEndBeforeStart(s)" class="form-hint form-hint-warn">
+                    Окончание не может быть раньше начала
+                  </p>
                   <textarea
                     v-model="s.description"
                     class="native-input stage-desc-input"
                     rows="2"
+                    :maxlength="STAGE_DESCRIPTION_MAX"
                     placeholder="Описание этапа (необязательно)"
                   />
                   <span v-if="s.fromTemplate" class="stage-template-badge">из шаблона</span>
@@ -404,7 +417,7 @@
             </div>
           </div>
 
-          <ion-button expand="block" :disabled="creating || (!isJoinMode && !form.name)" @click="submit">
+          <ion-button expand="block" :disabled="creating || (!isJoinMode && !form.name) || hasStageTimeError" @click="submit">
             {{ isJoinMode ? 'Создать участие' : 'Создать мероприятие' }}
           </ion-button>
         </div>
@@ -448,6 +461,11 @@ import {
 } from '@/api/generated/almaEventFlow'
 import { resolvePersonName, rememberMemberPerson, shortId } from '@/utils/names'
 import type { EventRead, EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1, MemberRead, RoleRead } from '@/api/generated/almaEventFlow'
+
+const EVENT_NAME_MAX = 128
+const EVENT_DESCRIPTION_MAX = 1024
+const STAGE_NAME_MAX = 32
+const STAGE_DESCRIPTION_MAX = 1024
 
 // Редактируемый этап формы: даты в формате datetime-local, fromTemplate помечает
 // стадии, перенесённые из шаблона (их даты пересчитываются при смене даты мероприятия)
@@ -626,6 +644,26 @@ function onEndFocus(stage: StageForm) {
     stage.end_at = stage.start_at
   }
 }
+
+function firstWord(text: string | null | undefined): string {
+  return (text ?? '').trim().split(/\s+/)[0]?.slice(0, STAGE_NAME_MAX) ?? ''
+}
+
+function stageEffectiveName(s: StageForm): string {
+  return s.name.trim() || firstWord(s.description)
+}
+
+function stageNamePlaceholder(s: StageForm): string {
+  return firstWord(s.description) || 'Название этапа'
+}
+
+function stageEndBeforeStart(s: StageForm): boolean {
+  return !!s.start_at && !!s.end_at && new Date(s.end_at) < new Date(s.start_at)
+}
+
+const hasStageTimeError = computed(() =>
+  planMode.value === 'stages' && form.value.stages.some(stageEndBeforeStart),
+)
 // Original stage timestamps + template date for relative offset recalculation
 let templateBase: { date: string | null; stages: Array<{ name: string; start_at: string; end_at?: string | null; description?: string | null }> } | null = null
 
@@ -867,9 +905,9 @@ async function submit() {
               }]
             : [])
         : form.value.stages
-            .filter((s) => s.name && s.start_at)
+            .filter((s) => stageEffectiveName(s) && s.start_at)
             .map((s) => ({
-              name: s.name,
+              name: stageEffectiveName(s),
               start_at: toTzIso(s.start_at),
               end_at: s.end_at ? toTzIso(s.end_at) : null,
               description: s.description ?? null,
@@ -1214,6 +1252,12 @@ watch(() => principal.activePrincipalCollectiveId, async (collectiveId) => {
   margin: 4px 0 0;
   font-size: 12px;
   color: var(--ion-color-medium);
+}
+
+.char-counter {
+  align-self: flex-end;
+  font-size: 11px;
+  color: var(--ion-color-step-400);
 }
 
 .form-hint-warn {
