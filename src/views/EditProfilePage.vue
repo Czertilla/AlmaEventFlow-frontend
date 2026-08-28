@@ -68,6 +68,30 @@
           </div>
         </div>
 
+        <div class="edit-section">
+          <h3 class="edit-section-title">Telegram</h3>
+          <div class="edit-card">
+            <div class="telegram-row">
+              <ion-icon :icon="paperPlaneOutline" class="telegram-icon" />
+              <div class="telegram-text">
+                <span class="telegram-title">Привязать аккаунт</span>
+                <span class="field-hint">
+                  Откроет бота в Telegram — там достаточно нажать «Старт». После
+                  этого можно будет входить на сайт через Telegram.
+                </span>
+              </div>
+              <button
+                class="telegram-btn"
+                :disabled="telegramLoading"
+                @click="handleLinkTelegram"
+              >
+                <span v-if="telegramLoading" class="btn-spinner btn-spinner--small" />
+                <span v-else>Привязать</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
         <Transition name="fade">
           <div v-if="error" class="edit-error">
             <ion-icon :icon="alertCircleOutline" />
@@ -98,7 +122,9 @@ import {
 } from '@ionic/vue'
 import {
   personOutline, mailOutline, lockClosedOutline, keyOutline, alertCircleOutline,
+  paperPlaneOutline,
 } from 'ionicons/icons'
+import { createTelegramLinkTokenUserV1UsersMeTelegramLinkTokenPost } from '@/api/generated/almaEventFlow'
 import type { UserUpdate } from '@/api/generated/almaEventFlow'
 
 const router = useRouter()
@@ -112,6 +138,7 @@ const confirm = ref('')
 const currentPassword = ref('')
 const error = ref('')
 const loading = ref(false)
+const telegramLoading = ref(false)
 
 // Каждый показ страницы начинается с актуальных данных пользователя и пустых
 // полей пароля; при уходе чувствительные поля очищаются (страница кэшируется).
@@ -143,6 +170,21 @@ const dirty = computed(
 async function toast(message: string, color = 'success') {
   const t = await toastController.create({ message, duration: 2000, color })
   await t.present()
+}
+
+async function handleLinkTelegram() {
+  telegramLoading.value = true
+  try {
+    const response = await createTelegramLinkTokenUserV1UsersMeTelegramLinkTokenPost()
+    window.open(response.data.deep_link, '_blank')
+  } catch (err: any) {
+    await toast(
+      err?.response?.data?.detail || 'Не удалось получить ссылку для привязки Telegram',
+      'danger',
+    )
+  } finally {
+    telegramLoading.value = false
+  }
 }
 
 async function handleSave() {
@@ -282,6 +324,65 @@ async function handleSave() {
   font-size: 12px;
   color: var(--ion-color-medium);
   padding: 0 4px;
+}
+
+.telegram-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.telegram-icon {
+  font-size: 22px;
+  color: var(--ion-color-primary);
+  flex-shrink: 0;
+}
+
+.telegram-text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.telegram-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ion-text-color);
+}
+
+.telegram-btn {
+  flex-shrink: 0;
+  padding: 10px 18px;
+  border: none;
+  border-radius: 10px;
+  background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
+  color: white;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  min-width: 96px;
+}
+
+.telegram-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(var(--ion-color-primary-rgb), 0.3);
+}
+
+.telegram-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.btn-spinner--small {
+  width: 18px;
+  height: 18px;
 }
 
 .edit-error {
