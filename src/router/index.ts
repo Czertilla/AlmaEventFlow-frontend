@@ -131,6 +131,11 @@ const appRoutes: Array<RouteRecordRaw> = [
     meta: { auth: true },
   },
   {
+    path: '/changelog',
+    component: () => import('@/views/ChangelogPage.vue'),
+    meta: { auth: true },
+  },
+  {
     path: '/profile',
     component: () => import('@/views/ProfilePage.vue'),
     meta: { auth: true },

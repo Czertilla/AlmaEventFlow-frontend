@@ -120,7 +120,7 @@
 
         <div class="settings-section">
           <h3 class="settings-section-title">О приложении</h3>
-          <div class="settings-card about-card">
+          <button class="settings-card about-card about-card--link" @click="router.push('/changelog')">
             <div class="about-logo">
               <img src="/aef.svg" alt="Alma Event Flow" />
             </div>
@@ -129,7 +129,8 @@
               <span class="about-version">Приложение {{ appVersion }} · API {{ apiVersion }}</span>
               <span class="about-desc">Управление мероприятиями и присутствиями коллективов</span>
             </div>
-          </div>
+            <ion-icon :icon="chevronForwardOutline" class="settings-row-arrow" />
+          </button>
         </div>
       </div>
     </ion-content>
@@ -269,6 +270,15 @@ const apiVersion = __API_VERSION__
   align-items: center;
   gap: 16px;
   padding: 20px 16px;
+}
+
+.about-card--link {
+  width: 100%;
+  border: none;
+  background: var(--ion-card-background);
+  font-family: inherit;
+  text-align: left;
+  cursor: pointer;
 }
 
 .about-logo {
