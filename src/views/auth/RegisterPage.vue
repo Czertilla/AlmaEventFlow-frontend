@@ -27,12 +27,12 @@
               <span>{{ inviteError }}</span>
             </div>
 
-            <div class="auth-form">
+            <form class="auth-form" @submit.prevent="handleRegister">
               <div class="field-group">
                 <label class="field-label">Email</label>
                 <div class="field-input" :class="{ 'field-input--error': !!errors.email }">
                   <ion-icon :icon="mailOutline" class="field-icon" />
-                  <input v-model="email" type="email" placeholder="Введите email" @keyup.enter="handleRegister" />
+                  <input v-model="email" type="email" autocomplete="email" placeholder="Введите email" />
                 </div>
                 <span v-if="errors.email" class="field-error">{{ errors.email }}</span>
               </div>
@@ -41,7 +41,7 @@
                 <label class="field-label">Username</label>
                 <div class="field-input" :class="{ 'field-input--error': !!errors.username }">
                   <ion-icon :icon="personOutline" class="field-icon" />
-                  <input v-model="username" type="text" placeholder="Введите username" @input="onUsernameInput" @keyup.enter="handleRegister" />
+                  <input v-model="username" type="text" autocomplete="username" placeholder="Введите username" @input="onUsernameInput" />
                 </div>
                 <span v-if="usernameStatus" :class="usernameColor === 'danger' ? 'field-error' : 'field-success'">{{ usernameStatus }}</span>
                 <span v-else-if="errors.username" class="field-error">{{ errors.username }}</span>
@@ -51,7 +51,7 @@
                 <label class="field-label">Пароль</label>
                 <div class="field-input" :class="{ 'field-input--error': !!errors.password }">
                   <ion-icon :icon="lockClosedOutline" class="field-icon" />
-                  <input v-model="password" type="password" placeholder="Придумайте пароль" @keyup.enter="handleRegister" />
+                  <input v-model="password" type="password" autocomplete="new-password" placeholder="Придумайте пароль" />
                 </div>
                 <PasswordStrengthMeter :password="password" />
                 <span v-if="errors.password" class="field-error">{{ errors.password }}</span>
@@ -61,7 +61,7 @@
                 <label class="field-label">Подтвердите пароль</label>
                 <div class="field-input" :class="{ 'field-input--error': !!errors.confirmPassword }">
                   <ion-icon :icon="lockClosedOutline" class="field-icon" />
-                  <input v-model="confirmPassword" type="password" placeholder="Повторите пароль" @keyup.enter="handleRegister" />
+                  <input v-model="confirmPassword" type="password" autocomplete="new-password" placeholder="Повторите пароль" />
                 </div>
                 <span v-if="errors.confirmPassword" class="field-error">{{ errors.confirmPassword }}</span>
               </div>
@@ -81,11 +81,11 @@
                 </div>
               </Transition>
 
-              <button class="auth-btn" :disabled="loading || !agreed" @click="handleRegister">
+              <button type="submit" class="auth-btn" :disabled="loading || !agreed">
                 <span v-if="loading" class="btn-spinner" />
                 <span v-else>Зарегистрироваться</span>
               </button>
-            </div>
+            </form>
           </div>
         </div>
       </div>
