@@ -2427,7 +2427,13 @@
                         "description": "Successful Response",
                         "content": {
                             "application/json": {
-                                "schema": {}
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/MyCollectiveRead"
+                                    },
+                                    "type": "array",
+                                    "title": "Response Get My Collectives Event V1 Me Collectives Get"
+                                }
                             }
                         }
                     },
@@ -3603,6 +3609,101 @@
                         "content": {
                             "application/json": {
                                 "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/event/v1/me/events/{event_id}/attendance": {
+            "get": {
+                "tags": [
+                    "me"
+                ],
+                "summary": "Get My Event Attendance",
+                "description": "Resolves the current user's own attendance row(s) for this event,\nwithout needing to already know member_id/attendance_id — e.g. for the\nTelegram bot's \"mark my attendance\" buttons, which only carry the\nevent_id in their callback data.",
+                "operationId": "get_my_event_attendance_event_v1_me_events__event_id__attendance_get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "event_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Event Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/AttendanceRead"
+                                    },
+                                    "title": "Response Get My Event Attendance Event V1 Me Events  Event Id  Attendance Get"
+                                }
                             }
                         }
                     },
@@ -21893,6 +21994,46 @@
                 }
             }
         },
+        "/bot/v1/webhook/tg": {
+            "get": {
+                "tags": [
+                    "tg"
+                ],
+                "summary": "Webhook Info",
+                "description": "Returns information about the webhook.\n\nArgs:\n    bot: The Telegram bot instance.\n\nReturns:\n    WebhookInfo: Information about the current webhook.",
+                "operationId": "webhook_info_bot_v1_webhook_tg_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/WebhookInfo"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "tg"
+                ],
+                "summary": "Webhook",
+                "description": "Handles incoming Telegram updates via webhook.\n\nValidates the ``X-Telegram-Bot-Api-Secret-Token`` header (when\n``BOT_TG_WEBHOOK_SECRET`` is configured) so third parties can't inject\nfake updates, then validates the request JSON as an aiogram Update model\nand feeds it to the aiogram Dispatcher.\n\nArgs:\n    request: The FastAPI Request object containing the update data.\n    bot: The Telegram bot instance.\n    dp: The aiogram dispatcher instance.",
+                "operationId": "webhook_bot_v1_webhook_tg_post",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/user/v1/auth/jwt/login": {
             "post": {
                 "tags": [
@@ -23205,6 +23346,424 @@
                 }
             }
         },
+        "/user/v1/users/me/telegram/link-token": {
+            "post": {
+                "tags": [
+                    "telegram",
+                    "telegram"
+                ],
+                "summary": "Create Telegram Link Token",
+                "description": "Mints a short-lived deep link (``t.me/<bot>?start=<token>``) the caller\ncan open to link their Telegram profile to this AlmaEventFlow account.",
+                "operationId": "create_telegram_link_token_user_v1_users_me_telegram_link_token_post",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/TelegramLinkTokenRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/user/v1/auth/telegram/config": {
+            "get": {
+                "tags": [
+                    "auth",
+                    "auth"
+                ],
+                "summary": "Get Telegram Login Config",
+                "description": "Public: lets the frontend render the Login Widget without duplicating\nthe bot's public username in its own config.",
+                "operationId": "get_telegram_login_config_user_v1_auth_telegram_config_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": {
+                                        "anyOf": [
+                                            {
+                                                "type": "string"
+                                            },
+                                            {
+                                                "type": "null"
+                                            }
+                                        ]
+                                    },
+                                    "type": "object",
+                                    "title": "Response Get Telegram Login Config User V1 Auth Telegram Config Get"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/user/v1/auth/telegram/login": {
+            "post": {
+                "tags": [
+                    "auth",
+                    "auth"
+                ],
+                "summary": "Login With Telegram",
+                "description": "Alternative to password login: verifies the signed payload from\nTelegram's Login Widget and looks up the AEF user already linked via the\nbot's ``/start`` deep-link flow. Never creates an account -- a payload for\nan unlinked Telegram id is rejected with ``TELEGRAM_ACCOUNT_NOT_LINKED``.",
+                "operationId": "login_with_telegram_user_v1_auth_telegram_login_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TelegramWidgetAuth"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "additionalProperties": true,
+                                    "type": "object",
+                                    "title": "Response Login With Telegram User V1 Auth Telegram Login Post"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "TELEGRAM_AUTH_INVALID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "TELEGRAM_AUTH_INVALID": {
+                                        "summary": "TELEGRAM_AUTH_INVALID",
+                                        "value": {
+                                            "detail": "TELEGRAM_AUTH_INVALID"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "TELEGRAM_ACCOUNT_NOT_LINKED",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "TELEGRAM_ACCOUNT_NOT_LINKED": {
+                                        "summary": "TELEGRAM_ACCOUNT_NOT_LINKED",
+                                        "value": {
+                                            "detail": "TELEGRAM_ACCOUNT_NOT_LINKED"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/user/v1/internal/telegram/{person_id}/token": {
+            "post": {
+                "tags": [
+                    "internal",
+                    "internal"
+                ],
+                "summary": "Mint Token For Person",
+                "description": "Internal, bot-service-only: mints a normal access token for the AEF\nuser linked to ``person_id`` so the bot can call other services'\nuser-scoped endpoints on that person's behalf. Guarded by a shared secret\n(``BOT_SERVICE_SECRET``), not a user JWT — never call this from a browser\nclient.",
+                "operationId": "mint_token_for_person_user_v1_internal_telegram__person_id__token_post",
+                "parameters": [
+                    {
+                        "name": "person_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Person Id"
+                        }
+                    },
+                    {
+                        "name": "x-bot-service-secret",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Bot-Service-Secret"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                        "type": "string"
+                                    },
+                                    "title": "Response Mint Token For Person User V1 Internal Telegram  Person Id  Token Post"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/user/v1/internal/telegram/{person_id}/oauth-link": {
+            "post": {
+                "tags": [
+                    "internal",
+                    "internal"
+                ],
+                "summary": "Link Telegram Oauth",
+                "description": "Internal, bot-service-only: syncs a Telegram profile into the AEF\nuser's OAuth accounts right after the bot's own ``/start`` deep-link\nflow links it, so the website's Telegram Login Widget can find it later.\nNo-op if ``person_id`` has no AEF account yet.",
+                "operationId": "link_telegram_oauth_user_v1_internal_telegram__person_id__oauth_link_post",
+                "parameters": [
+                    {
+                        "name": "person_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Person Id"
+                        }
+                    },
+                    {
+                        "name": "x-bot-service-secret",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Bot-Service-Secret"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/OAuthLinkRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "internal",
+                    "internal"
+                ],
+                "summary": "Unlink Telegram Oauth",
+                "description": "Internal, bot-service-only: mirrors ``link_telegram_oauth`` on unlink.",
+                "operationId": "unlink_telegram_oauth_user_v1_internal_telegram__person_id__oauth_link_delete",
+                "parameters": [
+                    {
+                        "name": "person_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Person Id"
+                        }
+                    },
+                    {
+                        "name": "x-bot-service-secret",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "X-Bot-Service-Secret"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/user/v1/users/check/{username}": {
             "get": {
                 "tags": [
@@ -23359,6 +23918,274 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/InviteTokenRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/user/v1/users/{user_id}/person": {
+            "patch": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Link Person",
+                "description": "Admin-only: attaches an existing profile person to an existing\naccount, for cases the invite-token flow doesn't cover (account created\nfirst, or re-linking to a different person).",
+                "operationId": "link_person_user_v1_users__user_id__person_patch",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "User Id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PersonLinkRequest"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserRead"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Person already linked, or does not exist",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "PERSON_ALREADY_HAS_ACCOUNT": {
+                                        "summary": "PERSON_ALREADY_HAS_ACCOUNT",
+                                        "value": {
+                                            "detail": "PERSON_ALREADY_HAS_ACCOUNT"
+                                        }
+                                    },
+                                    "INVITE_PERSON_NOT_FOUND": {
+                                        "summary": "INVITE_PERSON_NOT_FOUND",
+                                        "value": {
+                                            "detail": "INVITE_PERSON_NOT_FOUND"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "USER_NOT_FOUND",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "USER_NOT_FOUND": {
+                                        "summary": "USER_NOT_FOUND",
+                                        "value": {
+                                            "detail": "USER_NOT_FOUND"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/user/v1/users/me/link-invite": {
+            "post": {
+                "tags": [
+                    "users"
+                ],
+                "summary": "Link Invite",
+                "description": "Self-service: an already-authenticated user opening an invite link\nconfirms attaching that invite's person to their own account.",
+                "operationId": "link_invite_user_v1_users_me_link_invite_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LinkInviteData"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserRead"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invite token invalid/expired, or person/account already linked",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "INVITE_TOKEN_INVALID": {
+                                        "summary": "INVITE_TOKEN_INVALID",
+                                        "value": {
+                                            "detail": "INVITE_TOKEN_INVALID"
+                                        }
+                                    },
+                                    "INVITE_TOKEN_EXPIRED": {
+                                        "summary": "INVITE_TOKEN_EXPIRED",
+                                        "value": {
+                                            "detail": "INVITE_TOKEN_EXPIRED"
+                                        }
+                                    },
+                                    "PERSON_ALREADY_HAS_ACCOUNT": {
+                                        "summary": "PERSON_ALREADY_HAS_ACCOUNT",
+                                        "value": {
+                                            "detail": "PERSON_ALREADY_HAS_ACCOUNT"
+                                        }
+                                    },
+                                    "ACCOUNT_ALREADY_LINKED": {
+                                        "summary": "ACCOUNT_ALREADY_LINKED",
+                                        "value": {
+                                            "detail": "ACCOUNT_ALREADY_LINKED"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -24878,6 +25705,7 @@
                 "properties": {
                     "name": {
                         "type": "string",
+                        "maxLength": 128,
                         "title": "Name"
                     },
                     "date": {
@@ -24895,7 +25723,8 @@
                     "description": {
                         "anyOf": [
                             {
-                                "type": "string"
+                                "type": "string",
+                                "maxLength": 1024
                             },
                             {
                                 "type": "null"
@@ -24996,7 +25825,8 @@
                     "name": {
                         "anyOf": [
                             {
-                                "type": "string"
+                                "type": "string",
+                                "maxLength": 128
                             },
                             {
                                 "type": "null"
@@ -25019,7 +25849,8 @@
                     "description": {
                         "anyOf": [
                             {
-                                "type": "string"
+                                "type": "string",
+                                "maxLength": 1024
                             },
                             {
                                 "type": "null"
@@ -25102,6 +25933,7 @@
                 "properties": {
                     "name": {
                         "type": "string",
+                        "maxLength": 128,
                         "title": "Name"
                     },
                     "date": {
@@ -25119,7 +25951,8 @@
                     "description": {
                         "anyOf": [
                             {
-                                "type": "string"
+                                "type": "string",
+                                "maxLength": 1024
                             },
                             {
                                 "type": "null"
@@ -25212,6 +26045,7 @@
                     },
                     "name": {
                         "type": "string",
+                        "maxLength": 128,
                         "title": "Name"
                     },
                     "date": {
@@ -25229,7 +26063,8 @@
                     "description": {
                         "anyOf": [
                             {
-                                "type": "string"
+                                "type": "string",
+                                "maxLength": 1024
                             },
                             {
                                 "type": "null"
@@ -25703,6 +26538,19 @@
                 ],
                 "title": "LinkCreate"
             },
+            "LinkInviteData": {
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "title": "Token"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "token"
+                ],
+                "title": "LinkInviteData"
+            },
             "LinkPatch": {
                 "properties": {
                     "id": {
@@ -26014,6 +26862,7 @@
                 "properties": {
                     "name": {
                         "type": "string",
+                        "maxLength": 128,
                         "title": "Name"
                     },
                     "date": {
@@ -26031,7 +26880,8 @@
                     "description": {
                         "anyOf": [
                             {
-                                "type": "string"
+                                "type": "string",
+                                "maxLength": 1024
                             },
                             {
                                 "type": "null"
@@ -26137,6 +26987,7 @@
                 "properties": {
                     "name": {
                         "type": "string",
+                        "maxLength": 128,
                         "title": "Name"
                     },
                     "date": {
@@ -26154,7 +27005,8 @@
                     "description": {
                         "anyOf": [
                             {
-                                "type": "string"
+                                "type": "string",
+                                "maxLength": 1024
                             },
                             {
                                 "type": "null"
@@ -26484,6 +27336,37 @@
                 ],
                 "title": "MemberRead"
             },
+            "MyCollectiveRead": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "principal_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Principal Id"
+                    },
+                    "is_verified": {
+                        "type": "boolean",
+                        "title": "Is Verified"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "name",
+                    "principal_id",
+                    "is_verified"
+                ],
+                "title": "MyCollectiveRead",
+                "description": "Summary used by ``GET /me/collectives`` (and the bot's collective\nlookups) -- just enough to let a caller pick one of their own led\ncollectives by name."
+            },
             "NameVariantCreate": {
                 "properties": {
                     "surname": {
@@ -26640,6 +27523,30 @@
                     "authorization_url"
                 ],
                 "title": "OAuth2AuthorizeResponse"
+            },
+            "OAuthLinkRequest": {
+                "properties": {
+                    "telegram_id": {
+                        "type": "string",
+                        "title": "Telegram Id"
+                    },
+                    "username": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Username"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "telegram_id"
+                ],
+                "title": "OAuthLinkRequest"
             },
             "OrganizationCreate": {
                 "properties": {
@@ -27373,6 +28280,20 @@
                     "patronymic"
                 ],
                 "title": "PersonItemRead"
+            },
+            "PersonLinkRequest": {
+                "properties": {
+                    "person_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Person Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "person_id"
+                ],
+                "title": "PersonLinkRequest"
             },
             "PersonPatchData": {
                 "properties": {
@@ -28606,6 +29527,7 @@
                 "properties": {
                     "name": {
                         "type": "string",
+                        "maxLength": 32,
                         "title": "Name"
                     },
                     "start_at": {
@@ -28628,13 +29550,25 @@
                     "description": {
                         "anyOf": [
                             {
-                                "type": "string"
+                                "type": "string",
+                                "maxLength": 1024
                             },
                             {
                                 "type": "null"
                             }
                         ],
                         "title": "Description"
+                    },
+                    "timezone": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Timezone"
                     },
                     "event_id": {
                         "type": "string",
@@ -28654,6 +29588,7 @@
                 "properties": {
                     "name": {
                         "type": "string",
+                        "maxLength": 32,
                         "title": "Name"
                     },
                     "start_at": {
@@ -28676,13 +29611,25 @@
                     "description": {
                         "anyOf": [
                             {
-                                "type": "string"
+                                "type": "string",
+                                "maxLength": 1024
                             },
                             {
                                 "type": "null"
                             }
                         ],
                         "title": "Description"
+                    },
+                    "timezone": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Timezone"
                     }
                 },
                 "type": "object",
@@ -28697,7 +29644,8 @@
                     "name": {
                         "anyOf": [
                             {
-                                "type": "string"
+                                "type": "string",
+                                "maxLength": 32
                             },
                             {
                                 "type": "null"
@@ -28732,13 +29680,25 @@
                     "description": {
                         "anyOf": [
                             {
-                                "type": "string"
+                                "type": "string",
+                                "maxLength": 1024
                             },
                             {
                                 "type": "null"
                             }
                         ],
                         "title": "Description"
+                    },
+                    "timezone": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Timezone"
                     }
                 },
                 "type": "object",
@@ -28748,6 +29708,7 @@
                 "properties": {
                     "name": {
                         "type": "string",
+                        "maxLength": 32,
                         "title": "Name"
                     },
                     "start_at": {
@@ -28770,13 +29731,25 @@
                     "description": {
                         "anyOf": [
                             {
-                                "type": "string"
+                                "type": "string",
+                                "maxLength": 1024
                             },
                             {
                                 "type": "null"
                             }
                         ],
                         "title": "Description"
+                    },
+                    "timezone": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Timezone"
                     }
                 },
                 "type": "object",
@@ -28795,6 +29768,7 @@
                     },
                     "name": {
                         "type": "string",
+                        "maxLength": 32,
                         "title": "Name"
                     },
                     "start_at": {
@@ -28817,13 +29791,25 @@
                     "description": {
                         "anyOf": [
                             {
-                                "type": "string"
+                                "type": "string",
+                                "maxLength": 1024
                             },
                             {
                                 "type": "null"
                             }
                         ],
                         "title": "Description"
+                    },
+                    "timezone": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Timezone"
                     },
                     "event_id": {
                         "type": "string",
@@ -29507,6 +30493,91 @@
                 ],
                 "title": "SubscriptionRead"
             },
+            "TelegramLinkTokenRead": {
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "title": "Token"
+                    },
+                    "deep_link": {
+                        "type": "string",
+                        "title": "Deep Link"
+                    },
+                    "expires_at": {
+                        "type": "integer",
+                        "title": "Expires At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "token",
+                    "deep_link",
+                    "expires_at"
+                ],
+                "title": "TelegramLinkTokenRead"
+            },
+            "TelegramWidgetAuth": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "title": "Id"
+                    },
+                    "first_name": {
+                        "type": "string",
+                        "title": "First Name"
+                    },
+                    "last_name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Last Name"
+                    },
+                    "username": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Username"
+                    },
+                    "photo_url": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Photo Url"
+                    },
+                    "auth_date": {
+                        "type": "integer",
+                        "title": "Auth Date"
+                    },
+                    "hash": {
+                        "type": "string",
+                        "title": "Hash"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "first_name",
+                    "auth_date",
+                    "hash"
+                ],
+                "title": "TelegramWidgetAuth",
+                "description": "The signed payload handed back by Telegram's Login Widget JS, verified\nvia ``verify_telegram_widget_payload`` before it's trusted."
+            },
             "TransportInfo": {
                 "properties": {
                     "type": {
@@ -30023,6 +31094,100 @@
                     "public_key"
                 ],
                 "title": "VapidPublicKey"
+            },
+            "WebhookInfo": {
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "title": "Url"
+                    },
+                    "has_custom_certificate": {
+                        "type": "boolean",
+                        "title": "Has Custom Certificate"
+                    },
+                    "pending_update_count": {
+                        "type": "integer",
+                        "title": "Pending Update Count"
+                    },
+                    "ip_address": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Ip Address"
+                    },
+                    "last_error_date": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Last Error Date"
+                    },
+                    "last_error_message": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Last Error Message"
+                    },
+                    "last_synchronization_error_date": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Last Synchronization Error Date"
+                    },
+                    "max_connections": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Max Connections"
+                    },
+                    "allowed_updates": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Allowed Updates"
+                    }
+                },
+                "additionalProperties": true,
+                "type": "object",
+                "required": [
+                    "url",
+                    "has_custom_certificate",
+                    "pending_update_count"
+                ],
+                "title": "WebhookInfo",
+                "description": "Describes the current status of a webhook.\n\nSource: https://core.telegram.org/bots/api#webhookinfo"
             },
             "org__schema__organization__OrganizationRead": {
                 "properties": {

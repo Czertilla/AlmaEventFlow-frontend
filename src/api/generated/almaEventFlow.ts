@@ -512,6 +512,7 @@ export interface StageCreateData {
   start_at: string;
   end_at?: string | null;
   description?: string | null;
+  timezone?: string | null;
 }
 
 export interface MeEventCreate {
@@ -975,6 +976,7 @@ export interface StageRead {
   start_at: string;
   end_at?: string | null;
   description?: string | null;
+  timezone?: string | null;
   event_id: string;
 }
 
@@ -1018,6 +1020,7 @@ export interface StageCreate {
   start_at: string;
   end_at?: string | null;
   description?: string | null;
+  timezone?: string | null;
   event_id: string;
 }
 
@@ -1026,6 +1029,7 @@ export interface StagePatchData {
   start_at?: string | null;
   end_at?: string | null;
   description?: string | null;
+  timezone?: string | null;
 }
 
 export interface StagePutData {
@@ -1033,6 +1037,7 @@ export interface StagePutData {
   start_at: string;
   end_at?: string | null;
   description?: string | null;
+  timezone?: string | null;
 }
 
 export interface StudentCreate {
@@ -1183,6 +1188,34 @@ export interface SessionRead {
   last_used_at: string;
   is_current?: boolean;
 }
+
+export interface PersonLinkRequest {
+  person_id: string;
+}
+
+export interface LinkInviteData {
+  token: string;
+}
+
+export interface TelegramLinkTokenRead {
+  token: string;
+  deep_link: string;
+  expires_at: number;
+}
+
+export interface TelegramWidgetAuth {
+  id: number;
+  first_name: string;
+  last_name?: string | null;
+  username?: string | null;
+  photo_url?: string | null;
+  auth_date: number;
+  hash: string;
+}
+
+export type LoginWithTelegramUserV1AuthTelegramLoginPost200 = { [key: string]: unknown };
+
+export type GetTelegramLoginConfigUserV1AuthTelegramConfigGet200 = { [key: string]: string | null };
 
 export type CalendarSubscriptionTypeEnum = typeof CalendarSubscriptionTypeEnum[keyof typeof CalendarSubscriptionTypeEnum];
 
@@ -1408,6 +1441,7 @@ export type GetStagesEventV1StagesGetParams = {
 order_by?: string | null;
 search?: string | null;
 event_id?: string | null;
+event_id__in?: string | null;
 page?: number;
 /**
  * @maximum 100
@@ -3934,6 +3968,41 @@ export const resetResetPasswordUserV1AuthResetPasswordPost = (
   }
 
 /**
+ * @summary Create Telegram Link Token
+ */
+export const createTelegramLinkTokenUserV1UsersMeTelegramLinkTokenPost = (
+     options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<TelegramLinkTokenRead>> => {
+    return axios.post(
+      `/user/v1/users/me/telegram/link-token`,
+      undefined,options
+    );
+  }
+
+/**
+ * @summary Login With Telegram
+ */
+export const loginWithTelegramUserV1AuthTelegramLoginPost = (
+    telegramWidgetAuth: TelegramWidgetAuth, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<LoginWithTelegramUserV1AuthTelegramLoginPost200>> => {
+    return axios.post(
+      `/user/v1/auth/telegram/login`,
+      telegramWidgetAuth,options
+    );
+  }
+
+/**
+ * @summary Get Telegram Login Config
+ */
+export const getTelegramLoginConfigUserV1AuthTelegramConfigGet = (
+     options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<GetTelegramLoginConfigUserV1AuthTelegramConfigGet200>> => {
+    return axios.get(
+      `/user/v1/auth/telegram/config`,options
+    );
+  }
+
+/**
  * @summary Users:Current User
  */
 export const usersCurrentUserUserV1UsersMeGet = (
@@ -4010,6 +4079,31 @@ export const usersPatchUserUserV1UsersIdPatch = (
     return axios.patch(
       `/user/v1/users/${id}`,
       userUpdate,options
+    );
+  }
+
+/**
+ * @summary Link Person
+ */
+export const linkPersonUserV1UsersUserIdPersonPatch = (
+    userId: string,
+    personLinkRequest: PersonLinkRequest, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<UserRead>> => {
+    return axios.patch(
+      `/user/v1/users/${userId}/person`,
+      personLinkRequest,options
+    );
+  }
+
+/**
+ * @summary Link Invite
+ */
+export const linkInviteUserV1UsersMeLinkInvitePost = (
+    linkInviteData: LinkInviteData, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<UserRead>> => {
+    return axios.post(
+      `/user/v1/users/me/link-invite`,
+      linkInviteData,options
     );
   }
 
@@ -4436,10 +4530,14 @@ export type LogoutUserV1AuthJwtLogoutPostResult = AxiosResponse<void>
 export type RegisterRegisterUserV1AuthRegisterPostResult = AxiosResponse<UserRead>
 export type ResetForgotPasswordUserV1AuthForgotPasswordPostResult = AxiosResponse<unknown>
 export type ResetResetPasswordUserV1AuthResetPasswordPostResult = AxiosResponse<unknown>
+export type CreateTelegramLinkTokenUserV1UsersMeTelegramLinkTokenPostResult = AxiosResponse<TelegramLinkTokenRead>
+export type LoginWithTelegramUserV1AuthTelegramLoginPostResult = AxiosResponse<LoginWithTelegramUserV1AuthTelegramLoginPost200>
+export type GetTelegramLoginConfigUserV1AuthTelegramConfigGetResult = AxiosResponse<GetTelegramLoginConfigUserV1AuthTelegramConfigGet200>
 export type UsersCurrentUserUserV1UsersMeGetResult = AxiosResponse<UserRead>
 export type UsersPatchCurrentUserUserV1UsersMePatchResult = AxiosResponse<UserRead>
 export type UsersUserUserV1UsersIdGetResult = AxiosResponse<UserRead>
 export type UsersPatchUserUserV1UsersIdPatchResult = AxiosResponse<UserRead>
+export type LinkPersonUserV1UsersUserIdPersonPatchResult = AxiosResponse<UserRead>
 export type UsersDeleteUserUserV1UsersIdDeleteResult = AxiosResponse<void>
 export type VerifyRequestTokenUserV1AuthRequestVerifyTokenPostResult = AxiosResponse<unknown>
 export type VerifyVerifyUserV1AuthVerifyPostResult = AxiosResponse<UserRead>
