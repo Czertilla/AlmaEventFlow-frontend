@@ -76,7 +76,7 @@
 <script setup lang="ts">
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonIcon,
-  IonMenu, IonMenuButton, useIonRouter, menuController,
+  IonMenu, IonMenuButton, menuController,
 } from '@ionic/vue'
 import {
   peopleOutline, personOutline, businessOutline, peopleCircleOutline,
@@ -84,13 +84,13 @@ import {
   schoolOutline, restaurantOutline, ribbonOutline, checkmarkDoneOutline,
   personAddOutline,
 } from 'ionicons/icons'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { usePlatform } from '@/composables/usePlatform'
 
 defineProps<{ title: string }>()
 
 const { isDesktop } = usePlatform()
-const ionRouter = useIonRouter()
+const router = useRouter()
 const route = useRoute()
 
 // Grouped by API microservice (TZ: навигация с разделением по микросервисам)
@@ -124,13 +124,12 @@ function isActive(path: string): boolean {
   return route.path === path
 }
 
-// Switch resources without stacking pages: a root-direction replace resets the
-// Ionic navigation stack, so the back button always returns to the home page
-// instead of walking the previously visited admin resources.
 async function go(path: string) {
-  await menuController.close('admin-menu').catch(() => {})
+  if (!isDesktop.value) {
+    await menuController.close('admin-menu').catch(() => {})
+  }
   if (route.path === path) return
-  ionRouter.navigate(path, 'root', 'replace')
+  router.push(path)
 }
 </script>
 
