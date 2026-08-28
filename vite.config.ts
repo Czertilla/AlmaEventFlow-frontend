@@ -36,5 +36,8 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'jsdom'
-  }
+  },
+  server: {
+      allowedHosts: ['sleekly-improving-hippo.cloudpub.ru']
+    }
 })
