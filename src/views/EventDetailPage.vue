@@ -337,26 +337,43 @@
             <p v-if="stageForms.length === 0" class="card-empty">Этапов пока нет — добавьте первый.</p>
             <div v-for="(s, i) in stageForms" :key="s.id ?? `new-${i}`" class="stage-edit">
               <div class="stage-edit-row">
-                <input v-model="s.name" type="text" class="native-input stage-name-input" placeholder="Название этапа" />
+                <input
+                  v-model="s.name"
+                  type="text"
+                  class="native-input stage-name-input"
+                  :maxlength="STAGE_NAME_MAX"
+                  :placeholder="stageNamePlaceholder(s)"
+                />
                 <button class="row-icon-btn row-icon-btn--danger" title="Удалить этап" @click="deleteStage(i)">
                   <ion-icon :icon="trashOutline" />
                 </button>
               </div>
+              <span class="char-counter">{{ s.name.length }} / {{ STAGE_NAME_MAX }}</span>
               <div class="stage-edit-row">
                 <input v-model="s.start_at" type="datetime-local" class="native-input" />
                 <span class="stage-dash">—</span>
-                <input v-model="s.end_at" type="datetime-local" class="native-input" placeholder="Окончание" />
+                <input
+                  v-model="s.end_at"
+                  type="datetime-local"
+                  class="native-input"
+                  placeholder="Окончание"
+                  @focus="onEndFocus(s)"
+                />
               </div>
+              <p v-if="stageEndBeforeStart(s)" class="form-hint form-hint-warn">
+                Окончание не может быть раньше начала
+              </p>
               <textarea
                 v-model="s.description"
                 class="native-input stage-desc-input"
                 rows="2"
+                :maxlength="STAGE_DESCRIPTION_MAX"
                 placeholder="Описание этапа (необязательно)"
               />
               <ion-button
                 size="small"
                 expand="block"
-                :disabled="stagePending || !s.name || !s.start_at"
+                :disabled="stagePending || !stageEffectiveName(s) || !s.start_at || stageEndBeforeStart(s) || !stageIsDirty(s)"
                 @click="saveStage(i)"
               >
                 {{ s.id ? 'Сохранить этап' : 'Добавить этап' }}
@@ -625,14 +642,53 @@ const showStagesModal = ref(false)
 const stagePending = ref(false)
 const stageForms = ref<StageForm[]>([])
 
+const STAGE_NAME_MAX = 32
+const STAGE_DESCRIPTION_MAX = 1024
+
+function firstWord(text: string): string {
+  return text.trim().split(/\s+/)[0]?.slice(0, STAGE_NAME_MAX) ?? ''
+}
+
+function stageEffectiveName(s: StageForm): string {
+  return s.name.trim() || firstWord(s.description)
+}
+
+function stageNamePlaceholder(s: StageForm): string {
+  return firstWord(s.description) || 'Название этапа'
+}
+
+function stageEndBeforeStart(s: StageForm): boolean {
+  return !!s.start_at && !!s.end_at && new Date(s.end_at) < new Date(s.start_at)
+}
+
+function onEndFocus(s: StageForm) {
+  if (!s.end_at && s.start_at) s.end_at = s.start_at
+}
+
+const stageOriginals = new Map<string, string>()
+
+function stageSnapshot(s: StageForm): string {
+  return JSON.stringify({ name: s.name, start_at: s.start_at, end_at: s.end_at, description: s.description })
+}
+
+function stageIsDirty(s: StageForm): boolean {
+  if (!s.id) return true
+  return stageOriginals.get(s.id) !== stageSnapshot(s)
+}
+
 function mapStagesToForms() {
-  stageForms.value = stages.value.map((s) => ({
-    id: s.id,
-    name: s.name,
-    start_at: s.start_at ? toLocalInput(s.start_at) : '',
-    end_at: s.end_at ? toLocalInput(s.end_at) : '',
-    description: s.description ?? '',
-  }))
+  stageOriginals.clear()
+  stageForms.value = stages.value.map((s) => {
+    const form: StageForm = {
+      id: s.id,
+      name: s.name,
+      start_at: s.start_at ? toLocalInput(s.start_at) : '',
+      end_at: s.end_at ? toLocalInput(s.end_at) : '',
+      description: s.description ?? '',
+    }
+    stageOriginals.set(s.id, stageSnapshot(form))
+    return form
+  })
 }
 
 function openStages() {
@@ -660,14 +716,20 @@ async function reloadStages() {
 async function saveStage(i: number) {
   const cid = editableCollectiveId.value
   const s = stageForms.value[i]
-  if (!cid || !s.name || !s.start_at) return
+  const name = stageEffectiveName(s)
+  if (!cid || !name || !s.start_at || stageEndBeforeStart(s)) return
   stagePending.value = true
   try {
     const body = {
-      name: s.name,
+      name,
       start_at: toTzIso(s.start_at),
       end_at: s.end_at ? toTzIso(s.end_at) : null,
       description: s.description || null,
+      // IANA-имя зоны этого браузера — offset в start_at/end_at уже даёт
+      // корректный момент времени, но только имя зоны позволяет каналам без
+      // собственного рендера (сообщение в Telegram) показать то время, что
+      // имел в виду автор, а не что-то в духе UTC.
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     }
     if (s.id) {
       await patchMyCollectiveEventStageEventV1MeCollectivesCollectiveIdStagesStageIdPatch(cid, s.id, body)
@@ -742,6 +804,7 @@ onMounted(async () => {
     const [eventResp, stagesResp] = await Promise.all([
       getEventEventV1EventsEventIdGet(eventId),
       getEventStagesEventV1EventsEventIdStagesGet(eventId, { limit: 100, order_by: 'start_at' }).catch(() => null),
+      principal.fetchCollectives(),
     ])
     event.value = eventResp.data
     stages.value = stagesResp?.data.items ?? []
@@ -1237,6 +1300,17 @@ onMounted(async () => {
   margin: 2px 0 0;
   font-size: 12px;
   color: var(--ion-color-medium);
+}
+
+.form-hint-warn {
+  color: var(--ion-color-danger);
+  font-weight: 600;
+}
+
+.char-counter {
+  align-self: flex-end;
+  font-size: 11px;
+  color: var(--ion-color-step-400);
 }
 
 .my-attendance {
