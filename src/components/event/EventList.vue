@@ -24,6 +24,7 @@
         :ref="(el) => setEventRef(event.id, el)"
         :event="event"
         :items="getItems(event)"
+        :time-range="stageTimes.get(event.id)"
         :is-principal="isPrincipal"
         @click="emit('selectEvent', event.id)"
         @toggle-attendance="(id, v) => emit('toggleAttendance', id, v)"
@@ -51,7 +52,7 @@ import { checkmarkDoneOutline } from 'ionicons/icons'
 import EventPreview from './EventPreview.vue'
 import { usePlatform } from '@/composables/usePlatform'
 import type { EventRead } from '@/api/generated/almaEventFlow'
-import type { EventAttendanceItem } from '@/stores/eventCalendar'
+import type { EventAttendanceItem, EventTimeRange } from '@/stores/eventCalendar'
 import type { CollectiveAttendanceItem } from './EventPreview.vue'
 import { isSameDay, format, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
@@ -59,6 +60,7 @@ import { ru } from 'date-fns/locale'
 const props = defineProps<{
   events: EventRead[]
   attendances: Map<string, EventAttendanceItem[]>
+  stageTimes: Map<string, EventTimeRange>
   isPrincipal: boolean
   loading: boolean
   loadingUp: boolean

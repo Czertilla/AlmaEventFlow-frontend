@@ -1,5 +1,5 @@
 <template>
-  <div class="event-card" :class="{ 'event-card--pending': hasPendingAttendance }" @click="$emit('click')">
+  <div class="event-card" @click="$emit('click')">
     <div class="event-card-header">
       <div v-if="isPrincipal" class="event-status" :style="{ background: statusColor }" :title="statusLabel" />
       <div class="event-info">
@@ -29,6 +29,7 @@
               :verified="item.attendance.is_verified"
               :attendance-id="item.attendance.id"
               :show-lock="false"
+              glow
               @toggle="(v) => $emit('toggleAttendance', item.attendance!.id, v)"
             />
             <EventCommentChip
@@ -57,6 +58,7 @@
               :verified="item.attendance.is_verified"
               :attendance-id="item.attendance.id"
               :show-lock="false"
+              glow
               @toggle="(v) => $emit('toggleAttendance', item.attendance!.id, v)"
             />
             <EventCommentChip
@@ -84,6 +86,7 @@ import { getCollectiveColor } from '@/utils/colors'
 import EventAttendanceChip from './EventAttendanceChip.vue'
 import EventCommentChip from './EventCommentChip.vue'
 import type { EventRead, AttendanceRead, EventStatusEnumV1 } from '@/api/generated/almaEventFlow'
+import type { EventTimeRange } from '@/stores/eventCalendar'
 import { calendarOutline, lockClosed } from 'ionicons/icons'
 
 export interface CollectiveAttendanceItem {
@@ -99,6 +102,7 @@ const getColor = getCollectiveColor
 const props = defineProps<{
   event: EventRead
   items: CollectiveAttendanceItem[]
+  timeRange?: EventTimeRange
   isPrincipal: boolean
 }>()
 
@@ -114,17 +118,14 @@ const settings = useSettingsStore()
 // Счётчик присутствий показываем руководителю только у активных мероприятий
 const showAttendanceCount = computed(() => props.isPrincipal && props.event.status === 'active')
 
-// Есть собственная неотмеченная запись — карточка подсвечивается жёлтым свечением
-const hasPendingAttendance = computed(() =>
-  props.items.some((i) => i.attendance && i.attendance.edited_at == null && !i.attendance.is_verified),
-)
-
-// Show time only when the event date carries a time component
+// Время самого мероприятия отсутствует (event.date -- только дата); время берём
+// из этапов -- первая метка начала и последняя метка окончания (если есть)
 const eventTime = computed(() => {
-  const d = props.event.date
-  if (!d || !d.includes('T')) return ''
-  const t = formatTime(d)
-  return t === '00:00' ? '' : t
+  const range = props.timeRange
+  if (!range) return ''
+  const first = formatTime(range.first)
+  const last = formatTime(range.last)
+  return first === last ? first : `${first}–${last}`
 })
 
 const statusColor = computed(() => {
@@ -163,20 +164,6 @@ const statusLabel = computed(() => {
 .event-card:hover {
   transform: translateY(-1px);
   box-shadow: 0 4px 20px rgba(var(--ion-color-primary-rgb), 0.12);
-}
-
-/* Неотмеченное мероприятие — пульсирующее жёлтое свечение */
-.event-card--pending {
-  animation: pendingGlow 1.8s ease-in-out infinite;
-}
-
-.event-card--pending:hover {
-  animation: none;
-}
-
-@keyframes pendingGlow {
-  0%, 100% { box-shadow: var(--ion-card-shadow); }
-  50% { box-shadow: var(--ion-card-shadow), 0 0 18px 2px rgba(255, 184, 0, 0.55); }
 }
 
 .event-card-header {

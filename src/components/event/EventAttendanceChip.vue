@@ -2,7 +2,10 @@
   <span class="att-chip-group">
     <button
       class="att-chip"
-      :class="[`att-chip--${state}`, { 'att-chip--locked': verified }]"
+      :class="[
+        `att-chip--${state}`,
+        { 'att-chip--locked': verified, 'att-chip--glow': glow && state === 'pending' },
+      ]"
       :disabled="!!verified || loading"
       @click.stop="handleToggle"
     >
@@ -20,7 +23,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { IonIcon } from '@ionic/vue'
-import { checkmarkCircle, closeCircle, helpCircle, lockClosed } from 'ionicons/icons'
+import { checkmarkCircle, closeCircle, removeCircle, lockClosed } from 'ionicons/icons'
 import { useAttendancePending } from '@/composables/useAttendancePending'
 
 const props = withDefaults(defineProps<{
@@ -33,6 +36,8 @@ const props = withDefaults(defineProps<{
   attendanceId?: string
   /** false — не рендерить замочек (родитель рендерит его сам после comment-chip) */
   showLock?: boolean
+  /** Пульсирующая подсветка чипа, пока отметка не проставлена */
+  glow?: boolean
 }>(), { own: true })
 
 const emit = defineEmits<{
@@ -53,7 +58,7 @@ const state = computed<ChipState>(() => {
 })
 
 const chipIcon = computed(() => ({
-  pending: helpCircle,
+  pending: removeCircle,
   attended: checkmarkCircle,
   absent: closeCircle,
 }[state.value]))
@@ -116,13 +121,27 @@ function handleToggle() {
 }
 
 .att-chip--pending {
-  background: rgba(124, 58, 237, 0.12);
-  border-color: rgba(124, 58, 237, 0.35);
-  color: #7C3AED;
+  background: rgba(255, 184, 0, 0.14);
+  border-color: rgba(255, 184, 0, 0.4);
+  color: #B37E00;
 }
 
 .ion-palette-dark .att-chip--pending {
-  color: #A78BFA;
+  color: #FFB800;
+}
+
+/* Неотмеченная своя отметка — пульсирующее жёлтое свечение вокруг кнопки */
+.att-chip--glow {
+  animation: att-chip-pending-glow 1.8s ease-in-out infinite;
+}
+
+.att-chip--glow:hover {
+  animation: none;
+}
+
+@keyframes att-chip-pending-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(255, 184, 0, 0); }
+  50% { box-shadow: 0 0 0 4px rgba(255, 184, 0, 0.45); }
 }
 
 .att-chip--attended {

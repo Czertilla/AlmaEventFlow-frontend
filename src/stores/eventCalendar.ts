@@ -1,8 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, addMonths, isSameDay, isWithinInterval } from 'date-fns'
-import { getParticipationsEventV1ParticipationsGet, getAttendancesEventV1AttendancesGet } from '@/api/generated/almaEventFlow'
-import type { EventRead, AttendanceRead } from '@/api/generated/almaEventFlow'
+import { getParticipationsEventV1ParticipationsGet, getAttendancesEventV1AttendancesGet, getStagesEventV1StagesGet } from '@/api/generated/almaEventFlow'
+import type { EventRead, AttendanceRead, StageRead } from '@/api/generated/almaEventFlow'
 import type { CollectiveInfo } from './principal'
 import { fetchAllPages } from '@/api/pagination'
 
@@ -14,9 +14,15 @@ export interface EventAttendanceItem {
   totalCount: number
 }
 
+export interface EventTimeRange {
+  first: string
+  last: string
+}
+
 export const useEventCalendarStore = defineStore('eventCalendar', () => {
   const events = ref<EventRead[]>([])
   const attendances = ref<Map<string, EventAttendanceItem[]>>(new Map())
+  const stageTimes = ref<Map<string, EventTimeRange>>(new Map())
   const selectedDate = ref<Date>(new Date())
   const currentMonth = ref<Date>(new Date())
   const visibleRange = ref<{ start: Date; end: Date }>({
@@ -145,10 +151,41 @@ export const useEventCalendarStore = defineStore('eventCalendar', () => {
     attendances.value = merged
   }
 
+  // Диапазон времени мероприятия — по этапам (у event.date времени нет),
+  // первая метка = min(start_at), последняя = max(end_at ?? start_at)
+  async function fetchStageTimes(eventIds: string[]) {
+    if (eventIds.length === 0) return
+    let items: StageRead[]
+    try {
+      items = await fetchAllPages<StageRead>(
+        (page, limit) =>
+          getStagesEventV1StagesGet({ event_id__in: eventIds.join(','), page, limit }),
+      )
+    } catch (e) {
+      console.warn('stage times fetch failed:', e)
+      return
+    }
+    const byEvent = new Map<string, StageRead[]>()
+    for (const s of items) {
+      if (!byEvent.has(s.event_id)) byEvent.set(s.event_id, [])
+      byEvent.get(s.event_id)!.push(s)
+    }
+    const merged = new Map(stageTimes.value)
+    for (const [eventId, stagesList] of byEvent) {
+      const starts = stagesList.map((s) => s.start_at)
+      const ends = stagesList.map((s) => s.end_at || s.start_at)
+      const first = starts.reduce((a, b) => (a < b ? a : b))
+      const last = ends.reduce((a, b) => (a > b ? a : b))
+      merged.set(eventId, { first, last })
+    }
+    stageTimes.value = merged
+  }
+
   // Полный сброс — вызывается при смене аккаунта, чтобы не показывать чужие attendance
   function reset() {
     events.value = []
     attendances.value = new Map()
+    stageTimes.value = new Map()
     selectedDate.value = new Date()
     setCurrentMonth(new Date())
   }
@@ -160,6 +197,7 @@ export const useEventCalendarStore = defineStore('eventCalendar', () => {
   return {
     events,
     attendances,
+    stageTimes,
     selectedDate,
     currentMonth,
     visibleRange,
@@ -172,6 +210,7 @@ export const useEventCalendarStore = defineStore('eventCalendar', () => {
     addEvents,
     setAttendances,
     fetchAttendances,
+    fetchStageTimes,
     reset,
     isInVisibleRange,
   }

@@ -79,6 +79,7 @@
                   ref="eventListRef"
                   :events="filteredEvents"
                   :attendances="calendar.attendances"
+                  :stage-times="calendar.stageTimes"
                   :is-principal="principal.isPrincipal"
                   :loading="loading"
                   :loading-up="loadingUp"
@@ -323,9 +324,14 @@ function toDateString(d: Date): string {
 }
 
 async function fetchAttendanceForEvents(eventList: Array<{ id: string }>) {
-  if (collectives.value.length === 0 || eventList.length === 0) return
+  if (eventList.length === 0) return
   const ids = eventList.map((e) => e.id)
-  await calendar.fetchAttendances(collectives.value, ids, principal.userMemberIds)
+  await Promise.all([
+    collectives.value.length > 0
+      ? calendar.fetchAttendances(collectives.value, ids, principal.userMemberIds)
+      : Promise.resolve(),
+    calendar.fetchStageTimes(ids),
+  ])
 }
 
 const loadingUp = ref(false)
