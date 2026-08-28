@@ -103,10 +103,19 @@ export const usePrincipalStore = defineStore('principal', () => {
     return inFlight
   }
 
+  async function getMyCollectivesWithRetry() {
+    try {
+      return await getMyCollectivesEventV1MeCollectivesGet()
+    } catch {
+      await new Promise((resolve) => setTimeout(resolve, 500))
+      return await getMyCollectivesEventV1MeCollectivesGet()
+    }
+  }
+
   async function doFetchCollectives() {
     loading.value = true
     try {
-      const myResp = await getMyCollectivesEventV1MeCollectivesGet()
+      const myResp = await getMyCollectivesWithRetry()
       const myIds = unwrapList<{ id: string }>(myResp.data).map((i) => i.id)
 
       // Членства пользователя (роль участника) — отдельная ручка me/members,
@@ -146,7 +155,6 @@ export const usePrincipalStore = defineStore('principal', () => {
       setCollectives(result, myIds)
       loadFromStorage()
     } catch (e) {
-      setCollectives([])
       console.error('fetchCollectives failed:', e)
     } finally {
       loading.value = false
