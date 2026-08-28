@@ -2,15 +2,16 @@ import { ref } from 'vue'
 
 const DESKTOP_BREAKPOINT = 768
 
-// Синглтон с синхронной инициализацией — иначе при первом рендере
-// все компоненты считают платформу мобильной до onMounted
-const isDesktop = ref(typeof window !== 'undefined' && window.innerWidth >= DESKTOP_BREAKPOINT)
+const desktopQuery =
+  typeof window !== 'undefined'
+    ? window.matchMedia(`(min-width: ${DESKTOP_BREAKPOINT}px)`)
+    : null
 
-if (typeof window !== 'undefined') {
-  window.addEventListener('resize', () => {
-    isDesktop.value = window.innerWidth >= DESKTOP_BREAKPOINT
-  })
-}
+const isDesktop = ref(desktopQuery?.matches ?? false)
+
+desktopQuery?.addEventListener('change', (e) => {
+  isDesktop.value = e.matches
+})
 
 export function usePlatform() {
   return { isDesktop }
