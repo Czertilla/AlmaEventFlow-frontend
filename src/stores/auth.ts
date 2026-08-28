@@ -12,8 +12,15 @@ import {
   registerRegisterUserV1AuthRegisterPost,
   resetForgotPasswordUserV1AuthForgotPasswordPost,
   resetResetPasswordUserV1AuthResetPasswordPost,
+  loginWithTelegramUserV1AuthTelegramLoginPost,
 } from '@/api/generated/almaEventFlow'
-import type { UserCreate, UserRead, UserUpdate, BodyLoginUserV1AuthJwtLoginPost } from '@/api/generated/almaEventFlow'
+import type {
+  UserCreate,
+  UserRead,
+  UserUpdate,
+  BodyLoginUserV1AuthJwtLoginPost,
+  TelegramWidgetAuth,
+} from '@/api/generated/almaEventFlow'
 
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<UserRead | null>(null)
@@ -42,6 +49,15 @@ export const useAuthStore = defineStore('auth', () => {
     const data = response.data as { access_token: string }
     // Сбрасываем данные предыдущего аккаунта ДО навигации на главную,
     // чтобы reset не стёр события, загруженные уже новым аккаунтом
+    useEventCalendarStore().reset()
+    setAccess(data.access_token)
+    await fetchUser()
+  }
+
+  async function loginWithTelegram(payload: TelegramWidgetAuth) {
+    const response = await loginWithTelegramUserV1AuthTelegramLoginPost(payload)
+    const data = response.data as { access_token: string }
+    // Тот же порядок, что и в login(): сброс календаря ДО навигации.
     useEventCalendarStore().reset()
     setAccess(data.access_token)
     await fetchUser()
@@ -106,6 +122,7 @@ export const useAuthStore = defineStore('auth', () => {
     isAuthenticated,
     isSuperuser,
     login,
+    loginWithTelegram,
     tryRefresh,
     fetchUser,
     register,

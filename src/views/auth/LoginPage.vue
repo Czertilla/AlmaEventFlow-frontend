@@ -50,6 +50,12 @@
               <router-link to="/auth/forgot-password" class="auth-forgot">
                 Забыли пароль?
               </router-link>
+
+              <div v-if="botUsername" class="auth-divider">
+                <span>или</span>
+              </div>
+
+              <div v-if="botUsername" class="auth-telegram" ref="telegramContainer" />
             </div>
           </div>
         </div>
@@ -59,11 +65,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { nextTick, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { IonPage, IonContent, IonIcon, onIonViewDidLeave } from '@ionic/vue'
 import { personOutline, lockClosedOutline, alertCircleOutline } from 'ionicons/icons'
+import { useTelegramWidget, type TelegramWidgetUser } from '@/composables/useTelegramWidget'
+import { getTelegramLoginConfigUserV1AuthTelegramConfigGet } from '@/api/generated/almaEventFlow'
 
 const route = useRoute()
 const router = useRouter()
@@ -73,6 +81,27 @@ const username = ref((route.query.email as string) || '')
 const password = ref('')
 const error = ref('')
 const loading = ref(false)
+
+const botUsername = ref<string | null>(null)
+const telegramContainer = ref<HTMLElement | null>(null)
+const { mount: mountTelegramWidget } = useTelegramWidget(telegramContainer, handleTelegramAuth)
+
+onMounted(async () => {
+  try {
+    const response = await getTelegramLoginConfigUserV1AuthTelegramConfigGet()
+    const name = response.data.bot_username
+    if (name) {
+      botUsername.value = name
+      // Контейнер появляется в DOM только после этого v-if — ждём именно
+      // патча Vue (nextTick), а не следующего animation frame: тот не даёт
+      // гарантии, что DOM уже обновлён, и виджет иногда не монтировался.
+      await nextTick()
+      mountTelegramWidget(name)
+    }
+  } catch (e) {
+    console.warn('failed to load telegram login config:', e)
+  }
+})
 
 // Не оставляем пароль в памяти/кэше после ухода со страницы входа.
 onIonViewDidLeave(() => {
@@ -92,6 +121,23 @@ async function handleLogin() {
     router.push('/')
   } catch (err: any) {
     error.value = err?.response?.data?.detail || 'Неверный логин или пароль'
+  } finally {
+    loading.value = false
+  }
+}
+
+async function handleTelegramAuth(user: TelegramWidgetUser) {
+  error.value = ''
+  loading.value = true
+  try {
+    await auth.loginWithTelegram(user)
+    router.push('/')
+  } catch (err: any) {
+    const detail = err?.response?.data?.detail
+    error.value =
+      detail === 'TELEGRAM_ACCOUNT_NOT_LINKED'
+        ? 'Этот Telegram-аккаунт ещё не привязан. Свяжите его через бота командой /start.'
+        : 'Не удалось войти через Telegram'
   } finally {
     loading.value = false
   }
@@ -326,6 +372,27 @@ async function handleLogin() {
   font-weight: 500;
   color: var(--ion-color-primary);
   text-decoration: none;
+}
+
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--ion-color-medium);
+  font-size: 13px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--ion-border-color);
+}
+
+.auth-telegram {
+  display: flex;
+  justify-content: center;
 }
 
 .btn-spinner {
