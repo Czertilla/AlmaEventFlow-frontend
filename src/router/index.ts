@@ -174,6 +174,11 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('@/views/auth/ResetPasswordPage.vue'),
     meta: { guest: true },
   },
+  {
+    path: '/auth/link-invite',
+    component: () => import('@/views/auth/LinkInvitePage.vue'),
+    meta: { auth: true },
+  },
   // Authenticated app shell with tab navigation
   {
     path: '/',
@@ -209,6 +214,9 @@ router.beforeEach(async (to, _from, next) => {
   const needsSup = to.meta.sup
   const needsPrincipal = to.meta.principal
   if (guestOnly && isAuthenticated) {
+    if (to.path === '/auth/register' && typeof to.query.token === 'string' && to.query.token) {
+      return next({ path: '/auth/link-invite', query: { token: to.query.token } })
+    }
     return next('/')
   }
   if (needsAuth && !isAuthenticated) {
