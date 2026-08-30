@@ -32,11 +32,8 @@ import '@ionic/vue/css/display.css';
 /* @import '@ionic/vue/css/palettes/dark.class.css'; */
 import '@ionic/vue/css/palettes/dark.class.css';
 
-/* Theme variables */
 import './theme/variables.css';
 
-// Согласуем анимации переходов Ionic с пользовательской настройкой ещё до
-// инициализации: 'off' (или системное reduced-motion при 'auto') отключает их.
 function resolveAnimated(): boolean {
   try {
     const mode = JSON.parse(localStorage.getItem('animations') ?? '"auto"')
@@ -55,3 +52,9 @@ const app = createApp(App)
 router.isReady().then(() => {
   app.mount('#app');
 });
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw.js').catch(() => {})
+  });
+}
