@@ -14,6 +14,17 @@ function loadSetting<T>(key: string, fallback: T): T {
   return fallback
 }
 
+function loadTheme(): Theme {
+  const stored = localStorage.getItem('theme')
+  if (stored !== null) {
+    try { return JSON.parse(stored) as Theme } catch { /* ignore */ }
+  }
+  const prefersDark = typeof window !== 'undefined' && window.matchMedia
+    ? window.matchMedia('(prefers-color-scheme: dark)').matches
+    : false
+  return prefersDark ? 'dark' : 'light'
+}
+
 function saveSetting(key: string, value: unknown) {
   localStorage.setItem(key, JSON.stringify(value))
 }
@@ -23,7 +34,7 @@ const reducedMotionQuery = typeof window !== 'undefined' && window.matchMedia
   : null
 
 export const useSettingsStore = defineStore('settings', () => {
-  const theme = ref<Theme>(loadSetting<Theme>('theme', 'light'))
+  const theme = ref<Theme>(loadTheme())
   const dateFormat = ref<DateFormat>(loadSetting<DateFormat>('dateFormat', 'DD.MM.YYYY'))
   const firstDayOfWeek = ref<FirstDayOfWeek>(loadSetting<FirstDayOfWeek>('firstDayOfWeek', 'monday'))
   const animations = ref<Animations>(loadSetting<Animations>('animations', 'auto'))
