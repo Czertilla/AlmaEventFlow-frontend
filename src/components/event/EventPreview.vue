@@ -9,6 +9,7 @@
           {{ event.date ? formatDate(event.date, settings.dateFormat) : 'Дата не назначена' }}
           <template v-if="eventTime"> · {{ eventTime }}</template>
         </span>
+        <LocationDisplay v-if="location" :location="location" class="event-location" />
       </div>
       <div class="event-members" v-if="showAttendanceCount && items.length === 1 && items[0]?.totalCount">
         <span class="member-badge">{{ items[0].attendedCount }}/{{ items[0].totalCount }}</span>
@@ -85,7 +86,8 @@ import { formatDate, formatTime } from '@/utils/date'
 import { getCollectiveColor } from '@/utils/colors'
 import EventAttendanceChip from './EventAttendanceChip.vue'
 import EventCommentChip from './EventCommentChip.vue'
-import type { EventRead, AttendanceRead, EventStatusEnumV1 } from '@/api/generated/almaEventFlow'
+import LocationDisplay from '@/components/geo/LocationDisplay.vue'
+import type { EventRead, AttendanceRead, EventStatusEnumV1, LocationRead } from '@/api/generated/almaEventFlow'
 import type { EventTimeRange } from '@/stores/eventCalendar'
 import { calendarOutline, lockClosed } from 'ionicons/icons'
 
@@ -104,6 +106,9 @@ const props = defineProps<{
   items: CollectiveAttendanceItem[]
   timeRange?: EventTimeRange
   isPrincipal: boolean
+  /** Опционально: карточка не делает запрос сама (список карточек не должен
+   * плодить N+1) -- показывает локацию, только если родитель уже её загрузил. */
+  location?: LocationRead | null
 }>()
 
 defineEmits<{
@@ -202,6 +207,11 @@ const statusLabel = computed(() => {
   gap: 4px;
   font-size: 12px;
   color: var(--ion-color-medium);
+  margin-top: 2px;
+}
+
+.event-location {
+  font-size: 12px;
   margin-top: 2px;
 }
 

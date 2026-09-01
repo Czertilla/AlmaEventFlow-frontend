@@ -228,31 +228,22 @@
             <div class="form-field">
               <label>Локация</label>
               <div v-if="selectedLocation" class="organizer-selected">
-                <span><ion-icon class="inline-icon" :icon="locationOutline" /> {{ selectedLocation.name }}</span>
+                <LocationDisplay :location="selectedLocation" />
                 <button class="organizer-clear" aria-label="Убрать локацию" @click="clearLocation">
                   <ion-icon :icon="closeOutline" />
                 </button>
               </div>
-              <template v-else>
-                <ion-searchbar
-                  v-model="locationSearch"
-                  placeholder="Поиск локации..."
-                  class="member-search"
-                  :debounce="400"
-                  @ion-input="searchLocations"
-                />
-                <div v-if="locationOptions.length" class="organizer-options">
-                  <button
-                    v-for="l in locationOptions"
-                    :key="l.id"
-                    class="organizer-option"
-                    @click="selectLocation(l)"
-                  >
-                    {{ l.name }}
-                  </button>
-                </div>
-              </template>
+              <ion-button v-else fill="outline" size="small" @click="locationPickerOpen = true">
+                <ion-icon slot="start" :icon="locationOutline" />
+                Выбрать локацию
+              </ion-button>
             </div>
+
+            <LocationAssignPicker
+              :is-open="locationPickerOpen"
+              @close="locationPickerOpen = false"
+              @selected="onLocationPicked"
+            />
 
             <div class="form-field">
               <label>
@@ -441,11 +432,13 @@ import {
 } from 'ionicons/icons'
 import { format as fnsFormat } from 'date-fns'
 import { listOrganizationsOrgV1OrganizationsGet } from '@/api/generated/almaEventFlow'
-import { getLocationsGeoV1LocationsGet } from '@/api/generated/almaEventFlow'
+import { getLocationGeoV1LocationsLocationIdGet } from '@/api/generated/almaEventFlow'
 import { usePrincipalStore } from '@/stores/principal'
 import { useSettingsStore } from '@/stores/settings'
 import { useToast } from '@/composables/useToast'
 import { useEntityPicker } from '@/composables/useEntityPicker'
+import LocationAssignPicker from '@/components/geo/LocationAssignPicker.vue'
+import LocationDisplay from '@/components/geo/LocationDisplay.vue'
 import { formatDate } from '@/utils/date'
 import {
   statusColor, statusLabel, levelOptions, typeOptions, formatOptions,
@@ -460,7 +453,7 @@ import {
   createMyCollectiveParticipationEventV1MeCollectivesCollectiveIdParticipationsPost,
 } from '@/api/generated/almaEventFlow'
 import { resolvePersonName, rememberMemberPerson, shortId } from '@/utils/names'
-import type { EventRead, EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1, MemberRead, RoleRead } from '@/api/generated/almaEventFlow'
+import type { EventRead, EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1, MemberRead, RoleRead, LocationRead } from '@/api/generated/almaEventFlow'
 
 const EVENT_NAME_MAX = 128
 const EVENT_DESCRIPTION_MAX = 1024
@@ -514,6 +507,7 @@ const selectedMemberIds = ref<Set<string>>(new Set())
 
 const form = ref({
   sourceId: null as string | null,
+  templateId: null as string | null,
   name: '',
   date: '',
   description: '',
@@ -524,10 +518,8 @@ const form = ref({
   stages: [] as StageForm[],
 })
 
-// Организатор и локация — поиск по справочникам (общий useEntityPicker).
-// Алиасы сохраняют прежние имена для шаблона.
+// Организатор — поиск по справочнику (общий useEntityPicker).
 type OrganizerOption = { id: string; name: string }
-type LocationOption = { id: string; name: string }
 
 const {
   search: organizerSearch, options: organizerOptions, selected: selectedOrganizer,
@@ -535,11 +527,18 @@ const {
   reset: resetOrganizer,
 } = useEntityPicker((params) => listOrganizationsOrgV1OrganizationsGet(params))
 
-const {
-  search: locationSearch, options: locationOptions, selected: selectedLocation,
-  runSearch: searchLocations, select: selectLocation, clear: clearLocation,
-  reset: resetLocation,
-} = useEntityPicker((params) => getLocationsGeoV1LocationsGet(params))
+// Локация — через LocationAssignPicker (три сценария: локации/адреса/новая).
+const locationPickerOpen = ref(false)
+const selectedLocation = ref<LocationRead | null>(null)
+
+function onLocationPicked(location: LocationRead) {
+  selectedLocation.value = location
+  locationPickerOpen.value = false
+}
+
+function clearLocation() {
+  selectedLocation.value = null
+}
 
 // Комбобокс выбора шаблона / существующего мероприятия как поисковая строка
 const sourceSearch = ref('')
@@ -764,12 +763,12 @@ function cancelParticipantsEdit() {
 }
 
 function openCreate() {
-  form.value = { sourceId: null, name: '', date: '', description: '', status: 'draft', level: null, type: null, format: null, stages: [] }
+  form.value = { sourceId: null, templateId: null, name: '', date: '', description: '', status: 'draft', level: null, type: null, format: null, stages: [] }
   templateBase = null
   sourceFilters.type = ''
   sourceFilters.level = ''
   resetOrganizer()
-  resetLocation()
+  clearLocation()
   sourceSearch.value = ''
   sourceDropdownOpen.value = false
   sourceFilterOpen.value = false
@@ -785,11 +784,16 @@ async function onSourceSelected(id: string | null) {
   form.value.sourceId = id
   const template = templates.value.find((t) => t.id === id)
   if (!template) {
+    form.value.templateId = null
     templateBase = null
     form.value.stages = []
     return
   }
-  // С шаблона переносятся все поля, кроме даты (включая стадии, организатора и локацию)
+  // Поля (включая организатора и локацию) копирует backend по template_id --
+  // здесь они лишь предзаполняются в форме, чтобы их можно было посмотреть и
+  // поправить перед созданием. Этапы backend не копирует принципиально
+  // (шаблон — не расписание), их пересчёт остаётся на клиенте, ниже.
+  form.value.templateId = template.id
   form.value.name = template.name
   form.value.description = template.description || ''
   form.value.level = template.level ?? null
@@ -802,14 +806,16 @@ async function onSourceSelected(id: string | null) {
       const found = (res.data.items as OrganizerOption[]).find((o) => o.id === template.organizer_id)
       if (found) selectedOrganizer.value = found
     } catch { /* имя организатора не критично */ }
+  } else {
+    clearOrganizer()
   }
   if (template.location_id) {
-    selectedLocation.value = { id: template.location_id, name: 'Локация из шаблона' }
     try {
-      const loc = await getLocationsGeoV1LocationsGet({ limit: 100 })
-      const found = (loc.data.items as LocationOption[]).find((o) => o.id === template.location_id)
-      if (found) selectedLocation.value = found
-    } catch { /* имя локации не критично */ }
+      const loc = await getLocationGeoV1LocationsLocationIdGet(template.location_id)
+      selectedLocation.value = loc.data
+    } catch { /* локация не критична для предпросмотра */ }
+  } else {
+    clearLocation()
   }
   // ТЗ: при копировании из шаблона без attendance тонкая настройка остаётся в дефолте
   participantsExpanded.value = false
@@ -930,6 +936,7 @@ async function submit() {
         format: form.value.format ?? undefined,
         organizer_id: selectedOrganizer.value?.id ?? null,
         location_id: selectedLocation.value?.id ?? null,
+        template_id: form.value.templateId,
         collective_id: collectiveId,
         member_ids: memberIds,
         stages: stages.length ? stages : null,
@@ -1525,12 +1532,6 @@ watch(() => principal.activePrincipalCollectiveId, async (collectiveId) => {
   margin-left: auto;
   font-size: 11px;
   color: var(--ion-color-step-400);
-}
-
-.inline-icon {
-  vertical-align: -2px;
-  margin-right: 4px;
-  color: var(--ion-color-medium);
 }
 
 /* Source combobox */

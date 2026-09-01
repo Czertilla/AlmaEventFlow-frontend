@@ -38,6 +38,7 @@
                   <ion-icon :icon="timeOutline" />
                   {{ eventTime }}
                 </span>
+                <LocationDisplay v-if="displayLocation" :location="displayLocation" class="info-meta-item" />
                 <UuidBadge :id="event.id" />
               </div>
               <p class="info-description">{{ event.description || 'Нет описания' }}</p>
@@ -264,26 +265,22 @@
             <div class="form-field">
               <label>Локация</label>
               <div v-if="selectedLocation" class="chip-selected">
-                <span><ion-icon class="inline-icon" :icon="locationOutline" /> {{ selectedLocation.name }}</span>
+                <LocationDisplay :location="selectedLocation" />
                 <button class="chip-clear" aria-label="Убрать локацию" @click="selectedLocation = null">
                   <ion-icon :icon="closeOutline" />
                 </button>
               </div>
-              <template v-else>
-                <ion-searchbar
-                  v-model="locationSearch"
-                  placeholder="Поиск локации..."
-                  class="member-search"
-                  :debounce="400"
-                  @ion-input="searchLocations"
-                />
-                <div v-if="locationOptions.length" class="combo-options">
-                  <button v-for="l in locationOptions" :key="l.id" class="combo-option" @click="selectLocation(l)">
-                    {{ l.name }}
-                  </button>
-                </div>
-              </template>
+              <ion-button v-else fill="outline" size="small" @click="locationPickerOpen = true">
+                <ion-icon slot="start" :icon="locationOutline" />
+                Выбрать локацию
+              </ion-button>
             </div>
+
+            <LocationAssignPicker
+              :is-open="locationPickerOpen"
+              @close="locationPickerOpen = false"
+              @selected="(l) => { selectedLocation = l; locationPickerOpen = false }"
+            />
 
             <div class="form-field">
               <label>Статус</label>
@@ -475,15 +472,17 @@ import {
   patchMyCollectiveEventStageEventV1MeCollectivesCollectiveIdStagesStageIdPatch,
   deleteMyCollectiveEventStageEventV1MeCollectivesCollectiveIdStagesStageIdDelete,
   listOrganizationsOrgV1OrganizationsGet,
-  getLocationsGeoV1LocationsGet,
+  getLocationGeoV1LocationsLocationIdGet,
 } from '@/api/generated/almaEventFlow'
 import { format as fnsFormat } from 'date-fns'
 import UuidBadge from '@/components/common/UuidBadge.vue'
 import EventAttendanceChip from '@/components/event/EventAttendanceChip.vue'
 import EventCommentChip from '@/components/event/EventCommentChip.vue'
+import LocationAssignPicker from '@/components/geo/LocationAssignPicker.vue'
+import LocationDisplay from '@/components/geo/LocationDisplay.vue'
 import type {
   EventRead, EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1,
-  EventPriorityEnumV1, StageRead,
+  EventPriorityEnumV1, StageRead, LocationRead,
 } from '@/api/generated/almaEventFlow'
 
 const route = useRoute()
@@ -496,6 +495,20 @@ const eventId = route.params.id as string
 const event = ref<EventRead | null>(null)
 const stages = ref<StageRead[]>([])
 const loading = ref(true)
+const displayLocation = ref<LocationRead | null>(null)
+
+async function loadDisplayLocation(locationId: string | null | undefined) {
+  if (!locationId) {
+    displayLocation.value = null
+    return
+  }
+  try {
+    const res = await getLocationGeoV1LocationsLocationIdGet(locationId)
+    displayLocation.value = res.data
+  } catch {
+    displayLocation.value = null
+  }
+}
 
 // Доменная логика участий/посещаемости вынесена в composable
 const {
@@ -533,9 +546,8 @@ interface PickOption { id: string; name: string }
 const organizerSearch = ref('')
 const organizerOptions = ref<PickOption[]>([])
 const selectedOrganizer = ref<PickOption | null>(null)
-const locationSearch = ref('')
-const locationOptions = ref<PickOption[]>([])
-const selectedLocation = ref<PickOption | null>(null)
+const locationPickerOpen = ref(false)
+const selectedLocation = ref<LocationRead | null>(null)
 
 async function searchOrganizers() {
   if (!organizerSearch.value) { organizerOptions.value = []; return }
@@ -549,18 +561,6 @@ function selectOrganizer(o: PickOption) {
   organizerSearch.value = ''
   organizerOptions.value = []
 }
-async function searchLocations() {
-  if (!locationSearch.value) { locationOptions.value = []; return }
-  try {
-    const res = await getLocationsGeoV1LocationsGet({ search: locationSearch.value, limit: 10 })
-    locationOptions.value = (res.data.items as PickOption[]) || []
-  } catch { locationOptions.value = [] }
-}
-function selectLocation(l: PickOption) {
-  selectedLocation.value = l
-  locationSearch.value = ''
-  locationOptions.value = []
-}
 
 async function openEdit() {
   const e = event.value
@@ -573,11 +573,9 @@ async function openEdit() {
   editForm.type = e.type ?? null
   editForm.format = e.format ?? null
   selectedOrganizer.value = e.organizer_id ? { id: e.organizer_id, name: 'Организатор' } : null
-  selectedLocation.value = e.location_id ? { id: e.location_id, name: 'Локация' } : null
+  selectedLocation.value = null
   organizerSearch.value = ''
   organizerOptions.value = []
-  locationSearch.value = ''
-  locationOptions.value = []
   showEditModal.value = true
   // Подтянуть человекочитаемые названия выбранных организатора/локации
   if (e.organizer_id) {
@@ -589,10 +587,9 @@ async function openEdit() {
   }
   if (e.location_id) {
     try {
-      const res = await getLocationsGeoV1LocationsGet({ limit: 100 })
-      const found = (res.data.items as PickOption[]).find((l) => l.id === e.location_id)
-      if (found) selectedLocation.value = found
-    } catch { /* имя не критично */ }
+      const res = await getLocationGeoV1LocationsLocationIdGet(e.location_id)
+      selectedLocation.value = res.data
+    } catch { /* локация не критична для предпросмотра */ }
   }
 }
 
@@ -620,6 +617,7 @@ async function submitEdit() {
       },
     )
     event.value = resp.data
+    await loadDisplayLocation(event.value.location_id)
     showEditModal.value = false
     showSuccess('Мероприятие обновлено')
   } catch (err) {
@@ -808,7 +806,7 @@ onMounted(async () => {
     ])
     event.value = eventResp.data
     stages.value = stagesResp?.data.items ?? []
-    await loadParticipations()
+    await Promise.all([loadParticipations(), loadDisplayLocation(event.value.location_id)])
   } catch (err) {
     console.error('Failed to load event', err)
   } finally {
