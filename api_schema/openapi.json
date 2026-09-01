@@ -2,7 +2,7 @@
     "openapi": "3.1.0",
     "info": {
         "title": "Alma Event Flow",
-        "version": "0.2.1-beta"
+        "version": "0.3.0-beta"
     },
     "paths": {
         "/event/v1/attendances": {
@@ -1641,6 +1641,22 @@
                                 }
                             ],
                             "title": "Search"
+                        }
+                    },
+                    {
+                        "name": "event_id__in",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Event Id  In"
                         }
                     },
                     {
@@ -4366,6 +4382,101 @@
                         "HTTPBearer": []
                     }
                 ]
+            }
+        },
+        "/event/v1/me/collectives/{collective_id}/templates": {
+            "get": {
+                "tags": [
+                    "me"
+                ],
+                "summary": "Get My Collective Templates",
+                "description": "The collective's ``status=template`` events -- what a principal\npicks from via ``MeEventCreate.template_id`` when creating a new\nevent, instead of filling every field out by hand.",
+                "operationId": "get_my_collective_templates_event_v1_me_collectives__collective_id__templates_get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "collective_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Collective Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/EventRead"
+                                    },
+                                    "title": "Response Get My Collective Templates Event V1 Me Collectives  Collective Id  Templates Get"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/event/v1/me/collectives/{collective_id}/events/{event_id}": {
@@ -8179,6 +8290,22 @@
                         }
                     },
                     {
+                        "name": "event_id__in",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Event Id  In"
+                        }
+                    },
+                    {
                         "name": "page",
                         "in": "query",
                         "required": false,
@@ -9508,7 +9635,8 @@
                         "in": "path",
                         "required": true,
                         "schema": {
-                            "type": "integer",
+                            "type": "string",
+                            "format": "uuid",
                             "title": "Address Id"
                         }
                     }
@@ -9613,7 +9741,8 @@
                         "in": "path",
                         "required": true,
                         "schema": {
-                            "type": "integer",
+                            "type": "string",
+                            "format": "uuid",
                             "title": "Address Id"
                         }
                     }
@@ -9728,7 +9857,8 @@
                         "in": "path",
                         "required": true,
                         "schema": {
-                            "type": "integer",
+                            "type": "string",
+                            "format": "uuid",
                             "title": "Address Id"
                         }
                     }
@@ -9843,7 +9973,8 @@
                         "in": "path",
                         "required": true,
                         "schema": {
-                            "type": "integer",
+                            "type": "string",
+                            "format": "uuid",
                             "title": "Address Id"
                         }
                     }
@@ -9908,6 +10039,265 @@
                                         "summary": "ADDRESS_NOT_FOUND",
                                         "value": {
                                             "detail": "ADDRESS_NOT_FOUND"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/geo/v1/cities": {
+            "get": {
+                "tags": [
+                    "city"
+                ],
+                "summary": "Get Cities",
+                "description": "List/search-only -- cities are seeded (bootstrap or hand-entered\nalongside an address's city), not admin-CRUD-managed in their own\nright. This exists so a city picker never has to fall back to typing\na raw id.",
+                "operationId": "get_cities_geo_v1_cities_get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "order_by",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "default": "name",
+                            "title": "Order By"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Search"
+                        }
+                    },
+                    {
+                        "name": "region_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "integer"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Region Id"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 0,
+                            "title": "Page"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
+                            "exclusiveMinimum": 0,
+                            "default": 10,
+                            "title": "Limit"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/SPage_CityRead_"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/geo/v1/cities/{city_id}": {
+            "get": {
+                "tags": [
+                    "city"
+                ],
+                "summary": "Get City",
+                "operationId": "get_city_geo_v1_cities__city_id__get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "city_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer",
+                            "title": "City Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CityRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "CITY_NOT_FOUND",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "CITY_NOT_FOUND": {
+                                        "summary": "CITY_NOT_FOUND",
+                                        "value": {
+                                            "detail": "CITY_NOT_FOUND"
                                         }
                                     }
                                 },
@@ -10086,6 +10476,7 @@
                     "location"
                 ],
                 "summary": "Create Location",
+                "description": "Any authenticated user may add a location -- e.g. a collective\nprincipal picking/pinning a venue for an event. Editing/removing an\nexisting location stays superuser-only (no ownership model exists yet\nto gate that safely per-collective).",
                 "operationId": "create_location_geo_v1_locations_post",
                 "security": [
                     {
@@ -10612,6 +11003,242 @@
                 }
             }
         },
+        "/geo/v1/locations/from-address": {
+            "post": {
+                "tags": [
+                    "location"
+                ],
+                "summary": "Create Location From Address",
+                "description": "Backend half of the \"pick an address, optionally name it\" flow: an\naddress is already selected (via address search), this turns it into a\nlocation id usable for ``EventCreate.location_id``. Omitting ``name``\nreuses the existing address-proxy location instead of creating a\nduplicate.",
+                "operationId": "create_location_from_address_geo_v1_locations_from_address_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LocationFromAddressCreate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LocationRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/geo/v1/map": {
+            "get": {
+                "tags": [
+                    "map"
+                ],
+                "summary": "Get Map",
+                "description": "Both marker types (addresses and locations) inside a bounding box,\nfor a map component to render -- backed by the GIST spatial index on\n``spot`` via PostGIS's ``&&`` bbox operator, paginated independently.",
+                "operationId": "get_map_geo_v1_map_get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "min_lat",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "maximum": 90,
+                            "minimum": -90,
+                            "title": "Min Lat"
+                        }
+                    },
+                    {
+                        "name": "min_lon",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "maximum": 180,
+                            "minimum": -180,
+                            "title": "Min Lon"
+                        }
+                    },
+                    {
+                        "name": "max_lat",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "maximum": 90,
+                            "minimum": -90,
+                            "title": "Max Lat"
+                        }
+                    },
+                    {
+                        "name": "max_lon",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "number",
+                            "maximum": 180,
+                            "minimum": -180,
+                            "title": "Max Lon"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 0,
+                            "title": "Page"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
+                            "exclusiveMinimum": 0,
+                            "default": 10,
+                            "title": "Limit"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MapResult"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/notify/v1/clients/my": {
             "get": {
                 "tags": [
@@ -10711,24 +11338,6 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "WEBPUSH_CLIENT_INVALID",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "WEBPUSH_CLIENT_INVALID": {
-                                        "summary": "WEBPUSH_CLIENT_INVALID",
-                                        "value": {
-                                            "detail": "WEBPUSH_CLIENT_INVALID"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -10765,6 +11374,24 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "WEBPUSH_CLIENT_INVALID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "WEBPUSH_CLIENT_INVALID": {
+                                        "summary": "WEBPUSH_CLIENT_INVALID",
+                                        "value": {
+                                            "detail": "WEBPUSH_CLIENT_INVALID"
                                         }
                                     }
                                 }
@@ -14089,24 +14716,6 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -14140,6 +14749,24 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 },
@@ -14193,24 +14820,6 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -14244,6 +14853,24 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 },
@@ -14311,24 +14938,6 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -14362,6 +14971,24 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 },
@@ -14427,24 +15054,6 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -14478,6 +15087,24 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 },
@@ -14531,24 +15158,6 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -14582,6 +15191,24 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 },
@@ -16133,24 +16760,6 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -16184,6 +16793,24 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 },
@@ -16234,24 +16861,6 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -16288,6 +16897,24 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 }
@@ -16357,24 +16984,6 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -16408,6 +17017,24 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 },
@@ -16473,24 +17100,6 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -16524,6 +17133,24 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 },
@@ -16589,24 +17216,6 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -16640,6 +17249,24 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 },
@@ -17949,24 +18576,6 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -18003,6 +18612,24 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 }
@@ -18043,24 +18670,6 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -18097,6 +18706,24 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 }
@@ -18147,24 +18774,6 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -18201,6 +18810,24 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 }
@@ -19157,24 +19784,6 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -19211,6 +19820,24 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 }
@@ -19251,24 +19878,6 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -19305,6 +19914,24 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 }
@@ -19355,24 +19982,6 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -19409,6 +20018,24 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 }
@@ -21994,46 +22621,6 @@
                 }
             }
         },
-        "/bot/v1/webhook/tg": {
-            "get": {
-                "tags": [
-                    "tg"
-                ],
-                "summary": "Webhook Info",
-                "description": "Returns information about the webhook.\n\nArgs:\n    bot: The Telegram bot instance.\n\nReturns:\n    WebhookInfo: Information about the current webhook.",
-                "operationId": "webhook_info_bot_v1_webhook_tg_get",
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/WebhookInfo"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "post": {
-                "tags": [
-                    "tg"
-                ],
-                "summary": "Webhook",
-                "description": "Handles incoming Telegram updates via webhook.\n\nValidates the ``X-Telegram-Bot-Api-Secret-Token`` header (when\n``BOT_TG_WEBHOOK_SECRET`` is configured) so third parties can't inject\nfake updates, then validates the request JSON as an aiogram Update model\nand feeds it to the aiogram Dispatcher.\n\nArgs:\n    request: The FastAPI Request object containing the update data.\n    bot: The Telegram bot instance.\n    dp: The aiogram dispatcher instance.",
-                "operationId": "webhook_bot_v1_webhook_tg_post",
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {}
-                            }
-                        }
-                    }
-                }
-            }
-        },
         "/user/v1/auth/jwt/login": {
             "post": {
                 "tags": [
@@ -22384,6 +22971,9 @@
                             }
                         }
                     },
+                    "401": {
+                        "description": "Missing token or inactive user."
+                    },
                     "400": {
                         "description": "Bad Request",
                         "content": {
@@ -22410,9 +23000,6 @@
                                 }
                             }
                         }
-                    },
-                    "401": {
-                        "description": "Missing token or inactive user."
                     },
                     "422": {
                         "description": "Validation Error",
@@ -22530,6 +23117,15 @@
                             }
                         }
                     },
+                    "401": {
+                        "description": "Missing token or inactive user."
+                    },
+                    "403": {
+                        "description": "Not a superuser."
+                    },
+                    "404": {
+                        "description": "The user does not exist."
+                    },
                     "400": {
                         "content": {
                             "application/json": {
@@ -22556,15 +23152,6 @@
                             }
                         },
                         "description": "Bad Request"
-                    },
-                    "401": {
-                        "description": "Missing token or inactive user."
-                    },
-                    "403": {
-                        "description": "Not a superuser."
-                    },
-                    "404": {
-                        "description": "The user does not exist."
                     },
                     "422": {
                         "description": "Validation Error",
@@ -23500,6 +24087,24 @@
                             }
                         }
                     },
+                    "404": {
+                        "description": "TELEGRAM_ACCOUNT_NOT_LINKED",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "TELEGRAM_ACCOUNT_NOT_LINKED": {
+                                        "summary": "TELEGRAM_ACCOUNT_NOT_LINKED",
+                                        "value": {
+                                            "detail": "TELEGRAM_ACCOUNT_NOT_LINKED"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -23539,215 +24144,6 @@
                                         }
                                     }
                                 }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "TELEGRAM_ACCOUNT_NOT_LINKED",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "TELEGRAM_ACCOUNT_NOT_LINKED": {
-                                        "summary": "TELEGRAM_ACCOUNT_NOT_LINKED",
-                                        "value": {
-                                            "detail": "TELEGRAM_ACCOUNT_NOT_LINKED"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/user/v1/internal/telegram/{person_id}/token": {
-            "post": {
-                "tags": [
-                    "internal",
-                    "internal"
-                ],
-                "summary": "Mint Token For Person",
-                "description": "Internal, bot-service-only: mints a normal access token for the AEF\nuser linked to ``person_id`` so the bot can call other services'\nuser-scoped endpoints on that person's behalf. Guarded by a shared secret\n(``BOT_SERVICE_SECRET``), not a user JWT — never call this from a browser\nclient.",
-                "operationId": "mint_token_for_person_user_v1_internal_telegram__person_id__token_post",
-                "parameters": [
-                    {
-                        "name": "person_id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid",
-                            "title": "Person Id"
-                        }
-                    },
-                    {
-                        "name": "x-bot-service-secret",
-                        "in": "header",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "X-Bot-Service-Secret"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "type": "object",
-                                    "additionalProperties": {
-                                        "type": "string"
-                                    },
-                                    "title": "Response Mint Token For Person User V1 Internal Telegram  Person Id  Token Post"
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        "/user/v1/internal/telegram/{person_id}/oauth-link": {
-            "post": {
-                "tags": [
-                    "internal",
-                    "internal"
-                ],
-                "summary": "Link Telegram Oauth",
-                "description": "Internal, bot-service-only: syncs a Telegram profile into the AEF\nuser's OAuth accounts right after the bot's own ``/start`` deep-link\nflow links it, so the website's Telegram Login Widget can find it later.\nNo-op if ``person_id`` has no AEF account yet.",
-                "operationId": "link_telegram_oauth_user_v1_internal_telegram__person_id__oauth_link_post",
-                "parameters": [
-                    {
-                        "name": "person_id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid",
-                            "title": "Person Id"
-                        }
-                    },
-                    {
-                        "name": "x-bot-service-secret",
-                        "in": "header",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "X-Bot-Service-Secret"
-                        }
-                    }
-                ],
-                "requestBody": {
-                    "required": true,
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/OAuthLinkRequest"
-                            }
-                        }
-                    }
-                },
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {}
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                }
-            },
-            "delete": {
-                "tags": [
-                    "internal",
-                    "internal"
-                ],
-                "summary": "Unlink Telegram Oauth",
-                "description": "Internal, bot-service-only: mirrors ``link_telegram_oauth`` on unlink.",
-                "operationId": "unlink_telegram_oauth_user_v1_internal_telegram__person_id__oauth_link_delete",
-                "parameters": [
-                    {
-                        "name": "person_id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid",
-                            "title": "Person Id"
-                        }
-                    },
-                    {
-                        "name": "x-bot-service-secret",
-                        "in": "header",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "X-Bot-Service-Secret"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {}
                             }
                         }
                     },
@@ -24028,30 +24424,6 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "Person already linked, or does not exist",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "PERSON_ALREADY_HAS_ACCOUNT": {
-                                        "summary": "PERSON_ALREADY_HAS_ACCOUNT",
-                                        "value": {
-                                            "detail": "PERSON_ALREADY_HAS_ACCOUNT"
-                                        }
-                                    },
-                                    "INVITE_PERSON_NOT_FOUND": {
-                                        "summary": "INVITE_PERSON_NOT_FOUND",
-                                        "value": {
-                                            "detail": "INVITE_PERSON_NOT_FOUND"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -24090,6 +24462,30 @@
                                 },
                                 "schema": {
                                     "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Person already linked, or does not exist",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "PERSON_ALREADY_HAS_ACCOUNT": {
+                                        "summary": "PERSON_ALREADY_HAS_ACCOUNT",
+                                        "value": {
+                                            "detail": "PERSON_ALREADY_HAS_ACCOUNT"
+                                        }
+                                    },
+                                    "INVITE_PERSON_NOT_FOUND": {
+                                        "summary": "INVITE_PERSON_NOT_FOUND",
+                                        "value": {
+                                            "detail": "INVITE_PERSON_NOT_FOUND"
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -24154,42 +24550,6 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "Invite token invalid/expired, or person/account already linked",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "INVITE_TOKEN_INVALID": {
-                                        "summary": "INVITE_TOKEN_INVALID",
-                                        "value": {
-                                            "detail": "INVITE_TOKEN_INVALID"
-                                        }
-                                    },
-                                    "INVITE_TOKEN_EXPIRED": {
-                                        "summary": "INVITE_TOKEN_EXPIRED",
-                                        "value": {
-                                            "detail": "INVITE_TOKEN_EXPIRED"
-                                        }
-                                    },
-                                    "PERSON_ALREADY_HAS_ACCOUNT": {
-                                        "summary": "PERSON_ALREADY_HAS_ACCOUNT",
-                                        "value": {
-                                            "detail": "PERSON_ALREADY_HAS_ACCOUNT"
-                                        }
-                                    },
-                                    "ACCOUNT_ALREADY_LINKED": {
-                                        "summary": "ACCOUNT_ALREADY_LINKED",
-                                        "value": {
-                                            "detail": "ACCOUNT_ALREADY_LINKED"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -24226,6 +24586,42 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Invite token invalid/expired, or person/account already linked",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "INVITE_TOKEN_INVALID": {
+                                        "summary": "INVITE_TOKEN_INVALID",
+                                        "value": {
+                                            "detail": "INVITE_TOKEN_INVALID"
+                                        }
+                                    },
+                                    "INVITE_TOKEN_EXPIRED": {
+                                        "summary": "INVITE_TOKEN_EXPIRED",
+                                        "value": {
+                                            "detail": "INVITE_TOKEN_EXPIRED"
+                                        }
+                                    },
+                                    "PERSON_ALREADY_HAS_ACCOUNT": {
+                                        "summary": "PERSON_ALREADY_HAS_ACCOUNT",
+                                        "value": {
+                                            "detail": "PERSON_ALREADY_HAS_ACCOUNT"
+                                        }
+                                    },
+                                    "ACCOUNT_ALREADY_LINKED": {
+                                        "summary": "ACCOUNT_ALREADY_LINKED",
+                                        "value": {
+                                            "detail": "ACCOUNT_ALREADY_LINKED"
                                         }
                                     }
                                 }
@@ -24530,13 +24926,27 @@
                                 "type": "null"
                             }
                         ]
+                    },
+                    "map_uri": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Map Uri",
+                        "description": "RFC 5870 ``geo:`` URI -- the one scheme both Android and iOS\nresolve to whatever maps app the viewer actually has installed,\nwithout picking a specific provider (Google/Apple/Yandex/OsmAnd\nall register as handlers).",
+                        "readOnly": true
                     }
                 },
                 "type": "object",
                 "required": [
                     "id",
                     "city_id",
-                    "name"
+                    "name",
+                    "map_uri"
                 ],
                 "title": "AddressRead"
             },
@@ -25011,6 +25421,40 @@
                     "exists"
                 ],
                 "title": "CheckResponse"
+            },
+            "CityRead": {
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "title": "Id"
+                    },
+                    "region_id": {
+                        "type": "integer",
+                        "title": "Region Id"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "acronym": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Acronym"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "region_id",
+                    "name"
+                ],
+                "title": "CityRead"
             },
             "ClientCreate": {
                 "properties": {
@@ -26675,8 +27119,15 @@
             "LocationCreate": {
                 "properties": {
                     "name": {
-                        "type": "string",
-                        "maxLength": 512,
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 512
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "Name"
                     },
                     "address_id": {
@@ -26692,15 +27143,45 @@
                         "title": "Address Id"
                     },
                     "spot": {
-                        "$ref": "#/components/schemas/Point"
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/Point"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    }
+                },
+                "type": "object",
+                "title": "LocationCreate"
+            },
+            "LocationFromAddressCreate": {
+                "properties": {
+                    "address_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Address Id"
+                    },
+                    "name": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 512
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Name"
                     }
                 },
                 "type": "object",
                 "required": [
-                    "name",
-                    "spot"
+                    "address_id"
                 ],
-                "title": "LocationCreate"
+                "title": "LocationFromAddressCreate",
+                "description": "The \"user picked an address, may or may not have bothered naming a\nlocation\" flow -- ``name=None`` resolves to the (idempotent)\naddress-proxy location instead of creating a new named one."
             },
             "LocationPatchData": {
                 "properties": {
@@ -26745,8 +27226,15 @@
             "LocationPutData": {
                 "properties": {
                     "name": {
-                        "type": "string",
-                        "maxLength": 512,
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 512
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "Name"
                     },
                     "address_id": {
@@ -26762,14 +27250,17 @@
                         "title": "Address Id"
                     },
                     "spot": {
-                        "$ref": "#/components/schemas/Point"
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/Point"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
                     }
                 },
                 "type": "object",
-                "required": [
-                    "name",
-                    "spot"
-                ],
                 "title": "LocationPutData"
             },
             "LocationRead": {
@@ -26780,8 +27271,15 @@
                         "title": "Id"
                     },
                     "name": {
-                        "type": "string",
-                        "maxLength": 512,
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 512
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "Name"
                     },
                     "address_id": {
@@ -26797,16 +27295,61 @@
                         "title": "Address Id"
                     },
                     "spot": {
-                        "$ref": "#/components/schemas/Point"
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/Point"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "address": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/AddressRead"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "map_uri": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Map Uri",
+                        "readOnly": true
                     }
                 },
                 "type": "object",
                 "required": [
                     "id",
-                    "name",
-                    "spot"
+                    "map_uri"
                 ],
                 "title": "LocationRead"
+            },
+            "MapResult": {
+                "properties": {
+                    "addresses": {
+                        "$ref": "#/components/schemas/SPage_AddressRead_"
+                    },
+                    "locations": {
+                        "$ref": "#/components/schemas/SPage_LocationRead_"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "addresses",
+                    "locations"
+                ],
+                "title": "MapResult",
+                "description": "Two separate paginated lists rather than one merged/tagged\ncollection -- simpler for a map layer to consume as two marker types\n(two icons), and each already paginates independently."
             },
             "MeAttendanceCreateData": {
                 "properties": {
@@ -26974,6 +27517,18 @@
                             }
                         ],
                         "title": "Stages"
+                    },
+                    "template_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Template Id"
                     }
                 },
                 "type": "object",
@@ -27523,30 +28078,6 @@
                     "authorization_url"
                 ],
                 "title": "OAuth2AuthorizeResponse"
-            },
-            "OAuthLinkRequest": {
-                "properties": {
-                    "telegram_id": {
-                        "type": "string",
-                        "title": "Telegram Id"
-                    },
-                    "username": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Username"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "telegram_id"
-                ],
-                "title": "OAuthLinkRequest"
             },
             "OrganizationCreate": {
                 "properties": {
@@ -28412,14 +28943,14 @@
                 "properties": {
                     "lat": {
                         "type": "number",
-                        "maximum": 90,
-                        "minimum": -90,
+                        "maximum": 90.0,
+                        "minimum": -90.0,
                         "title": "Lat"
                     },
                     "lon": {
                         "type": "number",
-                        "maximum": 180,
-                        "minimum": -180,
+                        "maximum": 180.0,
+                        "minimum": -180.0,
                         "title": "Lon"
                     }
                 },
@@ -29022,6 +29553,26 @@
                 ],
                 "title": "SPage[AttendanceRead]"
             },
+            "SPage_CityRead_": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/CityRead"
+                        },
+                        "type": "array",
+                        "title": "Items"
+                    },
+                    "pagination": {
+                        "$ref": "#/components/schemas/SPagination"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "items",
+                    "pagination"
+                ],
+                "title": "SPage[CityRead]"
+            },
             "SPage_CollectiveRead_": {
                 "properties": {
                     "items": {
@@ -29451,8 +30002,8 @@
                     },
                     "limit": {
                         "type": "integer",
-                        "maximum": 100,
-                        "exclusiveMinimum": 0,
+                        "maximum": 100.0,
+                        "exclusiveMinimum": 0.0,
                         "title": "Limit",
                         "default": 10
                     },
@@ -31094,100 +31645,6 @@
                     "public_key"
                 ],
                 "title": "VapidPublicKey"
-            },
-            "WebhookInfo": {
-                "properties": {
-                    "url": {
-                        "type": "string",
-                        "title": "Url"
-                    },
-                    "has_custom_certificate": {
-                        "type": "boolean",
-                        "title": "Has Custom Certificate"
-                    },
-                    "pending_update_count": {
-                        "type": "integer",
-                        "title": "Pending Update Count"
-                    },
-                    "ip_address": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Ip Address"
-                    },
-                    "last_error_date": {
-                        "anyOf": [
-                            {
-                                "type": "integer"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Last Error Date"
-                    },
-                    "last_error_message": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Last Error Message"
-                    },
-                    "last_synchronization_error_date": {
-                        "anyOf": [
-                            {
-                                "type": "integer"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Last Synchronization Error Date"
-                    },
-                    "max_connections": {
-                        "anyOf": [
-                            {
-                                "type": "integer"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Max Connections"
-                    },
-                    "allowed_updates": {
-                        "anyOf": [
-                            {
-                                "items": {
-                                    "type": "string"
-                                },
-                                "type": "array"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Allowed Updates"
-                    }
-                },
-                "additionalProperties": true,
-                "type": "object",
-                "required": [
-                    "url",
-                    "has_custom_certificate",
-                    "pending_update_count"
-                ],
-                "title": "WebhookInfo",
-                "description": "Describes the current status of a webhook.\n\nSource: https://core.telegram.org/bots/api#webhookinfo"
             },
             "org__schema__organization__OrganizationRead": {
                 "properties": {
