@@ -1,6 +1,9 @@
 <template>
   <div class="modal-header">
-    <h3>{{ title }}</h3>
+    <div class="modal-header-title">
+      <h3>{{ title }}</h3>
+      <UuidBadge v-if="item?.id" :id="item.id" />
+    </div>
     <button class="modal-close" aria-label="Закрыть" @click="$emit('close')">
       <ion-icon :icon="closeOutline" />
     </button>
@@ -56,6 +59,22 @@
           </ion-select-option>
         </ion-select>
 
+        <div v-else-if="field.type === 'map'" class="map-field">
+          <GeoMap
+            pickable
+            :picked-point="form[field.key]"
+            class="map-field-map"
+            @pick="form[field.key] = $event"
+          />
+          <div class="map-field-coords">
+            <span v-if="form[field.key]">{{ form[field.key].lat.toFixed(5) }}, {{ form[field.key].lon.toFixed(5) }}</span>
+            <span v-else class="map-field-hint">Нажмите на карту, чтобы указать точку</span>
+            <ion-button v-if="form[field.key]" fill="clear" size="small" @click="form[field.key] = null">
+              Очистить
+            </ion-button>
+          </div>
+        </div>
+
         <div v-else-if="field.type === 'search'" class="search-field">
           <div v-if="selectedItem[field.key]" class="search-selected" @click="clearSearch(field)">
             <span class="search-selected-label">{{ getSelectedLabel(field) }}</span>
@@ -105,11 +124,13 @@ import {
   IonSearchbar, IonSpinner,
 } from '@ionic/vue'
 import { closeOutline } from 'ionicons/icons'
+import GeoMap from '@/components/geo/GeoMap.vue'
+import UuidBadge from '@/components/common/UuidBadge.vue'
 
 export interface FormField {
   key: string
   label: string
-  type: 'text' | 'email' | 'number' | 'checkbox' | 'select' | 'textarea' | 'search'
+  type: 'text' | 'email' | 'number' | 'checkbox' | 'select' | 'textarea' | 'search' | 'map'
   required?: boolean
   maxLength?: number
   options?: { value: any; label: string }[]
@@ -154,6 +175,8 @@ onMounted(() => {
   for (const field of props.fields) {
     if (field.type === 'checkbox') {
       form[field.key] = props.item?.[field.key] ?? false
+    } else if (field.type === 'map') {
+      form[field.key] = props.item?.[field.key] ?? null
     } else if (field.type === 'search') {
       const val = props.item?.[field.key] ?? ''
       form[field.key] = val
@@ -225,6 +248,12 @@ async function submit() {
   justify-content: space-between;
   padding: 18px 20px 12px;
   background: var(--ion-card-background);
+}
+
+.modal-header-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .modal-header h3 {
@@ -362,5 +391,30 @@ async function submit() {
 
 .search-result-item:hover {
   background: var(--ion-color-light-tint, #f1f3f5);
+}
+
+/* ── Map field ── */
+.map-field {
+  width: 100%;
+}
+
+.map-field-map {
+  height: 220px;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--ion-color-step-150, #e9ecef);
+}
+
+.map-field-coords {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.85rem;
+  color: var(--ion-color-medium);
+  margin-top: 4px;
+}
+
+.map-field-hint {
+  font-size: 0.8rem;
 }
 </style>
