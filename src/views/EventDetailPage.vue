@@ -264,23 +264,8 @@
 
             <div class="form-field">
               <label>Локация</label>
-              <div v-if="selectedLocation" class="chip-selected">
-                <LocationDisplay :location="selectedLocation" />
-                <button class="chip-clear" aria-label="Убрать локацию" @click="selectedLocation = null">
-                  <ion-icon :icon="closeOutline" />
-                </button>
-              </div>
-              <ion-button v-else fill="outline" size="small" @click="locationPickerOpen = true">
-                <ion-icon slot="start" :icon="locationOutline" />
-                Выбрать локацию
-              </ion-button>
+              <LocationField ref="locationFieldRef" v-model="selectedLocation" />
             </div>
-
-            <LocationAssignPicker
-              :is-open="locationPickerOpen"
-              @close="locationPickerOpen = false"
-              @selected="(l) => { selectedLocation = l; locationPickerOpen = false }"
-            />
 
             <div class="form-field">
               <label>Статус</label>
@@ -449,7 +434,7 @@ import {
 import {
   calendarOutline, timeOutline, chevronDownOutline, chevronUpOutline,
   shieldCheckmarkOutline, shieldCheckmark, shieldOutline, trashOutline,
-  addOutline, alertCircleOutline, createOutline, closeOutline, locationOutline, exitOutline,
+  addOutline, alertCircleOutline, createOutline, closeOutline, exitOutline,
 } from 'ionicons/icons'
 import { usePrincipalStore } from '@/stores/principal'
 import { useSettingsStore } from '@/stores/settings'
@@ -478,7 +463,7 @@ import { format as fnsFormat } from 'date-fns'
 import UuidBadge from '@/components/common/UuidBadge.vue'
 import EventAttendanceChip from '@/components/event/EventAttendanceChip.vue'
 import EventCommentChip from '@/components/event/EventCommentChip.vue'
-import LocationAssignPicker from '@/components/geo/LocationAssignPicker.vue'
+import LocationField from '@/components/geo/LocationField.vue'
 import LocationDisplay from '@/components/geo/LocationDisplay.vue'
 import type {
   EventRead, EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1,
@@ -546,7 +531,7 @@ interface PickOption { id: string; name: string }
 const organizerSearch = ref('')
 const organizerOptions = ref<PickOption[]>([])
 const selectedOrganizer = ref<PickOption | null>(null)
-const locationPickerOpen = ref(false)
+const locationFieldRef = ref<InstanceType<typeof LocationField>>()
 const selectedLocation = ref<LocationRead | null>(null)
 
 async function searchOrganizers() {
@@ -573,7 +558,7 @@ async function openEdit() {
   editForm.type = e.type ?? null
   editForm.format = e.format ?? null
   selectedOrganizer.value = e.organizer_id ? { id: e.organizer_id, name: 'Организатор' } : null
-  selectedLocation.value = null
+  locationFieldRef.value?.reset()
   organizerSearch.value = ''
   organizerOptions.value = []
   showEditModal.value = true

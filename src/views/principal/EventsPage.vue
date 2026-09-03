@@ -227,23 +227,8 @@
 
             <div class="form-field">
               <label>Локация</label>
-              <div v-if="selectedLocation" class="organizer-selected">
-                <LocationDisplay :location="selectedLocation" />
-                <button class="organizer-clear" aria-label="Убрать локацию" @click="clearLocation">
-                  <ion-icon :icon="closeOutline" />
-                </button>
-              </div>
-              <ion-button v-else fill="outline" size="small" @click="locationPickerOpen = true">
-                <ion-icon slot="start" :icon="locationOutline" />
-                Выбрать локацию
-              </ion-button>
+              <LocationField ref="locationFieldRef" v-model="selectedLocation" />
             </div>
-
-            <LocationAssignPicker
-              :is-open="locationPickerOpen"
-              @close="locationPickerOpen = false"
-              @selected="onLocationPicked"
-            />
 
             <div class="form-field">
               <label>
@@ -427,7 +412,7 @@ import {
 import PrincipalLayout from '@/components/layout/PrincipalLayout.vue'
 import {
   addOutline, calendarOutline, closeOutline, trashOutline,
-  optionsOutline, copyOutline, locationOutline, searchOutline,
+  optionsOutline, copyOutline, searchOutline,
   swapVerticalOutline, arrowUpOutline, arrowDownOutline, funnelOutline,
 } from 'ionicons/icons'
 import { format as fnsFormat } from 'date-fns'
@@ -437,8 +422,7 @@ import { usePrincipalStore } from '@/stores/principal'
 import { useSettingsStore } from '@/stores/settings'
 import { useToast } from '@/composables/useToast'
 import { useEntityPicker } from '@/composables/useEntityPicker'
-import LocationAssignPicker from '@/components/geo/LocationAssignPicker.vue'
-import LocationDisplay from '@/components/geo/LocationDisplay.vue'
+import LocationField from '@/components/geo/LocationField.vue'
 import { formatDate } from '@/utils/date'
 import {
   statusColor, statusLabel, levelOptions, typeOptions, formatOptions,
@@ -527,18 +511,9 @@ const {
   reset: resetOrganizer,
 } = useEntityPicker((params) => listOrganizationsOrgV1OrganizationsGet(params))
 
-// Локация — через LocationAssignPicker (три сценария: локации/адреса/новая).
-const locationPickerOpen = ref(false)
+// Локация — единое поле поиска (локации + адреса) с картой, см. LocationField.
+const locationFieldRef = ref<InstanceType<typeof LocationField>>()
 const selectedLocation = ref<LocationRead | null>(null)
-
-function onLocationPicked(location: LocationRead) {
-  selectedLocation.value = location
-  locationPickerOpen.value = false
-}
-
-function clearLocation() {
-  selectedLocation.value = null
-}
 
 // Комбобокс выбора шаблона / существующего мероприятия как поисковая строка
 const sourceSearch = ref('')
@@ -768,7 +743,7 @@ function openCreate() {
   sourceFilters.type = ''
   sourceFilters.level = ''
   resetOrganizer()
-  clearLocation()
+  locationFieldRef.value?.reset()
   sourceSearch.value = ''
   sourceDropdownOpen.value = false
   sourceFilterOpen.value = false
@@ -815,7 +790,7 @@ async function onSourceSelected(id: string | null) {
       selectedLocation.value = loc.data
     } catch { /* локация не критична для предпросмотра */ }
   } else {
-    clearLocation()
+    locationFieldRef.value?.reset()
   }
   // ТЗ: при копировании из шаблона без attendance тонкая настройка остаётся в дефолте
   participantsExpanded.value = false
