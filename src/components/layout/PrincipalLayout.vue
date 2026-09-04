@@ -66,7 +66,9 @@ import { computed } from 'vue'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBackButton, IonIcon,
 } from '@ionic/vue'
-import { peopleOutline, ribbonOutline, calendarOutline, chevronDownOutline, addOutline } from 'ionicons/icons'
+import {
+  peopleOutline, ribbonOutline, calendarOutline, chevronDownOutline, addOutline, statsChartOutline,
+} from 'ionicons/icons'
 import { usePrincipalStore } from '@/stores/principal'
 import { usePlatform } from '@/composables/usePlatform'
 import { getCollectiveColor } from '@/utils/colors'
@@ -83,6 +85,7 @@ const principal = usePrincipalStore()
 const { isDesktop } = usePlatform()
 
 const TABS = [
+  { path: '/principal/dashboard', label: 'Дашборд', icon: statsChartOutline },
   { path: '/principal/members', label: 'Участники', icon: peopleOutline },
   { path: '/principal/roles', label: 'Роли', icon: ribbonOutline },
   { path: '/principal/events', label: 'Мероприятия', icon: calendarOutline },

@@ -35,3 +35,14 @@ export function statusColor(status: EventStatusEnumV1 | null | undefined): strin
 export function statusLabel(status: EventStatusEnumV1 | null | undefined): string {
   return statusLabels[status ?? 'draft']
 }
+
+// Те же оттенки, что и в COLLECTIVE_COLORS (@/utils/colors), без красного
+// (занят под danger/archived) -- для колонок дашборда руководителя.
+const typeColors: Record<EventTypeEnumV1, string> = {
+  rehearsal: '#6C63FF', competition: '#FF6B9D', concert: '#00D9A6',
+  festival: '#FFB800', play: '#7C3AED', performance: '#06B6D4',
+}
+
+export function typeColor(type: EventTypeEnumV1 | null | undefined): string {
+  return type ? typeColors[type] : '#92949c'
+}

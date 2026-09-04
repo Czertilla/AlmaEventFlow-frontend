@@ -22,7 +22,12 @@ const appRoutes: Array<RouteRecordRaw> = [
   // Principal panel
   {
     path: '/principal',
-    redirect: '/principal/members',
+    redirect: '/principal/dashboard',
+  },
+  {
+    path: '/principal/dashboard',
+    component: () => import('@/views/principal/DashboardPage.vue'),
+    meta: { auth: true, principal: true },
   },
   {
     path: '/principal/members',
