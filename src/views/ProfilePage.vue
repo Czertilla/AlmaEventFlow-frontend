@@ -67,7 +67,7 @@ const { isDesktop } = usePlatform()
 
 async function handleLogout() {
   await auth.logout()
-  router.push('/auth/login')
+  await router.replace('/auth/login')
 }
 </script>
 

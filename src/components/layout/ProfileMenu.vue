@@ -53,7 +53,7 @@ function closeMenu() {
 async function logout() {
   await auth.logout()
   closeMenu()
-  router.push('/auth/login')
+  await router.replace('/auth/login')
 }
 </script>
 

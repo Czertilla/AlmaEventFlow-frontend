@@ -135,7 +135,10 @@ async function handleLogin() {
   loading.value = true
   try {
     await auth.login(username.value, password.value)
-    router.push('/')
+    // replace, не push: назад из главной не должно возвращать на форму входа,
+    // и это же убирает залипание формы, которое иногда оставлял push-переход
+    // между отдельной auth-страницей и TabsShell в корневом ion-router-outlet.
+    await router.replace('/')
   } catch (err: any) {
     error.value = err?.response?.data?.detail || 'Неверный логин или пароль'
   } finally {
@@ -148,7 +151,7 @@ async function handleTelegramAuth(user: TelegramWidgetUser) {
   loading.value = true
   try {
     await auth.loginWithTelegram(user)
-    router.push('/')
+    await router.replace('/')
   } catch (err: any) {
     const detail = err?.response?.data?.detail
     error.value =
