@@ -33,7 +33,7 @@
                   <router-link
                     v-for="c in principal.principalCollectives"
                     :key="c.id"
-                    :to="'/principal/members'"
+                    :to="'/principal/dashboard'"
                     class="dropdown-item"
                     :class="{ 'dropdown-item--active': c.id === principal.activePrincipalCollectiveId }"
                     @click="selectCollective(c.id)"

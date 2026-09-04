@@ -19,12 +19,12 @@ export function useSectionNav() {
   )
 
   function goToPrincipal() {
-    router.push('/principal/members')
+    router.push('/principal/dashboard')
   }
 
   function selectCollective(id: string) {
     principal.setActivePrincipalCollective(id)
-    router.push('/principal/members')
+    router.push('/principal/dashboard')
   }
 
   return { isAdminActive, isPrincipalActive, isHomeActive, goToPrincipal, selectCollective }

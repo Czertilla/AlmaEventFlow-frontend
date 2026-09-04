@@ -1,5 +1,5 @@
 <template>
-  <PrincipalLayout title="Дашборд">
+  <PrincipalLayout title="Дашборд" full-width>
     <div class="page-body">
       <div class="ev-toolbar">
         <div class="ev-search">
@@ -80,6 +80,19 @@
         </div>
       </div>
 
+      <div class="filter-row">
+        <span class="filter-row-label">Период:</span>
+        <input v-model="dateFrom" type="date" class="native-date" aria-label="С даты" />
+        <span class="range-dash">—</span>
+        <input v-model="dateTo" type="date" class="native-date" aria-label="По дату" />
+        <button class="sort-btn" :disabled="!dateFrom || !dateTo" @click="applyDateRange">Применить</button>
+        <button v-if="useCustomRange" class="sort-btn" @click="resetDateRange">Сбросить</button>
+        <button v-if="!useCustomRange && hasMoreEvents" class="sort-btn" :disabled="loadingMoreEvents" @click="loadMoreEvents">
+          <span v-if="loadingMoreEvents" class="btn-spinner-sm" />
+          <span v-else>Загрузить более ранние</span>
+        </button>
+      </div>
+
       <div v-if="loading" class="page-state">
         <div class="loading-spinner" />
       </div>
@@ -89,7 +102,7 @@
       </div>
 
       <template v-else>
-        <div class="matrix-wrap">
+        <div ref="matrixWrapRef" class="matrix-wrap" @scroll="onMatrixScroll">
           <table class="matrix">
             <thead>
               <tr>
@@ -122,7 +135,7 @@
                   :key="filteredEvents[i].id"
                   class="matrix-cell"
                   :title="cell.title"
-                  @click="$router.push(`/event/${filteredEvents[i].id}`)"
+                  @click="onCellClick(filteredEvents[i], row.member)"
                 >
                   <span class="matrix-cell-inner">
                     <ion-icon :icon="cell.icon" :style="{ color: cell.color }" />
@@ -149,6 +162,7 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { IonIcon } from '@ionic/vue'
 import {
   searchOutline, closeOutline, swapVerticalOutline, arrowUpOutline, arrowDownOutline,
@@ -162,6 +176,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { formatDate } from '@/utils/date'
 import { resolvePersonName, shortId } from '@/utils/names'
 import { typeOptions, typeColor } from '@/utils/eventLabels'
+import { fetchAllPages } from '@/api/pagination'
 import {
   reconcileRoleOrder, rankByRoleIds, loadSortMode, saveSortMode, type SortMode,
 } from '@/utils/roleSort'
@@ -178,6 +193,7 @@ import type {
   AttendanceRead, LocationRead,
 } from '@/api/generated/almaEventFlow'
 
+const router = useRouter()
 const principal = usePrincipalStore()
 const settings = useSettingsStore()
 
@@ -197,7 +213,7 @@ const selectedTypes = ref<Set<EventTypeEnumV1>>(new Set(allTypeValues))
 const allTypesSelected = computed(() => selectedTypes.value.size === allTypeValues.length)
 const selectedRoleIds = ref<Set<string>>(new Set())
 const allRolesSelected = computed(() => selectedRoleIds.value.size === roles.value.length)
-const activeFilter = ref<'all' | 'active' | 'inactive'>('all')
+const activeFilter = ref<'all' | 'active' | 'inactive'>('active')
 
 watch(roles, (list) => {
   selectedRoleIds.value = new Set(list.map((r) => r.id))
@@ -222,9 +238,10 @@ function selectAllRoles() {
   selectedRoleIds.value = new Set(roles.value.map((r) => r.id))
 }
 
-// ---- Сортировка мероприятий (колонки) -- та же логика, что на principal/events ----
+// ---- Сортировка мероприятий (колонки) -- та же логика, что на principal/events,
+// но по умолчанию по возрастанию: сегодняшняя дата должна быть последней колонкой ----
 const sortKey = ref<'date' | 'name' | 'status'>('date')
-const sortOrder = ref<'asc' | 'desc'>('desc')
+const sortOrder = ref<'asc' | 'desc'>('asc')
 const STATUS_RANK: Record<EventStatusEnumV1, number> = {
   active: 0, draft: 1, template: 2, archived: 3,
 }
@@ -310,6 +327,13 @@ interface CellInfo {
   verified: boolean
 }
 
+// Комментарий уже приходит вместе с attendance (см. loadAllAttendance) --
+// отдельная подгрузка по наведению не нужна, просто добавляем его в title
+// (нативная всплывающая подсказка браузера).
+function withComment(title: string, a: AttendanceRead): string {
+  return a.comment ? `${title}\nКомментарий: ${a.comment}` : title
+}
+
 function buildCellInfo(a: AttendanceRead | undefined): CellInfo {
   if (!a) {
     return { icon: helpCircleOutline, color: 'var(--ion-color-step-300, #c7c7c7)', title: 'Нет данных об участии', hasComment: false, verified: false }
@@ -317,12 +341,12 @@ function buildCellInfo(a: AttendanceRead | undefined): CellInfo {
   const hasComment = !!a.comment
   const verified = !!a.is_verified
   if (a.is_attended === true) {
-    return { icon: checkmarkCircleOutline, color: '#00BF92', title: 'Присутствовал', hasComment, verified }
+    return { icon: checkmarkCircleOutline, color: '#00BF92', title: withComment('Присутствовал', a), hasComment, verified }
   }
   if (a.is_attended === false) {
-    return { icon: closeCircleOutline, color: 'var(--ion-color-danger)', title: 'Отсутствовал', hasComment, verified }
+    return { icon: closeCircleOutline, color: 'var(--ion-color-danger)', title: withComment('Отсутствовал', a), hasComment, verified }
   }
-  return { icon: helpCircleOutline, color: 'var(--ion-color-medium)', title: 'Не отмечено', hasComment, verified }
+  return { icon: helpCircleOutline, color: 'var(--ion-color-medium)', title: withComment('Не отмечено', a), hasComment, verified }
 }
 
 interface MatrixRow {
@@ -341,12 +365,112 @@ const matrixRows = computed<MatrixRow[]>(() =>
   })),
 )
 
-// ---- Загрузка данных ----
+// ---- Окно мероприятий -- как на главной странице (HomePage/eventCalendar),
+// только сегодняшняя дата на конце окна, а не в начале: дашборд посещений в
+// первую очередь смотрит в прошлое. Догрузка более ранних -- по скроллу
+// таблицы влево либо кнопкой; либо явный диапазон дат вместо окна. ----
+const EVENTS_WINDOW_SIZE = 20
+const dateFrom = ref('')
+const dateTo = ref('')
+const useCustomRange = ref(false)
+const hasMoreEvents = ref(true)
+const loadingMoreEvents = ref(false)
+const matrixWrapRef = ref<HTMLElement | null>(null)
+
+function todayStr(): string {
+  return new Date().toISOString().slice(0, 10)
+}
+
+async function fetchEventsWindow(collectiveId: string, dateLte: string): Promise<EventRead[]> {
+  const res = await getEventsEventV1EventsGet({
+    participant_id: collectiveId, date__lte: dateLte, order_by: '-date', limit: EVENTS_WINDOW_SIZE,
+  })
+  return res.data.items.filter((e) => e.status !== 'template')
+}
+
+async function loadInitialEvents(collectiveId: string) {
+  if (useCustomRange.value && dateFrom.value && dateTo.value) {
+    const items = await fetchAllPages<EventRead>((page, limit) =>
+      getEventsEventV1EventsGet({
+        participant_id: collectiveId, date__gte: dateFrom.value, date__lte: dateTo.value, order_by: 'date', page, limit,
+      }))
+    events.value = items.filter((e) => e.status !== 'template')
+    hasMoreEvents.value = false
+  } else {
+    const items = await fetchEventsWindow(collectiveId, todayStr())
+    events.value = items.slice().reverse() // по возрастанию даты -- сегодня последним
+    hasMoreEvents.value = items.length === EVENTS_WINDOW_SIZE
+  }
+  await loadLocations(events.value)
+}
+
+async function loadMoreEvents() {
+  const collectiveId = principal.activePrincipalCollectiveId
+  if (!collectiveId || useCustomRange.value || !hasMoreEvents.value || loadingMoreEvents.value) return
+  const oldest = events.value[0]?.date
+  if (!oldest) {
+    hasMoreEvents.value = false
+    return
+  }
+  loadingMoreEvents.value = true
+  try {
+    // date__lte включает саму границу, поэтому дедупим по id (как на HomePage).
+    const items = await fetchEventsWindow(collectiveId, oldest)
+    const existingIds = new Set(events.value.map((e) => e.id))
+    const newOnes = items.filter((e) => !existingIds.has(e.id))
+    if (newOnes.length === 0) {
+      hasMoreEvents.value = false
+      return
+    }
+    events.value = [...newOnes.slice().reverse(), ...events.value]
+    if (items.length < EVENTS_WINDOW_SIZE) hasMoreEvents.value = false
+    await loadLocations(newOnes)
+  } finally {
+    loadingMoreEvents.value = false
+  }
+}
+
+function applyDateRange() {
+  if (!dateFrom.value || !dateTo.value) return
+  useCustomRange.value = true
+  const collectiveId = principal.activePrincipalCollectiveId
+  if (collectiveId) loadInitialEvents(collectiveId)
+}
+
+function resetDateRange() {
+  useCustomRange.value = false
+  dateFrom.value = ''
+  dateTo.value = ''
+  hasMoreEvents.value = true
+  const collectiveId = principal.activePrincipalCollectiveId
+  if (collectiveId) loadInitialEvents(collectiveId)
+}
+
+// Динамическая подгрузка: приближение к левому краю таблицы (более ранние
+// мероприятия) подгружает следующую порцию окна -- аналог load-more-up на
+// главной странице, но по горизонтальному скроллу вместо вертикального.
+function onMatrixScroll() {
+  const el = matrixWrapRef.value
+  if (!el) return
+  if (el.scrollLeft < 120) loadMoreEvents()
+}
+
+function onCellClick(event: EventRead, member: MemberRead) {
+  const collectiveId = principal.activePrincipalCollectiveId
+  router.push({
+    path: `/event/${event.id}`,
+    query: collectiveId ? { member: member.id, collective: collectiveId } : { member: member.id },
+  })
+}
+
+// ---- Загрузка остальных данных ----
 
 // Батч-фильтра по локациям нет -- один GET на уникальный location_id (по числу
-// мероприятий, не мероприятий×участников).
+// мероприятий, не мероприятий×участников), пропуская уже известные (для
+// инкрементальной догрузки через loadMoreEvents).
 async function loadLocations(eventList: EventRead[]) {
   const ids = [...new Set(eventList.map((e) => e.location_id).filter((id): id is string => !!id))]
+    .filter((id) => !locationsById[id])
   await Promise.all(ids.map(async (id) => {
     try {
       const res = await getLocationGeoV1LocationsLocationIdGet(id)
@@ -355,34 +479,26 @@ async function loadLocations(eventList: EventRead[]) {
   }))
 }
 
-// AttendanceFilter поддерживает participation_id__in, но строки могут не
-// уместиться в один лимит в 100 -- дочитываем страницы, пока не наберём total.
+// AttendanceFilter поддерживает participation_id__in -- один батч-запрос на
+// весь коллектив вместо запроса на каждое мероприятие; fetchAllPages
+// дочитывает страницы, если строк больше одного лимита.
 async function loadAllAttendance(participationIds: string[]): Promise<AttendanceRead[]> {
   if (!participationIds.length) return []
   const participationIdIn = participationIds.join(',')
-  const all: AttendanceRead[] = []
-  let page = 0
-  for (;;) {
-    const res = await getAttendancesEventV1AttendancesGet({ participation_id__in: participationIdIn, limit: 100, page })
-    all.push(...res.data.items)
-    if (res.data.items.length === 0 || all.length >= res.data.pagination.total) break
-    page += 1
-  }
-  return all
+  return fetchAllPages<AttendanceRead>((page, limit) =>
+    getAttendancesEventV1AttendancesGet({ participation_id__in: participationIdIn, page, limit }))
 }
 
 async function loadDashboard(collectiveId: string) {
   loading.value = true
   try {
-    const [eventsRes, activeRes, inactiveRes, rolesRes, participationsRes] = await Promise.all([
-      getEventsEventV1EventsGet({ participant_id: collectiveId, limit: 100, order_by: '-date' }),
+    const [activeRes, inactiveRes, rolesRes, participationsRes] = await Promise.all([
       getMyCollectiveMembersEventV1MeCollectivesCollectiveIdMembersGet(collectiveId, { limit: 100, is_active: true }),
       getMyCollectiveMembersEventV1MeCollectivesCollectiveIdMembersGet(collectiveId, { limit: 100, is_active: false }),
       getMyCollectiveRolesEventV1MeCollectivesCollectiveIdRolesGet(collectiveId, { limit: 100 }),
       getParticipationsEventV1ParticipationsGet({ collective_id: collectiveId, limit: 100 }),
     ])
 
-    events.value = eventsRes.data.items.filter((e) => e.status !== 'template')
     members.value = [...activeRes.data.items, ...inactiveRes.data.items]
     roles.value = rolesRes.data.items
     participations.value = participationsRes.data.items
@@ -390,8 +506,8 @@ async function loadDashboard(collectiveId: string) {
     rowSortMode.value = loadSortMode(collectiveId)
 
     await Promise.all([
+      loadInitialEvents(collectiveId),
       loadAllAttendance(participations.value.map((p) => p.id)).then((list) => { attendances.value = list }),
-      loadLocations(events.value),
       Promise.all(members.value.map(async (m) => {
         const name = await resolvePersonName(m.person_id)
         if (name) personNames[m.person_id] = name
@@ -405,6 +521,10 @@ async function loadDashboard(collectiveId: string) {
 }
 
 watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
+  useCustomRange.value = false
+  dateFrom.value = ''
+  dateTo.value = ''
+  hasMoreEvents.value = true
   if (!collectiveId) {
     events.value = []
     members.value = []
@@ -577,6 +697,37 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
   font-weight: 600;
   color: var(--ion-color-medium);
   flex-shrink: 0;
+}
+
+.native-date {
+  height: 36px;
+  padding: 0 10px;
+  border: 1.5px solid var(--ion-border-color);
+  border-radius: 10px;
+  background: var(--ion-card-background);
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--ion-text-color);
+  outline: none;
+}
+
+.native-date:focus {
+  border-color: var(--ion-color-primary);
+}
+
+.range-dash {
+  color: var(--ion-color-step-400);
+  font-size: 13px;
+}
+
+.btn-spinner-sm {
+  display: inline-block;
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--ion-border-color);
+  border-top-color: var(--ion-color-primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
 }
 
 .role-chips {

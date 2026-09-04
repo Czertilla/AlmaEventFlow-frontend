@@ -126,7 +126,13 @@
                 <div v-if="expanded[p.participationId]" class="attendance-list">
                   <template v-for="g in attendanceGroups(p)" :key="g.key">
                   <div v-if="g.label" class="attendance-divider">{{ g.label }}</div>
-                  <div v-for="a in g.items" :key="a.id" class="attendance-row">
+                  <div
+                    v-for="a in g.items"
+                    :key="a.id"
+                    :id="`attendance-row-${a.id}`"
+                    class="attendance-row"
+                    :class="{ 'attendance-row--highlight': highlightedAttendanceId === a.id }"
+                  >
                     <span class="attendance-member">{{ memberLabel(a.member_id) }}</span>
                     <div class="attendance-row-chips">
                       <EventAttendanceChip
@@ -424,7 +430,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive } from 'vue'
+import { ref, computed, onMounted, reactive, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   IonPage, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonContent,
@@ -781,6 +787,28 @@ async function submitJoin() {
   }
 }
 
+// Дашборд руководителя переходит сюда с ?member=&collective= для конкретной
+// ячейки посещения -- разворачиваем нужный коллектив, прокручиваем к строке
+// этого участника и подсвечиваем её на пару секунд.
+const highlightedAttendanceId = ref<string | null>(null)
+
+async function scrollToRequestedAttendance() {
+  const memberId = route.query.member
+  if (typeof memberId !== 'string' || !memberId) return
+  const collectiveId = typeof route.query.collective === 'string' ? route.query.collective : undefined
+  const target = participationItems.value.find((p) => !collectiveId || p.collectiveId === collectiveId)
+  if (!target) return
+  if (target.canExpand) expanded[target.participationId] = true
+  const attendance = target.attendances.find((a) => a.member_id === memberId)
+  if (!attendance) return
+  highlightedAttendanceId.value = attendance.id
+  await nextTick()
+  document.getElementById(`attendance-row-${attendance.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  setTimeout(() => {
+    if (highlightedAttendanceId.value === attendance.id) highlightedAttendanceId.value = null
+  }, 2500)
+}
+
 onMounted(async () => {
   loading.value = true
   try {
@@ -792,6 +820,7 @@ onMounted(async () => {
     event.value = eventResp.data
     stages.value = stagesResp?.data.items ?? []
     await Promise.all([loadParticipations(), loadDisplayLocation(event.value.location_id)])
+    await scrollToRequestedAttendance()
   } catch (err) {
     console.error('Failed to load event', err)
   } finally {
@@ -1359,6 +1388,15 @@ onMounted(async () => {
   padding: 8px 10px;
   border-radius: 10px;
   background: var(--ion-background-color);
+}
+
+.attendance-row--highlight {
+  animation: attendance-highlight 2.5s ease;
+}
+
+@keyframes attendance-highlight {
+  0%, 100% { background: var(--ion-background-color); }
+  15%, 65% { background: rgba(var(--ion-color-primary-rgb), 0.18); }
 }
 
 .attendance-member {

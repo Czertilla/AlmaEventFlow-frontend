@@ -27,7 +27,12 @@ export function shortenName(full: string): string {
   return initials ? `${surname} ${initials}` : surname
 }
 
-/** ФИО персоны по id; null — если недоступно. */
+/**
+ * ФИО персоны по id; null — если недоступно. Неудачу НЕ кешируем: под резкой
+ * нагрузкой (десятки параллельных запросов на странице со списком участников)
+ * единичный сетевой сбой не должен навсегда «приклеивать» участнику короткий
+ * id вместо имени на всю сессию — следующий вызов должен получить новый шанс.
+ */
 export async function resolvePersonName(personId: string): Promise<string | null> {
   if (personNameCache.has(personId)) return personNameCache.get(personId)!
   try {
@@ -36,7 +41,6 @@ export async function resolvePersonName(personId: string): Promise<string | null
     personNameCache.set(personId, name)
     return name
   } catch {
-    personNameCache.set(personId, null)
     return null
   }
 }
@@ -48,10 +52,11 @@ export async function resolveMemberName(memberId: string, knownPersonId?: string
     try {
       const resp = await getMemberEventV1MembersMemberIdGet(memberId)
       personId = resp.data.person_id
+      memberPersonCache.set(memberId, personId)
     } catch {
+      // Не кешируем неудачу -- см. resolvePersonName выше.
       personId = null
     }
-    memberPersonCache.set(memberId, personId)
   }
   if (!personId) return null
   return resolvePersonName(personId)

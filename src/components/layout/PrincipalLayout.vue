@@ -10,7 +10,7 @@
       </ion-toolbar>
     </ion-header>
     <ion-content>
-      <div class="principal-shell">
+      <div class="principal-shell" :class="{ 'principal-shell--full': fullWidth }">
         <h1 v-if="isDesktop" class="principal-title">{{ title }}</h1>
 
         <div class="principal-top">
@@ -77,6 +77,9 @@ import AppFab from '@/components/common/AppFab.vue'
 defineProps<{
   title: string
   addLabel?: string
+  /** Разворачивает содержимое на всю ширину экрана (с небольшим отступом) --
+   * для широких таблиц вроде дашборда, которым тесно в обычных 760px. */
+  fullWidth?: boolean
 }>()
 
 defineEmits<{ add: [] }>()
@@ -105,6 +108,10 @@ function onCollectiveChange(id: string) {
   max-width: 760px;
   margin: 0 auto;
   padding: 16px;
+}
+
+.principal-shell--full {
+  max-width: none;
 }
 
 .principal-title {

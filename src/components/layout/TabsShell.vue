@@ -9,7 +9,7 @@
         <ion-label>Главная</ion-label>
       </ion-tab-button>
 
-      <ion-tab-button v-if="principal.isPrincipal" tab="principal" href="/principal/members">
+      <ion-tab-button v-if="principal.isPrincipal" tab="principal" href="/principal/dashboard">
         <ion-icon :icon="shieldCheckmarkOutline" />
         <ion-label>Руководитель</ion-label>
       </ion-tab-button>
