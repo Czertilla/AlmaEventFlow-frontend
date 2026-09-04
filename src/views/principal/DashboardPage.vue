@@ -87,10 +87,6 @@
         <input v-model="dateTo" type="date" class="native-date" aria-label="По дату" />
         <button class="sort-btn" :disabled="!dateFrom || !dateTo" @click="applyDateRange">Применить</button>
         <button v-if="useCustomRange" class="sort-btn" @click="resetDateRange">Сбросить</button>
-        <button v-if="!useCustomRange && hasMoreEvents" class="sort-btn" :disabled="loadingMoreEvents" @click="loadMoreEvents">
-          <span v-if="loadingMoreEvents" class="btn-spinner-sm" />
-          <span v-else>Загрузить более ранние</span>
-        </button>
       </div>
 
       <div v-if="loading" class="page-state">
@@ -102,7 +98,17 @@
       </div>
 
       <template v-else>
-        <div ref="matrixWrapRef" class="matrix-wrap" @scroll="onMatrixScroll">
+        <div class="matrix-shell">
+          <button
+            class="matrix-page-btn matrix-page-btn--left"
+            :disabled="useCustomRange || !canGoEarlier || !!loadingWindow"
+            title="Более ранние мероприятия"
+            @click="goEarlier"
+          >
+            <span v-if="loadingWindow === 'earlier'" class="btn-spinner-sm" />
+            <ion-icon v-else :icon="chevronBackOutline" />
+          </button>
+          <div ref="matrixWrapRef" class="matrix-wrap">
           <table class="matrix">
             <thead>
               <tr>
@@ -146,6 +152,16 @@
               </tr>
             </tbody>
           </table>
+          </div>
+          <button
+            class="matrix-page-btn matrix-page-btn--right"
+            :disabled="useCustomRange || !canGoLater || !!loadingWindow"
+            title="Более поздние мероприятия"
+            @click="goLater"
+          >
+            <span v-if="loadingWindow === 'later'" class="btn-spinner-sm" />
+            <ion-icon v-else :icon="chevronForwardOutline" />
+          </button>
         </div>
 
         <div class="legend">
@@ -161,13 +177,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, reactive, computed, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import { IonIcon } from '@ionic/vue'
 import {
   searchOutline, closeOutline, swapVerticalOutline, arrowUpOutline, arrowDownOutline,
   peopleOutline, gridOutline, checkmarkCircleOutline, closeCircleOutline, helpCircleOutline,
-  lockClosedOutline,
+  lockClosedOutline, chevronBackOutline, chevronForwardOutline,
 } from 'ionicons/icons'
 import PrincipalLayout from '@/components/layout/PrincipalLayout.vue'
 import LocationDisplay from '@/components/geo/LocationDisplay.vue'
@@ -365,68 +381,98 @@ const matrixRows = computed<MatrixRow[]>(() =>
   })),
 )
 
-// ---- Окно мероприятий -- как на главной странице (HomePage/eventCalendar),
-// только сегодняшняя дата на конце окна, а не в начале: дашборд посещений в
-// первую очередь смотрит в прошлое. Догрузка более ранних -- по скроллу
-// таблицы влево либо кнопкой; либо явный диапазон дат вместо окна. ----
-const EVENTS_WINDOW_SIZE = 20
+// ---- Окно мероприятий: пагинирующее (порциями по EVENTS_PAGE_SIZE), а не
+// фильтрующее -- каждый переход стрелкой ЗАМЕНЯЕТ видимую страницу, а не
+// доливает в один бесконечно растущий список. Даты считаются так же, как на
+// главной странице (HomePage/eventCalendar: date__lte/date__gte), но
+// сегодняшняя дата -- на конце страницы, а не в начале, т.к. дашборд
+// посещений в первую очередь смотрит в прошлое. laterStack запоминает уже
+// просмотренные более свежие страницы, чтобы «Позже» не перезапрашивало их. ----
+const EVENTS_PAGE_SIZE = 20
 const dateFrom = ref('')
 const dateTo = ref('')
 const useCustomRange = ref(false)
-const hasMoreEvents = ref(true)
-const loadingMoreEvents = ref(false)
+const canGoEarlier = ref(true)
+const canGoLater = ref(false)
+const loadingWindow = ref<'earlier' | 'later' | null>(null)
+const laterStack = ref<EventRead[][]>([])
 const matrixWrapRef = ref<HTMLElement | null>(null)
 
 function todayStr(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
-async function fetchEventsWindow(collectiveId: string, dateLte: string): Promise<EventRead[]> {
+async function fetchEventsPage(collectiveId: string, dateLte: string): Promise<EventRead[]> {
   const res = await getEventsEventV1EventsGet({
-    participant_id: collectiveId, date__lte: dateLte, order_by: '-date', limit: EVENTS_WINDOW_SIZE,
+    participant_id: collectiveId, date__lte: dateLte, order_by: '-date', limit: EVENTS_PAGE_SIZE,
   })
   return res.data.items.filter((e) => e.status !== 'template')
 }
 
+async function resetMatrixScroll() {
+  await nextTick()
+  if (matrixWrapRef.value) matrixWrapRef.value.scrollLeft = 0
+}
+
 async function loadInitialEvents(collectiveId: string) {
+  laterStack.value = []
+  canGoLater.value = false
   if (useCustomRange.value && dateFrom.value && dateTo.value) {
     const items = await fetchAllPages<EventRead>((page, limit) =>
       getEventsEventV1EventsGet({
         participant_id: collectiveId, date__gte: dateFrom.value, date__lte: dateTo.value, order_by: 'date', page, limit,
       }))
     events.value = items.filter((e) => e.status !== 'template')
-    hasMoreEvents.value = false
+    canGoEarlier.value = false
   } else {
-    const items = await fetchEventsWindow(collectiveId, todayStr())
+    const items = await fetchEventsPage(collectiveId, todayStr())
     events.value = items.slice().reverse() // по возрастанию даты -- сегодня последним
-    hasMoreEvents.value = items.length === EVENTS_WINDOW_SIZE
+    canGoEarlier.value = items.length === EVENTS_PAGE_SIZE
   }
   await loadLocations(events.value)
+  await resetMatrixScroll()
 }
 
-async function loadMoreEvents() {
+async function goEarlier() {
   const collectiveId = principal.activePrincipalCollectiveId
-  if (!collectiveId || useCustomRange.value || !hasMoreEvents.value || loadingMoreEvents.value) return
-  const oldest = events.value[0]?.date
-  if (!oldest) {
-    hasMoreEvents.value = false
+  if (!collectiveId || useCustomRange.value || !canGoEarlier.value || loadingWindow.value) return
+  const boundary = events.value[0]?.date
+  if (!boundary) {
+    canGoEarlier.value = false
     return
   }
-  loadingMoreEvents.value = true
+  loadingWindow.value = 'earlier'
   try {
     // date__lte включает саму границу, поэтому дедупим по id (как на HomePage).
-    const items = await fetchEventsWindow(collectiveId, oldest)
-    const existingIds = new Set(events.value.map((e) => e.id))
-    const newOnes = items.filter((e) => !existingIds.has(e.id))
+    const items = await fetchEventsPage(collectiveId, boundary)
+    const currentIds = new Set(events.value.map((e) => e.id))
+    const newOnes = items.filter((e) => !currentIds.has(e.id))
     if (newOnes.length === 0) {
-      hasMoreEvents.value = false
+      canGoEarlier.value = false
       return
     }
-    events.value = [...newOnes.slice().reverse(), ...events.value]
-    if (items.length < EVENTS_WINDOW_SIZE) hasMoreEvents.value = false
-    await loadLocations(newOnes)
+    laterStack.value.push(events.value)
+    events.value = newOnes.slice().reverse()
+    canGoEarlier.value = items.length === EVENTS_PAGE_SIZE
+    canGoLater.value = true
+    await loadLocations(events.value)
+    await resetMatrixScroll()
   } finally {
-    loadingMoreEvents.value = false
+    loadingWindow.value = null
+  }
+}
+
+async function goLater() {
+  if (useCustomRange.value || !laterStack.value.length || loadingWindow.value) return
+  loadingWindow.value = 'later'
+  try {
+    events.value = laterStack.value.pop()!
+    canGoLater.value = laterStack.value.length > 0
+    canGoEarlier.value = true
+    await loadLocations(events.value)
+    await resetMatrixScroll()
+  } finally {
+    loadingWindow.value = null
   }
 }
 
@@ -441,18 +487,8 @@ function resetDateRange() {
   useCustomRange.value = false
   dateFrom.value = ''
   dateTo.value = ''
-  hasMoreEvents.value = true
   const collectiveId = principal.activePrincipalCollectiveId
   if (collectiveId) loadInitialEvents(collectiveId)
-}
-
-// Динамическая подгрузка: приближение к левому краю таблицы (более ранние
-// мероприятия) подгружает следующую порцию окна -- аналог load-more-up на
-// главной странице, но по горизонтальному скроллу вместо вертикального.
-function onMatrixScroll() {
-  const el = matrixWrapRef.value
-  if (!el) return
-  if (el.scrollLeft < 120) loadMoreEvents()
 }
 
 function onCellClick(event: EventRead, member: MemberRead) {
@@ -466,8 +502,8 @@ function onCellClick(event: EventRead, member: MemberRead) {
 // ---- Загрузка остальных данных ----
 
 // Батч-фильтра по локациям нет -- один GET на уникальный location_id (по числу
-// мероприятий, не мероприятий×участников), пропуская уже известные (для
-// инкрементальной догрузки через loadMoreEvents).
+// мероприятий, не мероприятий×участников), пропуская уже известные (страницы
+// в laterStack не нужно перезапрашивать при возврате через "Позже").
 async function loadLocations(eventList: EventRead[]) {
   const ids = [...new Set(eventList.map((e) => e.location_id).filter((id): id is string => !!id))]
     .filter((id) => !locationsById[id])
@@ -524,7 +560,9 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
   useCustomRange.value = false
   dateFrom.value = ''
   dateTo.value = ''
-  hasMoreEvents.value = true
+  canGoEarlier.value = true
+  canGoLater.value = false
+  laterStack.value = []
   if (!collectiveId) {
     events.value = []
     members.value = []
@@ -790,12 +828,56 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
 }
 
 /* Матрица */
+.matrix-shell {
+  position: relative;
+}
+
 .matrix-wrap {
   max-height: 70vh;
   overflow: auto;
   border-radius: 14px;
   box-shadow: var(--ion-card-shadow);
   background: var(--ion-card-background);
+}
+
+/* Пагинация страниц окна -- листает мероприятия целыми порциями, а не
+   доливает их бесконечно; стрелки лежат поверх таблицы по краям. */
+.matrix-page-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border: 1.5px solid var(--ion-border-color);
+  border-radius: 50%;
+  background: var(--ion-card-background);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+  color: var(--ion-text-color);
+  font-size: 18px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.matrix-page-btn:hover:not(:disabled) {
+  border-color: var(--ion-color-primary);
+  color: var(--ion-color-primary);
+}
+
+.matrix-page-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.matrix-page-btn--left {
+  left: -14px;
+}
+
+.matrix-page-btn--right {
+  right: -14px;
 }
 
 .matrix {
