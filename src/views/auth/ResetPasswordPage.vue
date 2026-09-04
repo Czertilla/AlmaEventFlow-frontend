@@ -42,19 +42,25 @@
               <div v-else key="form" class="auth-form">
                 <div class="field-group">
                   <label class="field-label">Новый пароль</label>
-                  <div class="field-input" :class="{ 'field-input--error': error && !password }">
-                    <ion-icon :icon="lockClosedOutline" class="field-icon" />
-                    <input v-model="password" type="password" placeholder="Введите новый пароль" @keyup.enter="handleSubmit" />
-                  </div>
+                  <PasswordField
+                    v-model="password"
+                    autocomplete="new-password"
+                    placeholder="Введите новый пароль"
+                    :error="!!error && !password"
+                    @enter="handleSubmit"
+                  />
                   <PasswordStrengthMeter :password="password" />
                 </div>
 
                 <div class="field-group">
                   <label class="field-label">Повторите пароль</label>
-                  <div class="field-input" :class="{ 'field-input--error': error && password !== confirm }">
-                    <ion-icon :icon="lockClosedOutline" class="field-icon" />
-                    <input v-model="confirm" type="password" placeholder="Повторите пароль" @keyup.enter="handleSubmit" />
-                  </div>
+                  <PasswordField
+                    v-model="confirm"
+                    autocomplete="new-password"
+                    placeholder="Повторите пароль"
+                    :error="!!error && password !== confirm"
+                    @enter="handleSubmit"
+                  />
                 </div>
 
                 <Transition name="fade">
@@ -83,9 +89,10 @@ import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { validatePassword } from '@/utils/password'
 import PasswordStrengthMeter from '@/components/common/PasswordStrengthMeter.vue'
+import PasswordField from '@/components/common/PasswordField.vue'
 import { IonPage, IonContent, IonIcon, onIonViewDidLeave } from '@ionic/vue'
 import {
-  lockClosedOutline, alertCircleOutline,
+  alertCircleOutline,
   checkmarkCircleOutline,
 } from 'ionicons/icons'
 

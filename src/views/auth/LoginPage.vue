@@ -23,16 +23,27 @@
                 <label class="field-label">Email</label>
                 <div class="field-input" :class="{ 'field-input--error': error && !username }">
                   <ion-icon :icon="personOutline" class="field-icon" />
-                  <input v-model="username" type="text" placeholder="Введите email" @keyup.enter="handleLogin" />
+                  <input
+                    v-model="username"
+                    type="email"
+                    name="email"
+                    autocomplete="username"
+                    placeholder="Введите email"
+                    @blur="normalizeUsername"
+                    @keyup.enter="handleLogin"
+                  />
                 </div>
               </div>
 
               <div class="field-group">
                 <label class="field-label">Пароль</label>
-                <div class="field-input" :class="{ 'field-input--error': error && !password }">
-                  <ion-icon :icon="lockClosedOutline" class="field-icon" />
-                  <input v-model="password" type="password" placeholder="Введите пароль" @keyup.enter="handleLogin" />
-                </div>
+                <PasswordField
+                  v-model="password"
+                  autocomplete="current-password"
+                  placeholder="Введите пароль"
+                  :error="!!error && !password"
+                  @enter="handleLogin"
+                />
               </div>
 
               <Transition name="fade">
@@ -69,9 +80,10 @@ import { nextTick, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { IonPage, IonContent, IonIcon, onIonViewDidLeave } from '@ionic/vue'
-import { personOutline, lockClosedOutline, alertCircleOutline } from 'ionicons/icons'
+import { personOutline, alertCircleOutline } from 'ionicons/icons'
 import { useTelegramWidget, type TelegramWidgetUser } from '@/composables/useTelegramWidget'
 import { getTelegramLoginConfigUserV1AuthTelegramConfigGet } from '@/api/generated/almaEventFlow'
+import PasswordField from '@/components/common/PasswordField.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -109,8 +121,13 @@ onIonViewDidLeave(() => {
   error.value = ''
 })
 
+function normalizeUsername() {
+  username.value = username.value.trim().toLowerCase()
+}
+
 async function handleLogin() {
   error.value = ''
+  normalizeUsername()
   if (!username.value || !password.value) {
     error.value = 'Заполните все поля'
     return

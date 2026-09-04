@@ -40,26 +40,17 @@
           <div class="edit-card">
             <div class="field-group">
               <label class="field-label">Новый пароль</label>
-              <div class="field-input">
-                <ion-icon :icon="lockClosedOutline" class="field-icon" />
-                <input v-model="password" type="password" placeholder="Оставьте пустым, чтобы не менять" />
-              </div>
+              <PasswordField v-model="password" autocomplete="new-password" placeholder="Оставьте пустым, чтобы не менять" />
               <PasswordStrengthMeter :password="password" />
             </div>
             <template v-if="password">
               <div class="field-group">
                 <label class="field-label">Повторите пароль</label>
-                <div class="field-input">
-                  <ion-icon :icon="lockClosedOutline" class="field-icon" />
-                  <input v-model="confirm" type="password" placeholder="Повторите новый пароль" />
-                </div>
+                <PasswordField v-model="confirm" autocomplete="new-password" placeholder="Повторите новый пароль" />
               </div>
               <div class="field-group">
                 <label class="field-label">Текущий пароль</label>
-                <div class="field-input">
-                  <ion-icon :icon="keyOutline" class="field-icon" />
-                  <input v-model="currentPassword" type="password" placeholder="Введите текущий пароль" />
-                </div>
+                <PasswordField v-model="currentPassword" autocomplete="current-password" placeholder="Введите текущий пароль" />
                 <span class="field-hint">
                   Для смены пароля подтвердите текущий. Остальные сеансы будут завершены.
                 </span>
@@ -115,13 +106,14 @@ import { useAuthStore } from '@/stores/auth'
 import { usePlatform } from '@/composables/usePlatform'
 import { validatePassword } from '@/utils/password'
 import PasswordStrengthMeter from '@/components/common/PasswordStrengthMeter.vue'
+import PasswordField from '@/components/common/PasswordField.vue'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons,
   IonBackButton, IonIcon, toastController,
   onIonViewWillEnter, onIonViewDidLeave,
 } from '@ionic/vue'
 import {
-  personOutline, mailOutline, lockClosedOutline, keyOutline, alertCircleOutline,
+  personOutline, mailOutline, alertCircleOutline,
   paperPlaneOutline,
 } from 'ionicons/icons'
 import { createTelegramLinkTokenUserV1UsersMeTelegramLinkTokenPost } from '@/api/generated/almaEventFlow'

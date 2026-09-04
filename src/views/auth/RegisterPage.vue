@@ -32,7 +32,14 @@
                 <label class="field-label">Email</label>
                 <div class="field-input" :class="{ 'field-input--error': !!errors.email }">
                   <ion-icon :icon="mailOutline" class="field-icon" />
-                  <input v-model="email" type="email" autocomplete="email" placeholder="Введите email" />
+                  <input
+                    v-model="email"
+                    type="email"
+                    name="email"
+                    autocomplete="username"
+                    placeholder="Введите email"
+                    @blur="normalizeEmail"
+                  />
                 </div>
                 <span v-if="errors.email" class="field-error">{{ errors.email }}</span>
               </div>
@@ -41,7 +48,7 @@
                 <label class="field-label">Username</label>
                 <div class="field-input" :class="{ 'field-input--error': !!errors.username }">
                   <ion-icon :icon="personOutline" class="field-icon" />
-                  <input v-model="username" type="text" autocomplete="username" placeholder="Введите username" @input="onUsernameInput" />
+                  <input v-model="username" type="text" name="nickname" autocomplete="nickname" placeholder="Введите username" @input="onUsernameInput" />
                 </div>
                 <span v-if="usernameStatus" :class="usernameColor === 'danger' ? 'field-error' : 'field-success'">{{ usernameStatus }}</span>
                 <span v-else-if="errors.username" class="field-error">{{ errors.username }}</span>
@@ -49,20 +56,14 @@
 
               <div class="field-group">
                 <label class="field-label">Пароль</label>
-                <div class="field-input" :class="{ 'field-input--error': !!errors.password }">
-                  <ion-icon :icon="lockClosedOutline" class="field-icon" />
-                  <input v-model="password" type="password" autocomplete="new-password" placeholder="Придумайте пароль" />
-                </div>
+                <PasswordField v-model="password" autocomplete="new-password" placeholder="Придумайте пароль" :error="!!errors.password" />
                 <PasswordStrengthMeter :password="password" />
                 <span v-if="errors.password" class="field-error">{{ errors.password }}</span>
               </div>
 
               <div class="field-group">
                 <label class="field-label">Подтвердите пароль</label>
-                <div class="field-input" :class="{ 'field-input--error': !!errors.confirmPassword }">
-                  <ion-icon :icon="lockClosedOutline" class="field-icon" />
-                  <input v-model="confirmPassword" type="password" autocomplete="new-password" placeholder="Повторите пароль" />
-                </div>
+                <PasswordField v-model="confirmPassword" autocomplete="new-password" placeholder="Повторите пароль" :error="!!errors.confirmPassword" />
                 <span v-if="errors.confirmPassword" class="field-error">{{ errors.confirmPassword }}</span>
               </div>
 
@@ -102,8 +103,9 @@ import { decodeJwt } from '@/utils/jwt'
 import { resolvePersonName } from '@/utils/names'
 import { validatePassword } from '@/utils/password'
 import PasswordStrengthMeter from '@/components/common/PasswordStrengthMeter.vue'
+import PasswordField from '@/components/common/PasswordField.vue'
 import { IonPage, IonContent, IonIcon, onIonViewDidLeave } from '@ionic/vue'
-import { mailOutline, personOutline, lockClosedOutline, checkmarkOutline, alertCircleOutline, linkOutline } from 'ionicons/icons'
+import { mailOutline, personOutline, checkmarkOutline, alertCircleOutline, linkOutline } from 'ionicons/icons'
 
 const router = useRouter()
 const route = useRoute()
@@ -170,6 +172,10 @@ onIonViewDidLeave(() => {
   errors.confirmPassword = ''
 })
 
+function normalizeEmail() {
+  email.value = email.value.trim().toLowerCase()
+}
+
 function validate() {
   let valid = true
   errors.email = ''
@@ -233,6 +239,7 @@ function onUsernameInput() {
 
 async function handleRegister() {
   error.value = ''
+  normalizeEmail()
   if (!validate()) return
   loading.value = true
   try {
