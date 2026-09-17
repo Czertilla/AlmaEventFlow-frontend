@@ -146,10 +146,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBackButton,
-  IonButton, IonIcon, IonSpinner, IonToggle, toastController,
+  IonButton, IonIcon, IonSpinner, IonToggle, toastController, onIonViewWillEnter,
 } from '@ionic/vue'
 import {
   informationCircleOutline, notificationsOutline, mailOutline, trashOutline,
@@ -295,7 +295,9 @@ async function onSendTest() {
   }
 }
 
-onMounted(reload)
+// onIonViewWillEnter, а не onMounted -- ion-router-outlet кэширует уже
+// посещённые страницы, обычный onMounted сработал бы только один раз.
+onIonViewWillEnter(reload)
 </script>
 
 <style scoped>

@@ -430,12 +430,12 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, reactive, nextTick } from 'vue'
+import { ref, computed, reactive, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   IonPage, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonContent,
   IonButton, IonIcon, IonModal, IonInput, IonTextarea, IonSelect, IonSelectOption,
-  IonSearchbar,
+  IonSearchbar, onIonViewWillEnter,
 } from '@ionic/vue'
 import {
   calendarOutline, timeOutline, chevronDownOutline, chevronUpOutline,
@@ -809,7 +809,12 @@ async function scrollToRequestedAttendance() {
   }, 2500)
 }
 
-onMounted(async () => {
+// onIonViewWillEnter, а не onMounted: ion-router-outlet по умолчанию кэширует
+// уже посещённые страницы и не размонтирует их при переходе на другую --
+// обычный onMounted сработал бы только один раз, и при возврате на эту
+// страницу (например, после отметки посещаемости в другом месте) она
+// показывала бы старые данные.
+onIonViewWillEnter(async () => {
   loading.value = true
   try {
     const [eventResp, stagesResp] = await Promise.all([

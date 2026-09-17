@@ -126,10 +126,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBackButton,
-  IonButton, IonIcon, IonSpinner, toastController,
+  IonButton, IonIcon, IonSpinner, toastController, onIonViewWillEnter,
 } from '@ionic/vue'
 import {
   informationCircleOutline, copyOutline, refreshOutline, trashOutline,
@@ -264,7 +264,9 @@ async function onDelete(sub: SubscriptionRead) {
   }
 }
 
-onMounted(() => store.refresh())
+// onIonViewWillEnter, а не onMounted -- ion-router-outlet кэширует уже
+// посещённые страницы, обычный onMounted сработал бы только один раз.
+onIonViewWillEnter(() => store.refresh())
 </script>
 
 <style scoped>

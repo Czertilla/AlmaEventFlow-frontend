@@ -69,14 +69,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 import { usePlatform } from '@/composables/usePlatform'
 import { useSettingsStore } from '@/stores/settings'
 import { formatDate, formatTime } from '@/utils/date'
 import { confirmAction } from '@/utils/confirm'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons,
-  IonBackButton, IonIcon, IonSpinner, toastController,
+  IonBackButton, IonIcon, IonSpinner, toastController, onIonViewWillEnter,
 } from '@ionic/vue'
 import {
   closeOutline, phonePortraitOutline, desktopOutline, tabletPortraitOutline,
@@ -183,7 +183,9 @@ async function revokeOthers() {
   }
 }
 
-onMounted(load)
+// onIonViewWillEnter, а не onMounted -- ion-router-outlet кэширует уже
+// посещённые страницы, обычный onMounted сработал бы только один раз.
+onIonViewWillEnter(load)
 </script>
 
 <style scoped>
