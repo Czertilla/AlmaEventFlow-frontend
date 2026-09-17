@@ -228,6 +228,48 @@ ion-tab-bar {
   }
 }
 
+/* Скелетоны загрузки — общий примитив по всему приложению вместо спиннера на
+   пустом месте: серый блок формы будущего контента с бегущим бликом, а не
+   резко появляющийся компонент после загрузки. Ширину/высоту/радиус задают
+   на месте использования (inline style или модификатор), .skeleton только
+   красит и анимирует. Уважает prefers-reduced-motion -- блик отключается,
+   но сам блок остаётся видимым индикатором загрузки. */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--ion-color-step-100, #ececf1);
+  border-radius: 6px;
+}
+
+.skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.16), transparent);
+  animation: skeleton-shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes skeleton-shimmer {
+  100% { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton::after {
+    animation: none;
+    display: none;
+  }
+}
+
+.skeleton--circle {
+  border-radius: 50%;
+}
+
+.skeleton--text {
+  height: 12px;
+  border-radius: 4px;
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
