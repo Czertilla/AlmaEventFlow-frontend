@@ -1,10 +1,10 @@
 <template>
-  <AdminLayout title="Участия">
     <ResourceTable
       ref="tableRef"
       :columns="columns"
       :get-label="(p) => p.collective_name || p.collective_id"
       :get-subtitle="(p) => p.event_id"
+      :subtitle-resource="(p) => ({ kind: 'event', id: p.event_id })"
       :fetch-items="fetchItems"
       add-label="Добавить"
       @add="openCreate"
@@ -22,13 +22,11 @@
         @close="editModal = false"
       />
     </ion-modal>
-  </AdminLayout>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { IonModal } from '@ionic/vue'
-import AdminLayout from '@/components/layout/AdminLayout.vue'
 import ResourceTable from '@/components/admin/ResourceTable.vue'
 import ResourceFormModal from '@/components/admin/ResourceFormModal.vue'
 import {
@@ -49,7 +47,7 @@ const priorityOptions = Object.entries(priorityLabels).map(([value, label]) => (
 
 const columns: ColumnDef[] = [
   { key: 'collective_name', label: 'Коллектив', render: (p) => p.collective_name || p.collective_id },
-  { key: 'event_id', label: 'Мероприятие' },
+  { key: 'event_id', label: 'Мероприятие', resource: (p) => ({ kind: 'event', id: p.event_id }) },
   { key: 'EventPriorityEnumV1', label: 'Приоритет', render: (p) => priorityLabels[p.EventPriorityEnumV1] || '—' },
 ]
 

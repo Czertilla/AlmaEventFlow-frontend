@@ -4,6 +4,11 @@ import { getMemberEventV1MembersMemberIdGet } from '@/api/generated/almaEventFlo
 // Caches survive for the app session — entity names change rarely
 const personNameCache = new Map<string, string | null>()
 const memberPersonCache = new Map<string, string | null>()
+// Промежуточный кэш активных запросов: несколько ячеек таблицы, резолвящих
+// один и тот же id одновременно (до того как personNameCache заполнится),
+// без этого каждая бьёт по сети отдельно вместо того чтобы дождаться одной.
+const personNameInFlight = new Map<string, Promise<string | null>>()
+const memberPersonInFlight = new Map<string, Promise<string | null>>()
 
 export function shortId(id: string): string {
   return id.slice(0, 8)
@@ -33,33 +38,47 @@ export function shortenName(full: string): string {
  * единичный сетевой сбой не должен навсегда «приклеивать» участнику короткий
  * id вместо имени на всю сессию — следующий вызов должен получить новый шанс.
  */
-export async function resolvePersonName(personId: string): Promise<string | null> {
-  if (personNameCache.has(personId)) return personNameCache.get(personId)!
-  try {
-    const resp = await getPersonProfileV1PersonsPersonIdGet(personId)
-    const name = formatPersonName(resp.data)
-    personNameCache.set(personId, name)
-    return name
-  } catch {
-    return null
-  }
+export function resolvePersonName(personId: string): Promise<string | null> {
+  if (personNameCache.has(personId)) return Promise.resolve(personNameCache.get(personId)!)
+  const inFlight = personNameInFlight.get(personId)
+  if (inFlight) return inFlight
+  const promise = (async () => {
+    try {
+      const resp = await getPersonProfileV1PersonsPersonIdGet(personId)
+      const name = formatPersonName(resp.data)
+      personNameCache.set(personId, name)
+      return name
+    } catch {
+      return null
+    } finally {
+      personNameInFlight.delete(personId)
+    }
+  })()
+  personNameInFlight.set(personId, promise)
+  return promise
 }
 
 /** ФИО участника коллектива по member id (member → person → ФИО). */
-export async function resolveMemberName(memberId: string, knownPersonId?: string): Promise<string | null> {
-  let personId = knownPersonId ?? memberPersonCache.get(memberId) ?? null
-  if (!personId && !memberPersonCache.has(memberId)) {
+export function resolveMemberName(memberId: string, knownPersonId?: string): Promise<string | null> {
+  if (knownPersonId) return resolvePersonName(knownPersonId)
+  const cachedPersonId = memberPersonCache.get(memberId)
+  if (cachedPersonId !== undefined) return cachedPersonId ? resolvePersonName(cachedPersonId) : Promise.resolve(null)
+  const inFlight = memberPersonInFlight.get(memberId)
+  if (inFlight) return inFlight
+  const promise = (async () => {
     try {
       const resp = await getMemberEventV1MembersMemberIdGet(memberId)
-      personId = resp.data.person_id
-      memberPersonCache.set(memberId, personId)
+      memberPersonCache.set(memberId, resp.data.person_id)
+      return resolvePersonName(resp.data.person_id)
     } catch {
       // Не кешируем неудачу -- см. resolvePersonName выше.
-      personId = null
+      return null
+    } finally {
+      memberPersonInFlight.delete(memberId)
     }
-  }
-  if (!personId) return null
-  return resolvePersonName(personId)
+  })()
+  memberPersonInFlight.set(memberId, promise)
+  return promise
 }
 
 /** Запоминает соответствие member → person (когда members уже загружены списком). */

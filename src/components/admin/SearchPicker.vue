@@ -1,7 +1,8 @@
 <template>
   <div class="search-picker">
     <div v-if="modelValue" class="picker-selected" @click="clear">
-      <span class="picker-label">{{ selectedLabel || String(modelValue) }}</span>
+      <span v-if="resolving" class="picker-label-skeleton" aria-hidden="true" />
+      <span v-else class="picker-label">{{ selectedLabel || String(modelValue) }}</span>
       <ion-icon :icon="closeOutline" />
     </div>
     <template v-else>
@@ -43,6 +44,7 @@ const emit = defineEmits<{ 'update:modelValue': [value: string | number | null] 
 const query = ref('')
 const results = ref<any[]>([])
 const selectedLabel = ref('')
+const resolving = ref(false)
 
 function label(opt: any): string {
   const df = props.displayField || 'name'
@@ -68,11 +70,14 @@ function clear() {
 // Подтянуть человекочитаемое имя для уже выбранного значения (при загрузке)
 async function resolveLabel() {
   if (!props.modelValue) { selectedLabel.value = ''; return }
+  resolving.value = true
   try {
     const items = await props.fetch('')
     const found = items.find((i) => String(i.id) === String(props.modelValue))
     if (found) selectedLabel.value = label(found)
-  } catch { /* имя не критично */ }
+  } catch { /* имя не критично */ } finally {
+    resolving.value = false
+  }
 }
 
 onMounted(resolveLabel)
@@ -91,6 +96,11 @@ watch(() => props.modelValue, (val, old) => {
 }
 .picker-selected:hover { border-color: var(--ion-color-medium); }
 .picker-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.picker-label-skeleton {
+  display: inline-block; width: 100px; height: 12px; border-radius: 4px;
+  background: var(--ion-color-step-200); animation: picker-label-pulse 1.4s ease-in-out infinite;
+}
+@keyframes picker-label-pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.8; } }
 .picker-search { padding: 0; --border-radius: 10px; --box-shadow: none; }
 .picker-results {
   margin-top: 4px; max-height: 200px; overflow-y: auto;

@@ -1,9 +1,9 @@
 <template>
-  <AdminLayout title="Посещаемость">
     <ResourceTable
       ref="tableRef"
       :columns="columns"
       :get-label="(a) => a.member_id"
+      :label-resource="(a) => ({ kind: 'member', id: a.member_id })"
       :get-subtitle="(a) => a.is_attended ? 'Присутствовал' : 'Отсутствовал'"
       :fetch-items="fetchItems"
       add-label="Добавить"
@@ -22,13 +22,11 @@
         @close="editModal = false"
       />
     </ion-modal>
-  </AdminLayout>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { IonModal } from '@ionic/vue'
-import AdminLayout from '@/components/layout/AdminLayout.vue'
 import ResourceTable from '@/components/admin/ResourceTable.vue'
 import ResourceFormModal from '@/components/admin/ResourceFormModal.vue'
 import {
@@ -45,8 +43,8 @@ import type { FormField } from '@/components/admin/ResourceFormModal.vue'
 const tableRef = ref()
 
 const columns: ColumnDef[] = [
-  { key: 'member_id', label: 'Участник' },
-  { key: 'participation_id', label: 'Участие' },
+  { key: 'member_id', label: 'Участник', resource: (a) => ({ kind: 'member', id: a.member_id }) },
+  { key: 'participation_id', label: 'Участие', resource: (a) => ({ kind: 'participation', id: a.participation_id }) },
   { key: 'is_attended', label: 'Присутствие', render: (a) => a.is_attended ? 'Да' : 'Нет' },
   { key: 'is_verified', label: 'Заверено', render: (a) => a.is_verified ? 'Да' : 'Нет', hideMobile: true },
   { key: 'comment', label: 'Комментарий', hideMobile: true },

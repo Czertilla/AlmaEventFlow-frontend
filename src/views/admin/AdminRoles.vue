@@ -1,10 +1,10 @@
 <template>
-  <AdminLayout title="Роли">
     <ResourceTable
       ref="tableRef"
       :columns="columns"
       :get-label="(r) => r.name"
       :get-subtitle="(r) => r.collective_id"
+      :subtitle-resource="(r) => ({ kind: 'collective', id: r.collective_id })"
       :fetch-items="fetchItems"
       add-label="Добавить"
       @add="openCreate"
@@ -22,13 +22,11 @@
         @close="editModal = false"
       />
     </ion-modal>
-  </AdminLayout>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { IonModal } from '@ionic/vue'
-import AdminLayout from '@/components/layout/AdminLayout.vue'
 import ResourceTable from '@/components/admin/ResourceTable.vue'
 import ResourceFormModal from '@/components/admin/ResourceFormModal.vue'
 import {
@@ -45,7 +43,7 @@ const tableRef = ref()
 
 const columns: ColumnDef[] = [
   { key: 'name', label: 'Название', sortable: true },
-  { key: 'collective_id', label: 'Коллектив' },
+  { key: 'collective_id', label: 'Коллектив', resource: (r) => ({ kind: 'collective', id: r.collective_id }) },
 ]
 
 const formFields: FormField[] = [

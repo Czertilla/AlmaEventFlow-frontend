@@ -93,9 +93,43 @@
       </button>
     </div>
 
-    <div v-if="loading && !items.length" class="state-box">
-      <ion-spinner name="crescent" />
-      <p>Загрузка...</p>
+    <!-- Скелетон вместо спиннера на пустом месте: форма будущих строк/карточек
+         с бегущим бликом (см. .skeleton в theme/variables.css), чтобы список
+         не появлялся рывком, а "проявлялся" на месте уже намеченной раскладки.
+         Использует те же классы .resource-desktop-table/.resource-mobile-list,
+         что и реальный контент -- нужный вариант сам покажется по media query. -->
+    <div v-if="loading && !items.length" class="table-container" aria-hidden="true">
+      <table class="resource-desktop-table">
+        <thead>
+          <tr>
+            <th v-for="col in visibleColumns" :key="col.key">{{ col.label }}</th>
+            <th class="actions-cell">Действия</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="n in 6" :key="n">
+            <td v-for="col in visibleColumns" :key="col.key">
+              <div class="skeleton skeleton--text" :style="{ width: skeletonWidth(n) }" />
+            </td>
+            <td class="actions-cell">
+              <div class="skeleton" style="width: 72px; height: 24px; border-radius: 8px; margin-left: auto;" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="resource-mobile-list">
+        <div v-for="n in 6" :key="n" class="mobile-card">
+          <div class="mobile-card-main">
+            <div class="skeleton skeleton--text" :style="{ width: skeletonWidth(n), height: '15px' }" />
+            <div class="skeleton skeleton--text" :style="{ width: skeletonWidth(n + 1), height: '12px' }" />
+          </div>
+          <div class="mobile-card-meta">
+            <div class="skeleton" style="width: 64px; height: 18px; border-radius: 6px;" />
+            <div class="skeleton" style="width: 48px; height: 18px; border-radius: 6px;" />
+          </div>
+        </div>
+      </div>
     </div>
 
     <div v-else-if="error" class="state-box error">
@@ -128,8 +162,9 @@
         </thead>
         <tbody>
           <tr v-for="item in items" :key="item.id" @click="$emit('edit', item)">
-            <td v-for="col in visibleColumns" :key="col.key" :title="getCellValue(item, col)">
-              {{ getCellValue(item, col) }}
+            <td v-for="col in visibleColumns" :key="col.key" :title="col.resource ? undefined : getCellValue(item, col)">
+              <ResourcePreview v-if="col.resource" v-bind="col.resource(item)" />
+              <template v-else>{{ getCellValue(item, col) }}</template>
             </td>
             <td class="actions-cell" @click.stop>
               <ion-button
@@ -155,12 +190,20 @@
       <div class="resource-mobile-list">
         <div v-for="item in items" :key="item.id" class="mobile-card" @click="$emit('edit', item)">
           <div class="mobile-card-main">
-            <span class="mobile-card-title">{{ getLabel(item) }}</span>
-            <span class="mobile-card-subtitle">{{ getSubtitle(item) }}</span>
+            <span class="mobile-card-title">
+              <ResourcePreview v-if="labelResource?.(item)" v-bind="labelResource(item)!" />
+              <template v-else>{{ getLabel(item) }}</template>
+            </span>
+            <span class="mobile-card-subtitle">
+              <ResourcePreview v-if="subtitleResource?.(item)" v-bind="subtitleResource(item)!" />
+              <template v-else>{{ getSubtitle(item) }}</template>
+            </span>
           </div>
           <div class="mobile-card-meta">
             <span v-for="col in mobileMetaColumns" :key="col.key" class="mobile-meta-item">
-              {{ col.label }}: {{ getCellValue(item, col) }}
+              {{ col.label }}:
+              <ResourcePreview v-if="col.resource" v-bind="col.resource(item)" />
+              <template v-else>{{ getCellValue(item, col) }}</template>
             </span>
           </div>
           <div class="mobile-card-actions" @click.stop>
@@ -204,7 +247,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import {
-  IonButton, IonIcon, IonSpinner, IonAlert, IonToggle,
+  IonButton, IonIcon, IonAlert, IonToggle,
   IonInfiniteScroll, IonInfiniteScrollContent,
 } from '@ionic/vue'
 import {
@@ -214,12 +257,17 @@ import {
 } from 'ionicons/icons'
 import type { AxiosResponse } from 'axios'
 import AppFab from '@/components/common/AppFab.vue'
+import ResourcePreview from '@/components/common/ResourcePreview.vue'
+import type { ResourceKind } from '@/utils/resourceLabels'
 
 export interface ColumnDef {
   key: string
   label: string
   sortable?: boolean
   render?: (item: any) => string
+  /** Значение колонки -- foreign key: рендерится мини-превью с резолвом
+   * имени и скелетоном на время загрузки, вместо голого uuid. */
+  resource?: (item: any) => { kind: ResourceKind; id: string | null | undefined }
   hideMobile?: boolean
 }
 
@@ -245,6 +293,10 @@ const props = withDefaults(defineProps<{
   columns: ColumnDef[]
   getLabel: (item: any) => string
   getSubtitle: (item: any) => string
+  /** Если заголовок/подзаголовок мобильной карточки -- foreign key (например
+   * person_id), показывает резолвленное имя со скелетоном вместо голого id. */
+  labelResource?: (item: any) => { kind: ResourceKind; id: string | null | undefined } | null
+  subtitleResource?: (item: any) => { kind: ResourceKind; id: string | null | undefined } | null
   fetchItems: (params: Record<string, any>) => Promise<AxiosResponse<{ items: any[]; pagination: { total: number; page?: number; limit?: number } }>>
   addLabel?: string
   searchPlaceholder?: string
@@ -307,6 +359,13 @@ function getCellValue(item: any, col: ColumnDef): string {
   const val = item[col.key]
   if (val === null || val === undefined) return '—'
   return String(val)
+}
+
+// Ширины скелетон-строк слегка отличаются -- иначе ряд одинаковых полосок
+// читается как явная заглушка, а не намёк на будущий текст разной длины.
+const SKELETON_WIDTHS = ['72%', '55%', '84%', '48%', '65%', '90%']
+function skeletonWidth(n: number): string {
+  return SKELETON_WIDTHS[n % SKELETON_WIDTHS.length]
 }
 
 function confirmDelete(item: any) {

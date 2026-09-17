@@ -1,9 +1,9 @@
 <template>
-  <AdminLayout title="Участники коллективов">
     <ResourceTable
       ref="tableRef"
       :columns="columns"
       :get-label="(m) => m.person_id"
+      :label-resource="(m) => ({ kind: 'person', id: m.person_id })"
       :get-subtitle="(m) => (m.roles || []).map((r: any) => r.name).join(', ') || 'Без роли'"
       :fetch-items="fetchItems"
       add-label="Добавить"
@@ -22,13 +22,11 @@
         @close="editModal = false"
       />
     </ion-modal>
-  </AdminLayout>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { IonModal } from '@ionic/vue'
-import AdminLayout from '@/components/layout/AdminLayout.vue'
 import ResourceTable from '@/components/admin/ResourceTable.vue'
 import ResourceFormModal from '@/components/admin/ResourceFormModal.vue'
 import {
@@ -45,8 +43,8 @@ import type { FormField } from '@/components/admin/ResourceFormModal.vue'
 const tableRef = ref()
 
 const columns: ColumnDef[] = [
-  { key: 'person_id', label: 'Персона' },
-  { key: 'collective_id', label: 'Коллектив' },
+  { key: 'person_id', label: 'Персона', resource: (m) => ({ kind: 'person', id: m.person_id }) },
+  { key: 'collective_id', label: 'Коллектив', resource: (m) => ({ kind: 'collective', id: m.collective_id }) },
   { key: 'roles', label: 'Роли', render: (m) => (m.roles || []).map((r: any) => r.name).join(', ') || '—' },
   { key: 'is_active', label: 'Активен', render: (m) => m.is_active !== false ? 'Да' : 'Нет', hideMobile: true },
 ]
