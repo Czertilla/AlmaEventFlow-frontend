@@ -5,7 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 
 export type SortMode = 'roles' | 'alpha'
 
-function keySuffix(collectiveId: string): string {
+export function keySuffix(collectiveId: string): string {
   const auth = useAuthStore()
   const sub = auth.jwtPayload?.sub || 'anon'
   return `${collectiveId}:${sub}`
