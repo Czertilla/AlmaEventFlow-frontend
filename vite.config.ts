@@ -5,7 +5,7 @@ import vue from '@vitejs/plugin-vue'
 import fs from 'fs'
 import path from 'path'
 import { defineConfig } from 'vite'
-import pkg from './package.json'
+import pkg from './package.json' with { type: 'json' }
 
 // Backend API version comes from the committed OpenAPI schema, refreshed by
 // `npm run schema` / `npm run generate`. Falls back gracefully if missing.
@@ -30,7 +30,7 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': path.resolve(import.meta.dirname, './src'),
     },
   },
   test: {
