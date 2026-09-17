@@ -1,6 +1,9 @@
 <template>
   <ion-page>
-    <ion-content>
+    <!-- На мобильном список нарочно выше экрана (см. EventList.vue) -- его
+         скроллит только сам список, поэтому внешний ion-content скроллить
+         не должен, иначе появляется второй, "внешний" скролл. -->
+    <ion-content :scroll-y="isDesktop">
       <div class="home-page">
         <div class="home-header">
           <div class="home-header-inner">
@@ -73,9 +76,16 @@
               <div class="section-card events-card">
                 <div class="section-card-header">
                   <h3>Мероприятия</h3>
-                  <span class="events-count" v-if="filteredEvents.length">{{ filteredEvents.length }}</span>
+                  <span class="events-count" v-if="!loading && filteredEvents.length">{{ filteredEvents.length }}</span>
                 </div>
+                <!-- EventList монтируется только когда загрузка ПОЛНОСТЬЮ завершена --
+                     initLoad()/reloadEventsForFilter() догружают диапазон календаря
+                     несколькими внутренними запросами (checkCalendarFill), и если
+                     показывать список всё это время, он на глазах донабирает
+                     карточки в несколько заходов вместо одного стабильного появления.
+                     Пока loading -- скелетон вместо (растущего на глазах) списка. -->
                 <EventList
+                  v-if="!loading"
                   ref="eventListRef"
                   :events="filteredEvents"
                   :attendances="calendar.attendances"
@@ -96,9 +106,17 @@
                   @visible-date-changed="onVisibleDateChanged"
                   @calendar-visible-change="onCalendarVisibleChange"
                 />
-                <div v-if="filteredEvents.length === 0 && loading" class="events-loading">
-                  <div class="loading-spinner" />
-                  <p>Загрузка мероприятий...</p>
+                <!-- Скелетон карточек мероприятий вместо спиннера -- форма будущих
+                     карточек с бегущим бликом (.skeleton, theme/variables.css),
+                     чтобы список не появлялся рывком после загрузки. -->
+                <div v-if="loading" class="events-loading" aria-hidden="true">
+                  <div v-for="n in 4" :key="n" class="skel-card">
+                    <span class="skeleton skeleton--circle skel-dot" />
+                    <div class="skel-info">
+                      <span class="skeleton skeleton--text" :style="{ width: skeletonWidth(n) }" />
+                      <span class="skeleton skeleton--text skel-date" />
+                    </div>
+                  </div>
                 </div>
                 <div v-else-if="filteredEvents.length === 0" class="events-empty">
                   <ion-icon :icon="calendarOutline" />
@@ -209,6 +227,8 @@ import EventList from '@/components/event/EventList.vue'
 import HomeFilters from '@/components/event/HomeFilters.vue'
 import AppFab from '@/components/common/AppFab.vue'
 import PendingAttendanceModal from '@/components/event/PendingAttendanceModal.vue'
+import { buildEventWindow, findUpcomingIndex } from '@/utils/eventWindow'
+import type { EventWindow } from '@/utils/eventWindow'
 import { calendarOutline, closeOutline, optionsOutline, alertCircleOutline } from 'ionicons/icons'
 
 const router = useRouter()
@@ -223,6 +243,13 @@ const {
   openPending, resetPending,
 } = usePendingAttendance()
 const calendarScrollTarget = ref<string>()
+
+// Ширины скелетон-строк слегка отличаются -- иначе ряд одинаковых полосок
+// читается как явная заглушка, а не намёк на будущий текст разной длины.
+const SKELETON_WIDTHS = ['62%', '48%', '74%', '56%']
+function skeletonWidth(n: number): string {
+  return SKELETON_WIDTHS[n % SKELETON_WIDTHS.length]
+}
 
 const eventListRef = ref<{ scrollTo: (d: string, smooth?: boolean) => void } | null>(null)
 const showFullCalendar = ref(false)
@@ -340,88 +367,112 @@ const loadingDown = ref(false)
 // не должен запускать параллельную перезагрузку
 let initializing = false
 
-// Окно событий вокруг даты: прошлое (<=) и будущее (>=) с серверным фильтром по коллективам
-async function fetchEventWindow(anchorStr: string): Promise<EventRead[]> {
+const EVENTS_PAGE_SIZE = 10
+
+// Окно событий вокруг даты: прошлое (<=) и будущее (>=) с серверным фильтром по
+// коллективам; дедуп + сортировка + признаки "есть ли ещё" -- общая логика с
+// дашбордом (матрицей), см. utils/eventWindow.
+async function fetchEventWindow(anchorStr: string): Promise<EventWindow<EventRead>> {
   const [pastResp, futureResp] = await Promise.all([
-    getEventsEventV1EventsGet({ date__lte: anchorStr, order_by: '-date', limit: 10 }, eventsOptions()),
-    getEventsEventV1EventsGet({ date__gte: anchorStr, order_by: 'date', limit: 10 }, eventsOptions()),
+    getEventsEventV1EventsGet({ date__lte: anchorStr, order_by: '-date', limit: EVENTS_PAGE_SIZE }, eventsOptions()),
+    getEventsEventV1EventsGet({ date__gte: anchorStr, order_by: 'date', limit: EVENTS_PAGE_SIZE }, eventsOptions()),
   ])
-  // Мероприятия с датой «сегодня» попадают в оба ответа — дедуп по id
-  const byId = new Map<string, EventRead>()
-  for (const e of [...(pastResp.data as SPageEventRead).items, ...(futureResp.data as SPageEventRead).items]) {
-    byId.set(e.id, e)
-  }
-  return Array.from(byId.values()).sort(
-    (a, b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime(),
+  return buildEventWindow(
+    (pastResp.data as SPageEventRead).items,
+    (futureResp.data as SPageEventRead).items,
+    EVENTS_PAGE_SIZE,
   )
 }
 
+// Новые события специально попадают в calendar.events ПОСЛЕДНИМ шагом, уже
+// после того как для них подтянуты attendance и stageTimes -- иначе карточка
+// сперва рендерится "пустой" (без отметок/времени этапов), а через сетевой
+// круг внезапно дозаполняется контентом. Это само по себе выглядит как рывок
+// списка, даже когда scrollTop не прыгает (см. captureAnchor/restoreAnchor
+// в EventList.vue, которые гасят только сдвиг позиции, а не смену контента
+// уже показанной карточки).
+function newEventIds(items: EventRead[]): string[] {
+  const existingIds = new Set(calendar.events.map((e) => e.id))
+  return items.filter((e) => !existingIds.has(e.id)).map((e) => e.id)
+}
+
+// loading (в отличие от loadingUp/loadingDown ниже) сюда намеренно не трогаем:
+// эта функция также вызывается в цикле из checkCalendarFill() при первой
+// загрузке страницы, и если дёргать общий флаг на каждой итерации, он
+// несколько раз мигает false/true пока initLoad() ещё не закончил -- список
+// на экране выглядит нестабильным, будто "доезжает" рывками. loading — это
+// только внешняя граница initLoad()/reloadEventsForFilter(), а повторный вход
+// уже прикрыт loadingUp/loadingDown (см. edge-guard в EventList.handleScroll).
 async function loadMoreUp(): Promise<boolean> {
   if (!hasMoreUp.value || loadingUp.value || noSelection.value) return false
   loadingUp.value = true
-  loading.value = true
   try {
     const firstDate = calendar.events[0]?.date
     if (!firstDate) return false
     const response = await getEventsEventV1EventsGet({
       date__lte: firstDate,
-      limit: 10,
+      limit: EVENTS_PAGE_SIZE,
       order_by: '-date',
     }, eventsOptions())
     const items = (response.data as SPageEventRead).items
-    if (items.length === 0) {
-      hasMoreUp.value = false
+    hasMoreUp.value = items.length === EVENTS_PAGE_SIZE
+    if (items.length === 0) return false
+    const ids = newEventIds(items)
+    if (ids.length === 0) {
+      hasMoreUp.value = false // защита от зацикливания -- вся страница уже была загружена
       return false
     }
-    const before = calendar.events.length
+    await Promise.all([
+      calendar.fetchAttendances(collectives.value, ids, principal.userMemberIds),
+      calendar.fetchStageTimes(ids),
+    ])
     calendar.addEvents(items)
-    if (calendar.events.length === before) {
-      hasMoreUp.value = false
-      return false
-    }
-    const ids = items.map((e) => e.id)
-    await calendar.fetchAttendances(collectives.value, ids, principal.userMemberIds)
     return true
   } finally {
-    loading.value = false
     loadingUp.value = false
   }
 }
 
+// см. коммент у loadMoreUp -- loading общий флаг здесь тоже не трогаем.
 async function loadMoreDown(): Promise<boolean> {
   if (!hasMoreDown.value || loadingDown.value || noSelection.value) return false
   loadingDown.value = true
-  loading.value = true
   try {
     const lastDate = calendar.events[calendar.events.length - 1]?.date
     if (!lastDate) return false
     const response = await getEventsEventV1EventsGet({
       date__gte: lastDate,
-      limit: 10,
+      limit: EVENTS_PAGE_SIZE,
       order_by: 'date',
     }, eventsOptions())
     const items = (response.data as SPageEventRead).items
-    if (items.length === 0) {
-      hasMoreDown.value = false
+    hasMoreDown.value = items.length === EVENTS_PAGE_SIZE
+    if (items.length === 0) return false
+    const ids = newEventIds(items)
+    if (ids.length === 0) {
+      hasMoreDown.value = false // защита от зацикливания -- вся страница уже была загружена
       return false
     }
-    const before = calendar.events.length
+    await Promise.all([
+      calendar.fetchAttendances(collectives.value, ids, principal.userMemberIds),
+      calendar.fetchStageTimes(ids),
+    ])
     calendar.addEvents(items)
-    if (calendar.events.length === before) {
-      hasMoreDown.value = false
-      return false
-    }
-    const ids = items.map((e) => e.id)
-    await calendar.fetchAttendances(collectives.value, ids, principal.userMemberIds)
     return true
   } finally {
-    loading.value = false
     loadingDown.value = false
   }
 }
 
 // Догружает мероприятия, пока видимый диапазон календаря не заполнится
-// (ограничение по числу итераций — страховка от зацикливания)
+// (ограничение по числу итераций — страховка от зацикливания). Нужна только
+// при ПРЫЖКЕ по календарю на произвольную дату (onShiftWeek/onPrevMonth/
+// onNextMonth) — туда нельзя доскроллить постепенно, поэтому диапазон
+// догружается заранее. Начальная загрузка (initLoad/reloadEventsForFilter)
+// эту функцию больше не вызывает: там достаточно одного окна вокруг текущей
+// даты (fetchEventWindow) + бесшовной подгрузки по достижении края списка
+// (loadMoreUp/loadMoreDown) — тот же принцип, что и в матрице дашборда
+// (см. DashboardPage.vue/positionMatrixScroll + loadMorePast/loadMoreFuture).
 async function checkCalendarFill() {
   for (let i = 0; i < 20; i++) {
     let loaded = false
@@ -586,9 +637,11 @@ async function initLoad() {
     calendar.setEvents([])
   } else {
     try {
-      const combined = await fetchEventWindow(todayStr)
-      calendar.setEvents(combined)
-      if (combined.length > 0) await fetchAttendanceForEvents(combined)
+      const eventWindow = await fetchEventWindow(todayStr)
+      calendar.setEvents(eventWindow.events)
+      hasMoreUp.value = eventWindow.hasMorePast
+      hasMoreDown.value = eventWindow.hasMoreFuture
+      if (eventWindow.events.length > 0) await fetchAttendanceForEvents(eventWindow.events)
     } catch {
       /* ignore */
     }
@@ -600,14 +653,11 @@ async function initLoad() {
   maybeAutoShow(await mergePendingEvents(remoteIds))
   refreshPendingCount()
 
-  // Тяжёлая дозагрузка диапазона календаря — уже после показа модалки
-  if (!noSelection.value) await checkCalendarFill()
-
   loading.value = false
   // Первым видимым делаем самое раннее мероприятие с датой >= сегодня
   const todayMidnight = new Date(todayStr)
-  const upcoming = calendar.events.find((e) => e.date && new Date(e.date) >= todayMidnight)
-  const target = upcoming?.date ?? calendar.selectedDate.toISOString()
+  const upcomingIdx = findUpcomingIndex(calendar.events, todayMidnight)
+  const target = upcomingIdx >= 0 ? calendar.events[upcomingIdx].date! : calendar.selectedDate.toISOString()
   calendarScrollTarget.value = target
   // Прокрутка списка к стартовой позиции — мгновенно, значение могло не измениться
   nextTick(() => eventListRef.value?.scrollTo(target, false))
@@ -627,13 +677,14 @@ async function reloadEventsForFilter() {
     return
   }
   try {
-    const combined = await fetchEventWindow(toDateString(calendar.selectedDate))
-    calendar.setEvents(combined)
-    if (combined.length > 0) await fetchAttendanceForEvents(combined)
+    const eventWindow = await fetchEventWindow(toDateString(calendar.selectedDate))
+    calendar.setEvents(eventWindow.events)
+    hasMoreUp.value = eventWindow.hasMorePast
+    hasMoreDown.value = eventWindow.hasMoreFuture
+    if (eventWindow.events.length > 0) await fetchAttendanceForEvents(eventWindow.events)
   } catch {
     /* ignore */
   }
-  await checkCalendarFill()
   loading.value = false
   refreshPendingCount()
 }
@@ -834,8 +885,7 @@ onIonViewWillEnter(initLoad)
   padding: 8px 0 12px;
 }
 
-.events-empty,
-.events-loading {
+.events-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -854,22 +904,48 @@ onIonViewWillEnter(initLoad)
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
-.events-empty p,
-.events-loading p {
+.events-empty p {
   margin: 0;
   font-size: 14px;
 }
 
-.events-loading .loading-spinner {
-  width: 28px;
-  height: 28px;
-  border: 3px solid var(--ion-border-color);
-  border-top-color: var(--ion-color-primary);
-  border-radius: 50%;
-  animation: spin 0.6s linear infinite;
+/* Скелетон списка мероприятий -- форма .event-card (см. EventPreview.vue) */
+.events-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
-@keyframes spin {
-  to { transform: rotate(360deg); }
+.skel-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  background: var(--ion-card-background);
+  border-radius: 14px;
+  box-shadow: var(--ion-card-shadow);
+}
+
+.skel-dot {
+  width: 10px;
+  height: 10px;
+  flex-shrink: 0;
+}
+
+.skel-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.skel-info .skeleton {
+  height: 13px;
+}
+
+.skel-date {
+  width: 40% !important;
+  height: 10px !important;
 }
 </style>
