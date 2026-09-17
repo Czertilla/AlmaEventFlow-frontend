@@ -20,6 +20,7 @@
 
 <script setup lang="ts">
 import { onMounted, watch } from 'vue'
+import { useRouter } from 'vue-router'
 import { IonApp, IonRouterOutlet } from '@ionic/vue'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
@@ -27,9 +28,11 @@ import { usePrincipalStore } from '@/stores/principal'
 import { useEventCalendarStore } from '@/stores/eventCalendar'
 import { usePlatform } from '@/composables/usePlatform'
 import { isNavigating } from '@/composables/useNavigationProgress'
+import { checkForNewVersion } from '@/utils/changelogVersion'
 import DesktopHeader from '@/components/layout/DesktopHeader.vue'
 import ProfileMenu from '@/components/layout/ProfileMenu.vue'
 
+const router = useRouter()
 const auth = useAuthStore()
 const settings = useSettingsStore()
 const principal = usePrincipalStore()
@@ -46,6 +49,10 @@ watch(() => auth.jwtPayload?.sub ?? null, async (sub) => {
   if (sub) {
     calendar.reset()
     await principal.fetchCollectives()
+    // /changelog требует авторизации (см. router/index.ts), поэтому проверка
+    // живёт здесь, а не сразу при запуске приложения -- один раз на новую
+    // версию, а не при каждом открытии (см. utils/changelogVersion.ts).
+    if (checkForNewVersion()) router.push('/changelog')
   } else {
     principal.setCollectives([])
     calendar.reset()

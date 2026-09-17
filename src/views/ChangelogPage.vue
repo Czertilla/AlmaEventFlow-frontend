@@ -33,6 +33,11 @@
               </ul>
             </div>
           </section>
+
+          <button v-if="hasMore" class="load-more-btn" :disabled="loadingMore" @click="loadMore">
+            <ion-spinner v-if="loadingMore" name="crescent" />
+            <span v-else>Показать более ранние версии</span>
+          </button>
         </div>
       </div>
     </ion-content>
@@ -40,7 +45,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonButtons, IonBackButton,
   IonContent, IonIcon, IonSpinner,
@@ -60,13 +65,29 @@ interface Release {
   groups: ReleaseGroup[]
 }
 
+// Манифест — сам по себе крошечный (версия/дата/имя файла), полный текст
+// релиза грузится только при реальном показе (см. loadMore) -- когда
+// список версий разрастётся, страница не тянет их все разом.
+interface ChangelogIndexEntry {
+  version: string
+  date: string
+  file: string
+}
+
+const PAGE_SIZE = 5
+
 const { isDesktop } = usePlatform()
 const loading = ref(true)
+const loadingMore = ref(false)
 const error = ref(false)
 const releases = ref<Release[]>([])
+const index = ref<ChangelogIndexEntry[]>([])
+const loadedCount = ref(0)
+const hasMore = computed(() => loadedCount.value < index.value.length)
 
 // Экранирование перед подстановкой **bold** — единственная поддерживаемая
-// inline-разметка в CHANGELOG.md, остального инлайн-HTML там нет и не будет.
+// inline-разметка в файлах public/changelog/*.md, остального инлайн-HTML там
+// нет и не будет.
 function renderInline(text: string): string {
   const escaped = text
     .replace(/&/g, '&amp;')
@@ -75,9 +96,11 @@ function renderInline(text: string): string {
   return escaped.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
 }
 
-// Мини-парсер под конкретную структуру CHANGELOG.md: `# ` заголовок файла
-// игнорируется, `## Версия — дата` начинает релиз, `### Раздел` — группу
-// пунктов, `- ` — сам пункт. Полноценный markdown не нужен — файл пишем сами.
+// Мини-парсер под конкретную структуру файлов релизов: `## Версия — дата`
+// начинает релиз, `### Раздел` — группу пунктов, `- ` — сам пункт.
+// Полноценный markdown не нужен — файлы пишем сами. Каждый файл в
+// public/changelog/ содержит ровно один релиз, но парсер общий (index.json
+// как раз даёт список файлов, а не их содержимое — см. loadMore).
 function parseChangelog(text: string): Release[] {
   const result: Release[] = []
   let currentRelease: Release | null = null
@@ -101,13 +124,37 @@ function parseChangelog(text: string): Release[] {
   return result
 }
 
+// Тянет содержимое следующей порции релизов из манифеста (index) и
+// доразбирает их тем же мини-парсером -- каждый файл содержит ровно один
+// релиз, поэтому из результата parseChangelog берётся первый элемент.
+async function loadMore() {
+  const nextEntries = index.value.slice(loadedCount.value, loadedCount.value + PAGE_SIZE)
+  if (nextEntries.length === 0) return
+  loadingMore.value = true
+  try {
+    const texts = await Promise.all(nextEntries.map(async (entry) => {
+      const response = await fetch(`/changelog/${entry.file}`)
+      if (!response.ok) throw new Error(`status ${response.status}`)
+      return response.text()
+    }))
+    releases.value.push(...texts.flatMap(parseChangelog))
+    loadedCount.value += nextEntries.length
+  } catch (e) {
+    console.error('failed to load changelog release:', e)
+    error.value = releases.value.length === 0
+  } finally {
+    loadingMore.value = false
+  }
+}
+
 onMounted(async () => {
   try {
-    const response = await fetch('/CHANGELOG.md')
+    const response = await fetch('/changelog/index.json')
     if (!response.ok) throw new Error(`status ${response.status}`)
-    releases.value = parseChangelog(await response.text())
+    index.value = await response.json()
+    await loadMore()
   } catch (e) {
-    console.error('failed to load changelog:', e)
+    console.error('failed to load changelog index:', e)
     error.value = true
   } finally {
     loading.value = false
@@ -149,6 +196,32 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.load-more-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  padding: 0 16px;
+  border: 1.5px solid var(--ion-border-color);
+  border-radius: 12px;
+  background: var(--ion-card-background);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ion-color-medium);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.load-more-btn:hover:not(:disabled) {
+  border-color: var(--ion-color-primary);
+  color: var(--ion-color-primary);
+}
+
+.load-more-btn:disabled {
+  cursor: wait;
 }
 
 .release-card {
