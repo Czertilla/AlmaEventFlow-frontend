@@ -66,7 +66,12 @@
 
         <main class="admin-main">
           <h1 v-if="isDesktop" class="admin-title">{{ title }}</h1>
-          <slot />
+          <!-- AdminLayout смонтирована один раз на весь /admin/*, страница
+               переключается здесь обычной Vue-реактивностью по activeSection,
+               а не через vue-router -- см. go()/utils/inPlaceNav.ts.
+               remountTick в ключе форсирует пересоздание (и повторную загрузку
+               данных) при возврате в раздел -- см. onIonViewWillEnter выше. -->
+          <component :is="currentPage.component" v-if="currentPage" v-bind="personId ? { personId } : {}" :key="`${activeSection}-${remountTick}`" />
         </main>
       </div>
     </ion-content>
@@ -74,9 +79,10 @@
 </template>
 
 <script setup lang="ts">
+import { computed, defineAsyncComponent, provide, ref } from 'vue'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonIcon,
-  IonMenu, IonMenuButton, menuController,
+  IonMenu, IonMenuButton, menuController, onIonViewWillEnter,
 } from '@ionic/vue'
 import {
   peopleOutline, personOutline, businessOutline, peopleCircleOutline,
@@ -84,14 +90,66 @@ import {
   schoolOutline, restaurantOutline, ribbonOutline, checkmarkDoneOutline,
   personAddOutline,
 } from 'ionicons/icons'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import { usePlatform } from '@/composables/usePlatform'
-
-defineProps<{ title: string }>()
+import { syncAddressBar } from '@/utils/inPlaceNav'
+import { adminNavigateKey } from '@/composables/useAdminNavigate'
 
 const { isDesktop } = usePlatform()
 const router = useRouter()
-const route = useRoute()
+
+interface AdminPageEntry {
+  title: string
+  component: ReturnType<typeof defineAsyncComponent>
+}
+
+const PAGES: Record<string, AdminPageEntry> = {
+  '/admin/users': { title: 'Пользователи', component: defineAsyncComponent(() => import('@/views/admin/AdminUsers.vue')) },
+  '/admin/organizations': { title: 'Организации', component: defineAsyncComponent(() => import('@/views/admin/AdminOrganizations.vue')) },
+  '/admin/collectives': { title: 'Коллективы', component: defineAsyncComponent(() => import('@/views/admin/AdminCollectives.vue')) },
+  '/admin/persons': { title: 'Персоны', component: defineAsyncComponent(() => import('@/views/admin/AdminPersons.vue')) },
+  '/admin/profiles': { title: 'Профили', component: defineAsyncComponent(() => import('@/views/admin/AdminProfiles.vue')) },
+  '/admin/students': { title: 'Студенты', component: defineAsyncComponent(() => import('@/views/admin/AdminStudents.vue')) },
+  '/admin/diets': { title: 'Диеты', component: defineAsyncComponent(() => import('@/views/admin/AdminDiets.vue')) },
+  '/admin/geo': { title: 'Гео', component: defineAsyncComponent(() => import('@/views/admin/AdminGeo.vue')) },
+  '/admin/events': { title: 'Мероприятия', component: defineAsyncComponent(() => import('@/views/admin/AdminEvents.vue')) },
+  '/admin/participation': { title: 'Участия', component: defineAsyncComponent(() => import('@/views/admin/AdminParticipation.vue')) },
+  '/admin/attendance': { title: 'Посещаемость', component: defineAsyncComponent(() => import('@/views/admin/AdminAttendance.vue')) },
+  '/admin/members': { title: 'Участники', component: defineAsyncComponent(() => import('@/views/admin/AdminMembers.vue')) },
+  '/admin/roles': { title: 'Роли', component: defineAsyncComponent(() => import('@/views/admin/AdminRoles.vue')) },
+}
+
+const personFilePage: AdminPageEntry = {
+  title: 'Личное дело',
+  component: defineAsyncComponent(() => import('@/views/admin/AdminPersonFile.vue')),
+}
+
+const PERSON_FILE_PREFIX = '/admin/persons/'
+
+// Активный раздел живёт в локальном состоянии, а не в route.path -- см.
+// utils/inPlaceNav.ts, почему смена route.path здесь недопустима.
+// Начальное значение берём из реального адреса (первый заход в /admin/*
+// это ОБЫЧНАЯ vue-router навигация, значит window.location уже верный).
+const activeSection = ref(window.location.pathname)
+
+function entryFor(path: string): AdminPageEntry | null {
+  if (path.startsWith(PERSON_FILE_PREFIX) && path !== PERSON_FILE_PREFIX) return personFilePage
+  return PAGES[path] ?? null
+}
+
+const currentPage = computed<AdminPageEntry | null>(() => entryFor(activeSection.value))
+const personId = computed(() => {
+  const p = activeSection.value
+  return p.startsWith(PERSON_FILE_PREFIX) ? p.slice(PERSON_FILE_PREFIX.length) : undefined
+})
+
+const title = computed(() => currentPage.value?.title ?? '')
+
+function navigate(path: string) {
+  activeSection.value = path
+  syncAddressBar(path)
+}
+provide(adminNavigateKey, navigate)
 
 // Grouped by API microservice (TZ: навигация с разделением по микросервисам)
 const NAV_GROUPS = [
@@ -121,15 +179,35 @@ const NAV_GROUPS = [
 ]
 
 function isActive(path: string): boolean {
-  return route.path === path
+  return activeSection.value === path
 }
+
+// AdminLayout монтируется один раз на весь /admin/* (см. коммент выше), а
+// ion-router-outlet по умолчанию кэширует уже посещённые страницы и не
+// размонтирует их при переходе на другую -- поэтому обычный onMounted у
+// дочерних страниц сработал бы только один раз за всё время жизни вкладки, а
+// не при каждом возврате в раздел. Форсируем пересоздание активной дочерней
+// страницы при каждом реальном возврате в раздел (см. :key ниже) -- тот же
+// приём, что и в PrincipalLayout.vue.
+const remountTick = ref(0)
+let firstEnter = true
+onIonViewWillEnter(() => {
+  if (firstEnter) { firstEnter = false; return }
+  remountTick.value++
+})
 
 async function go(path: string) {
   if (!isDesktop.value) {
     await menuController.close('admin-menu').catch(() => {})
   }
-  if (route.path === path) return
-  router.push(path)
+  if (activeSection.value === path) return
+  if (path === '/') {
+    // Выход из раздела -- отдельная route-запись (HomePage), здесь уместен
+    // обычный push с историей назад.
+    router.push(path)
+    return
+  }
+  navigate(path)
 }
 </script>
 

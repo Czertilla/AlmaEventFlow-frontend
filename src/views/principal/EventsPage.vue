@@ -1,5 +1,4 @@
 <template>
-  <PrincipalLayout title="Мероприятия" add-label="Новое мероприятие" @add="openCreate">
       <div class="page-body">
         <div class="ev-toolbar">
           <div class="ev-search">
@@ -399,7 +398,6 @@
         </div>
       </ion-content>
     </ion-modal>
-  </PrincipalLayout>
 </template>
 
 <script setup lang="ts">
@@ -409,13 +407,13 @@ import {
   IonButton, IonIcon, IonModal, IonInput, IonTextarea,
   IonSelect, IonSelectOption, IonSearchbar,
 } from '@ionic/vue'
-import PrincipalLayout from '@/components/layout/PrincipalLayout.vue'
 import {
   addOutline, calendarOutline, closeOutline, trashOutline,
   optionsOutline, copyOutline, searchOutline,
   swapVerticalOutline, arrowUpOutline, arrowDownOutline, funnelOutline,
 } from 'ionicons/icons'
 import { format as fnsFormat } from 'date-fns'
+import { useLayoutAddButton } from '@/composables/usePrincipalPageActions'
 import { listOrganizationsOrgV1OrganizationsGet } from '@/api/generated/almaEventFlow'
 import { getLocationGeoV1LocationsLocationIdGet } from '@/api/generated/almaEventFlow'
 import { usePrincipalStore } from '@/stores/principal'
@@ -970,6 +968,8 @@ watch(() => principal.activePrincipalCollectiveId, async (collectiveId) => {
     console.error('Failed to load members/roles', err)
   }
 }, { immediate: true })
+
+useLayoutAddButton('Новое мероприятие', openCreate)
 </script>
 
 <style scoped>

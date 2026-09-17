@@ -1,5 +1,4 @@
 <template>
-  <PrincipalLayout title="Роли" add-label="Новая роль" @add="openCreate">
       <div class="page-body">
         <div class="role-cards">
           <div v-for="role in roles" :key="role.id" class="role-card">
@@ -31,15 +30,14 @@
       :buttons="deleteButtons"
       @ion-alert-did-dismiss="deleteOpen = false"
     />
-  </PrincipalLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { IonIcon, IonAlert, toastController } from '@ionic/vue'
-import PrincipalLayout from '@/components/layout/PrincipalLayout.vue'
 import { pencilOutline, trashOutline } from 'ionicons/icons'
 import { usePrincipalStore } from '@/stores/principal'
+import { useLayoutAddButton } from '@/composables/usePrincipalPageActions'
 import {
   getMyCollectiveRolesEventV1MeCollectivesCollectiveIdRolesGet,
   createMyCollectiveRoleEventV1MeCollectivesCollectiveIdRolesPost,
@@ -135,6 +133,8 @@ watch(() => principal.activePrincipalCollectiveId, async (collectiveId) => {
   }
   await loadRoles(collectiveId)
 }, { immediate: true })
+
+useLayoutAddButton('Новая роль', openCreate)
 </script>
 
 <style scoped>

@@ -1,5 +1,4 @@
 <template>
-  <AdminLayout title="Гео">
       <ion-segment v-model="activeTab">
         <ion-segment-button value="addresses">Адреса</ion-segment-button>
         <ion-segment-button value="locations">Места</ion-segment-button>
@@ -70,13 +69,11 @@
         @close="locationModal = false"
       />
     </ion-modal>
-  </AdminLayout>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { IonSegment, IonSegmentButton, IonModal } from '@ionic/vue'
-import AdminLayout from '@/components/layout/AdminLayout.vue'
 import ResourceTable from '@/components/admin/ResourceTable.vue'
 import ResourceFormModal from '@/components/admin/ResourceFormModal.vue'
 import GeoMap from '@/components/geo/GeoMap.vue'
@@ -89,7 +86,6 @@ import {
   getCitiesGeoV1CitiesGet, getMapGeoV1MapGet,
 } from '@/api/generated/almaEventFlow'
 import type { AddressRead, LocationRead } from '@/api/generated/almaEventFlow'
-import { shortId } from '@/utils/names'
 import type { ColumnDef, SortOption } from '@/components/admin/ResourceTable.vue'
 import type { FormField } from '@/components/admin/ResourceFormModal.vue'
 
@@ -104,7 +100,7 @@ const sortOptions: SortOption[] = [
 // Addresses
 const addressColumns: ColumnDef[] = [
   { key: 'name', label: 'Название', sortable: true },
-  { key: 'city_id', label: 'Город', render: (a) => a.city_id || '—' },
+  { key: 'city_id', label: 'Город', resource: (a) => ({ kind: 'city', id: a.city_id != null ? String(a.city_id) : null }) },
   { key: 'parsed', label: 'Адрес', render: (a) => a.parsed ? [a.parsed.street, a.parsed.house].filter(Boolean).join(', ') : '—' },
   { key: 'spot', label: 'Координаты', render: (a) => a.spot ? `${a.spot.lat.toFixed(4)}, ${a.spot.lon.toFixed(4)}` : '—' },
 ]
@@ -182,7 +178,7 @@ async function handleAddressDelete(item: any) {
 // Locations
 const locationColumns: ColumnDef[] = [
   { key: 'name', label: 'Название', render: (l) => l.name || l.address?.name || 'Без названия', sortable: true },
-  { key: 'address_id', label: 'Адрес', render: (l) => l.address_id ? shortId(l.address_id) : '—' },
+  { key: 'address_id', label: 'Адрес', resource: (l) => ({ kind: 'address', id: l.address_id }) },
   { key: 'spot', label: 'Координаты', render: (l) => l.spot ? `${l.spot.lat.toFixed(4)}, ${l.spot.lon.toFixed(4)}` : '—' },
 ]
 

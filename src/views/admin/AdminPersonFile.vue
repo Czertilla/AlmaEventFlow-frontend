@@ -1,5 +1,4 @@
 <template>
-  <AdminLayout title="Личное дело">
     <div class="dossier">
       <button class="back-link" @click="goBack">
         <ion-icon :icon="arrowBackOutline" /> К списку персон
@@ -88,18 +87,16 @@
         </section>
       </template>
     </div>
-  </AdminLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useAdminNavigate } from '@/composables/useAdminNavigate'
 import {
   IonInput, IonButton, IonIcon, IonSpinner, IonSelect, IonSelectOption, IonToggle,
   toastController,
 } from '@ionic/vue'
 import { arrowBackOutline, trashOutline, addOutline, checkmarkOutline } from 'ionicons/icons'
-import AdminLayout from '@/components/layout/AdminLayout.vue'
 import SearchPicker from '@/components/admin/SearchPicker.vue'
 import {
   getPersonProfileV1PersonsPersonIdGet,
@@ -120,9 +117,9 @@ import {
 } from '@/api/generated/almaEventFlow'
 import type { DietRead } from '@/api/generated/almaEventFlow'
 
-const route = useRoute()
-const router = useRouter()
-const personId = route.params.id as string
+const props = defineProps<{ personId: string }>()
+const personId = props.personId
+const adminNavigate = useAdminNavigate()
 
 const loading = ref(true)
 const activeTab = ref<'person' | 'profile' | 'student' | 'contacts'>('person')
@@ -158,7 +155,7 @@ const savingStudent = ref(false)
 
 const fullName = computed(() => [person.surname, person.name, person.patronymic].filter(Boolean).join(' '))
 
-function goBack() { router.replace('/admin/persons') }
+function goBack() { adminNavigate('/admin/persons') }
 
 async function toast(message: string, color = 'success') {
   const t = await toastController.create({ message, duration: 2000, color })

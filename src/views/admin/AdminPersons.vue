@@ -1,5 +1,4 @@
 <template>
-  <AdminLayout title="Персоны">
       <ResourceTable
         ref="tableRef"
         :columns="columns"
@@ -30,14 +29,12 @@
     <ion-modal :is-open="inviteModal" @ion-modal-did-dismiss="inviteModal = false">
       <InviteLinkModal :person-id="invitePersonId" @close="inviteModal = false" />
     </ion-modal>
-  </AdminLayout>
 </template>
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { IonModal } from '@ionic/vue'
-import { useRouter } from 'vue-router'
-import AdminLayout from '@/components/layout/AdminLayout.vue'
+import { useAdminNavigate } from '@/composables/useAdminNavigate'
 import { getManyUserV1UsersGet } from '@/api/generated/almaEventFlow'
 import type { ExtraAction } from '@/components/admin/ResourceTable.vue'
 import { linkOutline } from 'ionicons/icons'
@@ -49,7 +46,7 @@ import type { ColumnDef, SortOption } from '@/components/admin/ResourceTable.vue
 import type { FormField } from '@/components/admin/ResourceFormModal.vue'
 
 const tableRef = ref()
-const router = useRouter()
+const adminNavigate = useAdminNavigate()
 
 const columns: ColumnDef[] = [
   { key: 'surname', label: 'Фамилия', sortable: true },
@@ -105,7 +102,7 @@ async function fetchPersons(params: Record<string, any>) {
 // Редактирование персоны открывает полное «личное дело» (досье) со всеми
 // связанными сущностями (профиль, студент, контакты).
 function openEdit(item: any) {
-  router.push(`/admin/persons/${item.id}`)
+  adminNavigate(`/admin/persons/${item.id}`)
 }
 
 function openCreate() {

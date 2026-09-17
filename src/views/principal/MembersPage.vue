@@ -1,5 +1,4 @@
 <template>
-  <PrincipalLayout title="Участники" add-label="Добавить участника" @add="openAdd">
       <div class="page-body">
         <div class="toolbar-row">
           <ion-searchbar v-model="searchQuery" placeholder="Поиск по имени или роли..." />
@@ -133,7 +132,6 @@
       :buttons="deleteButtons"
       @ion-alert-did-dismiss="deleteOpen = false"
     />
-  </PrincipalLayout>
 </template>
 
 <script setup lang="ts">
@@ -144,9 +142,9 @@ import {
   IonItem, IonLabel, IonSegment, IonSegmentButton, toastController,
 } from '@ionic/vue'
 import type { ItemReorderEventDetail } from '@ionic/vue'
-import PrincipalLayout from '@/components/layout/PrincipalLayout.vue'
 import { pencilOutline, trashOutline, closeOutline, swapVerticalOutline } from 'ionicons/icons'
 import { usePrincipalStore } from '@/stores/principal'
+import { useLayoutAddButton } from '@/composables/usePrincipalPageActions'
 import { reconcileRoleOrder, saveRoleOrder as persistRoleOrder, rankByRoleIds, loadSortMode, saveSortMode, type SortMode } from '@/utils/roleSort'
 import {
   getMyCollectiveMembersEventV1MeCollectivesCollectiveIdMembersGet,
@@ -369,6 +367,8 @@ watch(() => principal.activePrincipalCollectiveId, async (collectiveId) => {
   }
   await loadMembers(collectiveId)
 }, { immediate: true })
+
+useLayoutAddButton('Добавить участника', openAdd)
 </script>
 
 <style scoped>

@@ -1,5 +1,4 @@
 <template>
-  <AdminLayout title="Коллективы">
       <ResourceTable
         ref="tableRef"
         :columns="columns"
@@ -24,13 +23,11 @@
         @close="editModal = false"
       />
     </ion-modal>
-  </AdminLayout>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import { IonModal } from '@ionic/vue'
-import AdminLayout from '@/components/layout/AdminLayout.vue'
 import ResourceTable from '@/components/admin/ResourceTable.vue'
 import ResourceFormModal from '@/components/admin/ResourceFormModal.vue'
 import { listCollectivesOrgV1CollectivesGet, createCollectiveOrgV1CollectivesPost, patchCollectiveOrgV1CollectivesCollectiveIdPatch, deleteCollectiveOrgV1CollectivesCollectiveIdDelete, listUniversitiesOrgV1UniversitiesGet } from '@/api/generated/almaEventFlow'

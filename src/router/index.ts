@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from '@ionic/vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePrincipalStore } from '@/stores/principal'
+import { isNavigating } from '@/composables/useNavigationProgress'
 
 // Аутентифицированные страницы живут детьми TabsShell, поэтому их рендерит
 // внутренний ion-router-outlet внутри ion-tabs (отдельные стеки на вкладку,
@@ -19,104 +20,29 @@ const appRoutes: Array<RouteRecordRaw> = [
     component: () => import('@/views/EventDetailPage.vue'),
     meta: { auth: true },
   },
-  // Principal panel
+  // Principal panel: один route-матч на весь /principal/* -- PrincipalLayout
+  // монтируется один раз и сам переключает вложенную страницу по route.path
+  // (см. PrincipalLayout.vue). Так внутренние переходы вообще не проходят
+  // через ionic'овский page-transition (нет смены route-записи -- нет и
+  // входа/выхода страницы), а не просто анимируются иначе.
   {
     path: '/principal',
     redirect: '/principal/dashboard',
   },
   {
-    path: '/principal/dashboard',
-    component: () => import('@/views/principal/DashboardPage.vue'),
+    path: '/principal/:pathMatch(.*)*',
+    component: () => import('@/components/layout/PrincipalLayout.vue'),
     meta: { auth: true, principal: true },
   },
-  {
-    path: '/principal/members',
-    component: () => import('@/views/principal/MembersPage.vue'),
-    meta: { auth: true, principal: true },
-  },
-  {
-    path: '/principal/roles',
-    component: () => import('@/views/principal/RolesPage.vue'),
-    meta: { auth: true, principal: true },
-  },
-  {
-    path: '/principal/events',
-    component: () => import('@/views/principal/EventsPage.vue'),
-    meta: { auth: true, principal: true },
-  },
-  // Admin panel
+  // Admin panel -- тот же приём: один route-матч, AdminLayout сам решает,
+  // какую ресурсную страницу показать.
   {
     path: '/admin',
     redirect: '/admin/users',
   },
   {
-    path: '/admin/users',
-    component: () => import('@/views/admin/AdminUsers.vue'),
-    meta: { auth: true, sup: true },
-  },
-  {
-    path: '/admin/persons',
-    component: () => import('@/views/admin/AdminPersons.vue'),
-    meta: { auth: true, sup: true },
-  },
-  {
-    path: '/admin/organizations',
-    component: () => import('@/views/admin/AdminOrganizations.vue'),
-    meta: { auth: true, sup: true },
-  },
-  {
-    path: '/admin/collectives',
-    component: () => import('@/views/admin/AdminCollectives.vue'),
-    meta: { auth: true, sup: true },
-  },
-  {
-    path: '/admin/profiles',
-    component: () => import('@/views/admin/AdminProfiles.vue'),
-    meta: { auth: true, sup: true },
-  },
-  {
-    path: '/admin/persons/:id',
-    component: () => import('@/views/admin/AdminPersonFile.vue'),
-    meta: { auth: true, sup: true },
-  },
-  {
-    path: '/admin/students',
-    component: () => import('@/views/admin/AdminStudents.vue'),
-    meta: { auth: true, sup: true },
-  },
-  {
-    path: '/admin/diets',
-    component: () => import('@/views/admin/AdminDiets.vue'),
-    meta: { auth: true, sup: true },
-  },
-  {
-    path: '/admin/geo',
-    component: () => import('@/views/admin/AdminGeo.vue'),
-    meta: { auth: true, sup: true },
-  },
-  {
-    path: '/admin/events',
-    component: () => import('@/views/admin/AdminEvents.vue'),
-    meta: { auth: true, sup: true },
-  },
-  {
-    path: '/admin/participation',
-    component: () => import('@/views/admin/AdminParticipation.vue'),
-    meta: { auth: true, sup: true },
-  },
-  {
-    path: '/admin/attendance',
-    component: () => import('@/views/admin/AdminAttendance.vue'),
-    meta: { auth: true, sup: true },
-  },
-  {
-    path: '/admin/members',
-    component: () => import('@/views/admin/AdminMembers.vue'),
-    meta: { auth: true, sup: true },
-  },
-  {
-    path: '/admin/roles',
-    component: () => import('@/views/admin/AdminRoles.vue'),
+    path: '/admin/:pathMatch(.*)*',
+    component: () => import('@/components/layout/AdminLayout.vue'),
     meta: { auth: true, sup: true },
   },
   // Settings & Profile
@@ -212,6 +138,7 @@ const router = createRouter({
 let refreshAttempted = false
 
 router.beforeEach(async (to, _from, next) => {
+  isNavigating.value = true
   const auth = useAuthStore()
   if (!auth.isAuthenticated && !auth.accessToken && !refreshAttempted) {
     refreshAttempted = true
@@ -244,6 +171,14 @@ router.beforeEach(async (to, _from, next) => {
     if (!principal.isPrincipal) return next('/')
   }
   next()
+})
+
+router.afterEach(() => {
+  isNavigating.value = false
+})
+
+router.onError(() => {
+  isNavigating.value = false
 })
 
 export default router
