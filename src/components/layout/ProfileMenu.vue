@@ -38,11 +38,10 @@
 
 <script setup lang="ts">
 import { useAuthStore } from '@/stores/auth'
-import { IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonIcon, menuController, useIonRouter } from '@ionic/vue'
+import { IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonIcon, menuController } from '@ionic/vue'
 import { settingsOutline, personCircleOutline, logOutOutline, chevronForwardOutline } from 'ionicons/icons'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 
-const router = useIonRouter()
 const auth = useAuthStore()
 
 function closeMenu() {
@@ -52,9 +51,12 @@ function closeMenu() {
 async function logout() {
   await auth.logout()
   closeMenu()
-  // direction 'root': см. LoginPage.vue -- избегаем залипания страницы
-  // при смене корневого outlet-контента между auth-страницей и TabsShell.
-  router.navigate('/auth/login', 'root', 'replace')
+  // Жёсткий переход, не SPA-навигация: ion-router-outlet не убирает старый
+  // ion-tabs при уходе со страницы с вложенным outlet-ом (Ionic намеренно
+  // держит его в DOM для возврата назад) -- новая auth-страница оказывается
+  // НИЖЕ него в DOM и визуально не видна, хотя маршрут уже сменился. Полная
+  // перезагрузка гарантированно даёт чистый DOM.
+  window.location.href = '/auth/login'
 }
 </script>
 

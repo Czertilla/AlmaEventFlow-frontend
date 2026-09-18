@@ -54,22 +54,21 @@ import UuidBadge from '@/components/common/UuidBadge.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBackButton, IonIcon,
-  useIonRouter,
 } from '@ionic/vue'
 import {
   settingsOutline, logOutOutline, chevronForwardOutline,
   createOutline, shieldCheckmarkOutline,
 } from 'ionicons/icons'
 
-const router = useIonRouter()
 const auth = useAuthStore()
 const { isDesktop } = usePlatform()
 
 async function handleLogout() {
   await auth.logout()
-  // direction 'root': см. LoginPage.vue -- избегаем залипания страницы
-  // при смене корневого outlet-контента между auth-страницей и TabsShell.
-  router.navigate('/auth/login', 'root', 'replace')
+  // Жёсткий переход: см. ProfileMenu.vue -- ion-router-outlet не убирает
+  // старый ion-tabs при уходе со страницы с вложенным outlet-ом, новая
+  // auth-страница остаётся визуально под ним.
+  window.location.href = '/auth/login'
 }
 </script>
 

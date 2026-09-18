@@ -18,12 +18,12 @@
 
     <div v-if="items.length > 0" class="event-card-body">
       <template v-for="item in items" :key="item.collectiveId">
-        <div v-if="items.length === 1 && item.attendance" class="attendance-row" @click.stop>
+        <div v-if="items.length === 1 && item.attendance" class="attendance-row">
           <div class="collective-info">
             <span class="collective-dot" :style="{ background: getColor(item.collectiveId) }" />
             <span class="collective-name">{{ item.collectiveName }}</span>
           </div>
-          <div class="attendance-chips">
+          <div class="attendance-chips" @click.stop>
             <EventAttendanceChip
               :is-attended="item.attendance.is_attended"
               :edited-at="item.attendance.edited_at"
