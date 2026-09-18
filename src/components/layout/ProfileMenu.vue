@@ -37,13 +37,12 @@
 </template>
 
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonIcon, menuController } from '@ionic/vue'
+import { IonMenu, IonHeader, IonToolbar, IonTitle, IonContent, IonIcon, menuController, useIonRouter } from '@ionic/vue'
 import { settingsOutline, personCircleOutline, logOutOutline, chevronForwardOutline } from 'ionicons/icons'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 
-const router = useRouter()
+const router = useIonRouter()
 const auth = useAuthStore()
 
 function closeMenu() {
@@ -53,7 +52,9 @@ function closeMenu() {
 async function logout() {
   await auth.logout()
   closeMenu()
-  await router.replace('/auth/login')
+  // direction 'root': см. LoginPage.vue -- избегаем залипания страницы
+  // при смене корневого outlet-контента между auth-страницей и TabsShell.
+  router.navigate('/auth/login', 'root', 'replace')
 }
 </script>
 

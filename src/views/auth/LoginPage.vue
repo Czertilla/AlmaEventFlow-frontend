@@ -77,16 +77,16 @@
 
 <script setup lang="ts">
 import { nextTick, onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { IonPage, IonContent, IonIcon, onIonViewDidLeave } from '@ionic/vue'
+import { IonPage, IonContent, IonIcon, onIonViewDidLeave, useIonRouter } from '@ionic/vue'
 import { personOutline, alertCircleOutline } from 'ionicons/icons'
 import { useTelegramWidget, type TelegramWidgetUser } from '@/composables/useTelegramWidget'
 import { getTelegramLoginConfigUserV1AuthTelegramConfigGet } from '@/api/generated/almaEventFlow'
 import PasswordField from '@/components/common/PasswordField.vue'
 
 const route = useRoute()
-const router = useRouter()
+const router = useIonRouter()
 const auth = useAuthStore()
 
 const username = ref((route.query.email as string) || '')
@@ -135,10 +135,11 @@ async function handleLogin() {
   loading.value = true
   try {
     await auth.login(username.value, password.value)
-    // replace, не push: назад из главной не должно возвращать на форму входа,
-    // и это же убирает залипание формы, которое иногда оставлял push-переход
-    // между отдельной auth-страницей и TabsShell в корневом ion-router-outlet.
-    await router.replace('/')
+    // direction 'root' + action 'replace': заменяет весь стек мгновенно, без
+    // анимированного push/pop-перехода ion-router-outlet между отдельной
+    // auth-страницей и вложенным outlet-ом TabsShell -- именно этот переход
+    // иногда оставлял форму входа поверх контента (залипание).
+    router.navigate('/', 'root', 'replace')
   } catch (err: any) {
     error.value = err?.response?.data?.detail || 'Неверный логин или пароль'
   } finally {
@@ -151,7 +152,7 @@ async function handleTelegramAuth(user: TelegramWidgetUser) {
   loading.value = true
   try {
     await auth.loginWithTelegram(user)
-    await router.replace('/')
+    router.navigate('/', 'root', 'replace')
   } catch (err: any) {
     const detail = err?.response?.data?.detail
     error.value =
