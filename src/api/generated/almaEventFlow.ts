@@ -24,7 +24,7 @@ export interface Point {
 }
 
 export interface AddressFields {
-  house: string;
+  house?: string | null;
   district?: string | null;
   street?: string | null;
   building?: string | null;
@@ -38,18 +38,11 @@ export interface AddressCreate {
   parsed?: AddressFields | null;
 }
 
-export interface AddressFieldsPatchData {
-  house?: string | null;
-  district?: string | null;
-  street?: string | null;
-  building?: string | null;
-  apartment?: string | null;
+export interface AddressPatchData {
+  name?: string | null;
   city_id?: number | null;
   spot?: Point | null;
-}
-
-export interface AddressPatchData {
-  parsed?: AddressFieldsPatchData | null;
+  parsed?: AddressFields | null;
 }
 
 export interface AddressPutData {
@@ -1610,6 +1603,8 @@ page?: number;
  * @exclusiveMinimum 0
  */
 limit?: number;
+near_lat?: number | null;
+near_lon?: number | null;
 };
 
 export type GetCitiesGeoV1CitiesGetParams = {
@@ -1628,12 +1623,15 @@ export type GetLocationsGeoV1LocationsGetParams = {
 order_by?: string | null;
 search?: string | null;
 address_id?: string | null;
+name__isnull?: boolean | null;
 page?: number;
 /**
  * @maximum 100
  * @exclusiveMinimum 0
  */
 limit?: number;
+near_lat?: number | null;
+near_lon?: number | null;
 };
 
 export type GetMapGeoV1MapGetParams = {

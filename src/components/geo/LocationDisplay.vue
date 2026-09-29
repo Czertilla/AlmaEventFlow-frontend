@@ -1,15 +1,11 @@
 <template>
-  <a
-    v-if="location.map_uri"
-    class="location-display location-display--link"
-    :href="location.map_uri"
-    target="_blank"
-    rel="noopener"
-  >
-    <ion-icon :icon="locationOutline" />
-    <span>{{ text }}</span>
-    <ion-icon class="location-display-external" :icon="openOutline" />
-  </a>
+  <MapLinkMenu v-if="point" :point="point" :label="mapLabel" v-slot="{ toggle }">
+    <a href="#" class="location-display location-display--link" @click.prevent="toggle">
+      <ion-icon :icon="locationOutline" />
+      <span>{{ text }}</span>
+      <ion-icon class="location-display-external" :icon="openOutline" />
+    </a>
+  </MapLinkMenu>
   <div v-else class="location-display">
     <ion-icon :icon="locationOutline" />
     <span>{{ text }}</span>
@@ -20,13 +16,21 @@
 import { computed } from 'vue'
 import { IonIcon } from '@ionic/vue'
 import { locationOutline, openOutline } from 'ionicons/icons'
+import MapLinkMenu from './MapLinkMenu.vue'
+import type { GeoPoint } from './GeoMap.vue'
 import type { LocationRead } from '@/api/generated/almaEventFlow'
+import { mapLinkLabel } from '@/composables/useGeoSearch'
 
 const props = defineProps<{ location: LocationRead }>()
 
 const text = computed(
   () => props.location.name || props.location.address?.name || 'Локация без названия',
 )
+const mapLabel = computed(() => mapLinkLabel(props.location))
+const point = computed<GeoPoint | null>(() => {
+  const p = props.location.spot ?? props.location.address?.spot
+  return p ? { lat: p.lat, lon: p.lon } : null
+})
 </script>
 
 <style scoped>

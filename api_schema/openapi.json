@@ -9463,6 +9463,38 @@
                             "default": 10,
                             "title": "Limit"
                         }
+                    },
+                    {
+                        "name": "near_lat",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "number"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Near Lat"
+                        }
+                    },
+                    {
+                        "name": "near_lon",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "number"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Near Lon"
+                        }
                     }
                 ],
                 "responses": {
@@ -10384,6 +10416,22 @@
                         }
                     },
                     {
+                        "name": "name__isnull",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "boolean"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Name  Isnull"
+                        }
+                    },
+                    {
                         "name": "page",
                         "in": "query",
                         "required": false,
@@ -10403,6 +10451,38 @@
                             "exclusiveMinimum": 0,
                             "default": 10,
                             "title": "Limit"
+                        }
+                    },
+                    {
+                        "name": "near_lat",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "number"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Near Lat"
+                        }
+                    },
+                    {
+                        "name": "near_lon",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "number"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Near Lon"
                         }
                     }
                 ],
@@ -24696,7 +24776,14 @@
             "AddressFields": {
                 "properties": {
                     "house": {
-                        "type": "string",
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "House"
                     },
                     "district": {
@@ -24745,14 +24832,11 @@
                     }
                 },
                 "type": "object",
-                "required": [
-                    "house"
-                ],
                 "title": "AddressFields"
             },
-            "AddressFieldsPatchData": {
+            "AddressPatchData": {
                 "properties": {
-                    "house": {
+                    "name": {
                         "anyOf": [
                             {
                                 "type": "string"
@@ -24761,51 +24845,7 @@
                                 "type": "null"
                             }
                         ],
-                        "title": "House"
-                    },
-                    "district": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "District"
-                    },
-                    "street": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Street"
-                    },
-                    "building": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Building"
-                    },
-                    "apartment": {
-                        "anyOf": [
-                            {
-                                "type": "string"
-                            },
-                            {
-                                "type": "null"
-                            }
-                        ],
-                        "title": "Apartment"
+                        "title": "Name"
                     },
                     "city_id": {
                         "anyOf": [
@@ -24827,17 +24867,11 @@
                                 "type": "null"
                             }
                         ]
-                    }
-                },
-                "type": "object",
-                "title": "AddressFieldsPatchData"
-            },
-            "AddressPatchData": {
-                "properties": {
+                    },
                     "parsed": {
                         "anyOf": [
                             {
-                                "$ref": "#/components/schemas/AddressFieldsPatchData"
+                                "$ref": "#/components/schemas/AddressFields"
                             },
                             {
                                 "type": "null"

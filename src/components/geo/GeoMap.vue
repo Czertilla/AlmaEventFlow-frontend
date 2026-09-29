@@ -32,18 +32,22 @@ const props = withDefaults(
     markers?: MapMarker[]
     pickable?: boolean
     pickedPoint?: GeoPoint | null
+    fit?: boolean
   }>(),
   {
     zoom: 15,
     markers: () => [],
     pickable: false,
     pickedPoint: null,
+    fit: false,
   },
 )
 
 const emit = defineEmits<{
   pick: [point: GeoPoint]
   'marker-click': [marker: MapMarker]
+  'marker-create': [marker: MapMarker]
+  interact: []
   bbox: [box: MapBBox]
 }>()
 
@@ -59,13 +63,13 @@ const DEFAULT_CENTER: GeoPoint = { lat: 55.7558, lon: 37.6173 } // Москва
 const icons: Record<'address' | 'location' | 'pick', L.DivIcon> = {
   address: L.divIcon({
     className: 'geo-marker geo-marker--address',
-    html: '●',
+    html: '',
     iconSize: [16, 16],
   }),
   location: L.divIcon({
     className: 'geo-marker geo-marker--location',
     html: '★',
-    iconSize: [18, 18],
+    iconSize: [24, 24],
   }),
   pick: L.divIcon({
     className: 'geo-marker geo-marker--pick',
@@ -79,6 +83,7 @@ let map: L.Map | null = null
 let markerLayer: L.LayerGroup | null = null
 let pickMarker: L.Marker | null = null
 let bboxTimer: ReturnType<typeof setTimeout> | null = null
+let resizeObserver: ResizeObserver | null = null
 
 function emitBbox() {
   if (!map) return
@@ -96,15 +101,58 @@ function scheduleBboxEmit() {
   bboxTimer = setTimeout(emitBbox, 400)
 }
 
+function buildAddressPopup(marker: L.Marker, m: MapMarker): HTMLElement {
+  const root = document.createElement('div')
+  root.className = 'geo-marker-popup'
+  if (m.label) {
+    const title = document.createElement('div')
+    title.className = 'geo-marker-popup-title'
+    title.textContent = m.label
+    root.appendChild(title)
+  }
+  const actions = document.createElement('div')
+  actions.className = 'geo-marker-popup-actions'
+  const selectBtn = document.createElement('button')
+  selectBtn.type = 'button'
+  selectBtn.className = 'geo-marker-popup-btn'
+  selectBtn.textContent = 'Выбрать'
+  selectBtn.addEventListener('click', () => {
+    marker.closePopup()
+    emit('marker-click', m)
+  })
+  const createBtn = document.createElement('button')
+  createBtn.type = 'button'
+  createBtn.className = 'geo-marker-popup-btn geo-marker-popup-btn--primary'
+  createBtn.textContent = 'Создать локацию'
+  createBtn.addEventListener('click', () => {
+    marker.closePopup()
+    emit('marker-create', m)
+  })
+  actions.append(selectBtn, createBtn)
+  root.appendChild(actions)
+  return root
+}
+
 function renderMarkers() {
   if (!markerLayer) return
   markerLayer.clearLayers()
   for (const m of props.markers) {
     const marker = L.marker([m.lat, m.lon], { icon: icons[m.kind] })
     if (m.label) marker.bindTooltip(m.label)
-    marker.on('click', () => emit('marker-click', m))
+    if (m.kind === 'address') {
+      marker.bindPopup(buildAddressPopup(marker, m), { className: 'geo-marker-popup-wrap' })
+    } else {
+      marker.on('click', () => emit('marker-click', m))
+    }
     marker.addTo(markerLayer!)
   }
+  fitToMarkers()
+}
+
+function fitToMarkers() {
+  if (!map || !props.fit || props.markers.length === 0) return
+  const bounds = L.latLngBounds(props.markers.map((m) => [m.lat, m.lon] as [number, number]))
+  map.fitBounds(bounds, { padding: [40, 40], maxZoom: 17 })
 }
 
 function renderPick() {
@@ -114,14 +162,19 @@ function renderPick() {
     pickMarker = null
   }
   if (props.pickedPoint) {
-    pickMarker = L.marker([props.pickedPoint.lat, props.pickedPoint.lon], {
-      icon: icons.pick,
-    }).addTo(map)
+    const latlng = L.latLng(props.pickedPoint.lat, props.pickedPoint.lon)
+    pickMarker = L.marker(latlng, { icon: icons.pick }).addTo(map)
+    if (!map.getBounds().contains(latlng)) map.setView(latlng, map.getZoom())
   }
+}
+
+function onPointerDown() {
+  emit('interact')
 }
 
 onMounted(() => {
   if (!mapEl.value) return
+  mapEl.value.addEventListener('pointerdown', onPointerDown)
   const c = props.center || props.pickedPoint || DEFAULT_CENTER
   map = L.map(mapEl.value).setView([c.lat, c.lon], props.zoom)
   L.tileLayer(TILE_URL, {
@@ -140,10 +193,17 @@ onMounted(() => {
   }
   map.on('moveend', scheduleBboxEmit)
   map.on('zoomend', scheduleBboxEmit)
+  scheduleBboxEmit()
+
+  resizeObserver = new ResizeObserver(() => map?.invalidateSize())
+  resizeObserver.observe(mapEl.value)
 })
 
 onBeforeUnmount(() => {
   if (bboxTimer) clearTimeout(bboxTimer)
+  resizeObserver?.disconnect()
+  resizeObserver = null
+  mapEl.value?.removeEventListener('pointerdown', onPointerDown)
   map?.remove()
   map = null
   markerLayer = null
@@ -163,11 +223,14 @@ defineExpose({
   /** Leaflet needs this after the map becomes visible inside a modal/tab
    * that was hidden (zero-size) at mount time. */
   invalidateSize: () => map?.invalidateSize(),
+  refit: fitToMarkers,
 })
 </script>
 
 <style scoped>
 .geo-map {
+  /* contains leaflet's internal panes (z-index up to 700) so they can't paint over sibling dropdowns */
+  z-index: 0;
   width: 100%;
   height: 100%;
   min-height: 240px;
@@ -177,19 +240,84 @@ defineExpose({
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  box-sizing: border-box;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
+  color: #ffffff;
+  font-size: 13px;
   line-height: 1;
 }
 
 :deep(.geo-marker--address) {
-  color: var(--ion-color-medium, #666666);
+  background: var(--ion-color-medium, #666666);
 }
 
 :deep(.geo-marker--location) {
-  color: var(--ion-color-primary, #3880ff);
+  background: var(--ion-color-primary, #3880ff);
 }
 
 :deep(.geo-marker--pick) {
+  border: none;
+  background: none;
+  box-shadow: none;
   font-size: 22px;
+}
+
+:deep(.geo-marker-popup-wrap .leaflet-popup-content-wrapper) {
+  border-radius: 12px;
+  background: var(--ion-card-background);
+  color: var(--ion-text-color);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+}
+
+:deep(.geo-marker-popup-wrap .leaflet-popup-content) {
+  margin: 10px 12px;
+}
+
+:deep(.geo-marker-popup-wrap .leaflet-popup-tip) {
+  background: var(--ion-card-background);
+}
+
+:deep(.geo-marker-popup) {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 170px;
+}
+
+:deep(.geo-marker-popup-title) {
+  overflow: hidden;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ion-text-color);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:deep(.geo-marker-popup-actions) {
+  display: flex;
+  gap: 6px;
+}
+
+:deep(.geo-marker-popup-btn) {
+  flex: 1;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1.5px solid var(--ion-border-color);
+  border-radius: 8px;
+  background: var(--ion-card-background);
+  color: var(--ion-text-color);
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+:deep(.geo-marker-popup-btn--primary) {
+  border-color: var(--ion-color-primary);
+  background: var(--ion-color-primary);
+  color: var(--ion-color-primary-contrast);
 }
 </style>

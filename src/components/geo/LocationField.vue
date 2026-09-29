@@ -1,575 +1,361 @@
 <template>
-  <div class="loc-field">
-    <!-- Выбрана локация -->
-    <div v-if="modelValue" class="loc-chip loc-chip--location">
-      <LocationDisplay :location="modelValue" />
-      <button class="loc-chip-clear" aria-label="Убрать локацию" @click="clearAll">
-        <ion-icon :icon="closeOutline" />
-      </button>
-    </div>
-
-    <!-- Выбран адрес, локация ещё не создана -->
-    <div v-else-if="pendingAddress" class="loc-chip loc-chip--address">
-      <ion-icon :icon="locationOutline" />
-      <span class="loc-chip-label">{{ pendingAddress.name }}</span>
-      <span class="loc-chip-kind">адрес</span>
-      <button class="loc-chip-action" :disabled="creating" @click="createFromPendingAddress">
-        <ion-spinner v-if="creating" name="crescent" />
-        <template v-else>
-          <ion-icon :icon="addCircleOutline" />
-          Создать локацию
-        </template>
-      </button>
-      <button class="loc-chip-clear" aria-label="Сбросить" @click="clearAll">
-        <ion-icon :icon="closeOutline" />
-      </button>
-    </div>
-
-    <!-- Поиск -->
-    <div v-else class="loc-combo">
-      <div class="loc-input-wrap">
-        <ion-icon class="loc-input-icon" :icon="searchOutline" />
-        <input
-          v-model="search"
-          type="text"
-          class="native-input loc-input"
-          :placeholder="placeholder"
-          @focus="dropdownOpen = true"
-          @blur="onBlur"
-        />
+  <div class="lf">
+    <div class="lf-control" :class="{ 'lf-control--selected': !!modelValue }">
+      <template v-if="modelValue">
+        <span class="lf-tile"><ion-icon :icon="locationOutline" /></span>
+        <span class="lf-value">
+          <span class="lf-title">{{ locationLabel(modelValue) }}</span>
+          <span v-if="subtitle" class="lf-sub">{{ subtitle }}</span>
+        </span>
         <button
+          v-if="modelValue.address"
           type="button"
-          class="loc-map-btn"
-          :class="{ 'loc-map-btn--active': mapOpen }"
-          aria-label="Открыть карту"
-          @click="openMap"
+          class="lf-btn"
+          aria-label="Создать локацию по этому адресу"
+          @click="openModal({ address: modelValue.address })"
         >
-          <ion-icon :icon="mapOutline" />
+          <ion-icon :icon="addOutline" />
         </button>
-      </div>
+        <MapLinkMenu v-if="selectedPoint" :point="selectedPoint" :label="mapLinkLabel(modelValue)" v-slot="{ toggle }">
+          <button type="button" class="lf-btn" aria-label="Открыть на карте" @click="toggle">
+            <ion-icon :icon="openOutline" />
+          </button>
+        </MapLinkMenu>
+        <button type="button" class="lf-btn lf-btn--danger" aria-label="Убрать локацию" @click="clearValue">
+          <ion-icon :icon="closeOutline" />
+        </button>
+      </template>
 
-      <div v-if="dropdownOpen && search" class="loc-suggestions">
-        <button
-          v-for="r in results"
-          :key="`${r.kind}-${r.item.id}`"
-          class="loc-suggestion"
-          @mousedown.prevent="pickResult(r)"
-        >
-          <ion-icon
-            class="loc-suggestion-icon"
-            :class="`loc-suggestion-icon--${r.kind}`"
-            :icon="r.kind === 'location' ? starOutline : locationOutline"
-          />
-          <span class="loc-suggestion-name">{{ resultLabel(r) }}</span>
-          <span class="loc-suggestion-kind">{{ r.kind === 'location' ? 'локация' : 'адрес' }}</span>
+      <template v-else>
+        <ion-icon class="lf-search-icon" :icon="searchOutline" />
+        <input
+          v-model="query"
+          type="text"
+          class="lf-input"
+          role="combobox"
+          autocomplete="off"
+          :placeholder="placeholder"
+          :disabled="resolving"
+          :aria-expanded="showDropdown"
+          :aria-controls="listId"
+          :aria-activedescendant="active >= 0 ? geoOptionId(listId, active) : undefined"
+          @focus="onFocus"
+          @blur="closeSoon"
+          @keydown="onKeydown"
+        />
+        <ion-spinner v-if="searching || resolving" class="lf-spinner" name="crescent" />
+        <button v-if="query" type="button" class="lf-btn" aria-label="Очистить" @click="clearQuery">
+          <ion-icon :icon="closeOutline" />
         </button>
-        <p v-if="!searching && results.length === 0" class="loc-suggestions-empty">Ничего не найдено</p>
-      </div>
+      </template>
+
+      <button
+        type="button"
+        class="lf-btn lf-btn--map"
+        :class="{ 'lf-btn--active': modalOpen }"
+        aria-label="Выбрать на карте"
+        :disabled="resolving"
+        @click="openModal()"
+      >
+        <ion-icon :icon="mapOutline" />
+      </button>
     </div>
 
-    <!-- Карта: тот же поиск + метки найденных точек + создание новой локации кликом -->
-    <ion-modal :is-open="mapOpen" @ion-modal-did-dismiss="mapOpen = false" @did-present="onMapPresented">
-      <ion-header>
-        <ion-toolbar>
-          <ion-title>Локация на карте</ion-title>
-          <ion-buttons slot="end">
-            <ion-button aria-label="Закрыть" @click="mapOpen = false">
-              <ion-icon slot="icon-only" :icon="closeOutline" />
-            </ion-button>
-          </ion-buttons>
-        </ion-toolbar>
-        <ion-toolbar>
-          <ion-searchbar v-model="search" placeholder="Поиск локации или адреса..." />
-        </ion-toolbar>
-      </ion-header>
-      <ion-content>
-        <div v-if="search && results.length" class="loc-map-suggestions">
-          <button
-            v-for="r in results"
-            :key="`m-${r.kind}-${r.item.id}`"
-            class="loc-suggestion"
-            @click="pickResult(r)"
-          >
-            <ion-icon
-              class="loc-suggestion-icon"
-              :class="`loc-suggestion-icon--${r.kind}`"
-              :icon="r.kind === 'location' ? starOutline : locationOutline"
-            />
-            <span class="loc-suggestion-name">{{ resultLabel(r) }}</span>
-            <span class="loc-suggestion-kind">{{ r.kind === 'location' ? 'локация' : 'адрес' }}</span>
-          </button>
-        </div>
+    <div v-if="showDropdown" class="lf-popover">
+      <GeoResultList
+        :id="listId"
+        :results="results"
+        :query="query"
+        :searching="searching"
+        :active-index="active"
+        :show-create="canCreate"
+        @pick="pick"
+        @create-from-address="openModal({ address: $event })"
+        @create-named="openModal({ name: $event })"
+      />
+    </div>
 
-        <GeoMap
-          ref="geoMapRef"
-          pickable
-          :markers="mapMarkers"
-          :picked-point="pendingPoint"
-          :center="mapCenter"
-          class="loc-map"
-          @pick="onMapPick"
-          @marker-click="onMarkerClick"
-        />
-
-        <div v-if="pendingPoint" class="loc-new-card">
-          <ion-input v-model="pendingName" placeholder="Название локации (необязательно)" mode="md" />
-          <div class="loc-new-actions">
-            <ion-button fill="outline" size="small" @click="pendingPoint = null">Отмена</ion-button>
-            <ion-button size="small" :disabled="creating" @click="createFromPoint">
-              <ion-spinner v-if="creating" slot="start" name="crescent" />
-              Создать локацию здесь
-            </ion-button>
-          </div>
-        </div>
-        <p v-else class="loc-map-hint">
-          Кликните по метке, чтобы выбрать, или по свободному месту на карте, чтобы создать новую локацию.
-        </p>
-      </ion-content>
-    </ion-modal>
+    <LocationPickerModal
+      v-model:open="modalOpen"
+      :selected="modelValue"
+      :seed-query="modalSeed"
+      :draft="modalDraft"
+      @select="select"
+    />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, nextTick } from 'vue'
-import {
-  IonIcon, IonModal, IonHeader, IonToolbar, IonTitle, IonButtons, IonButton,
-  IonSearchbar, IonContent, IonInput, IonSpinner,
-} from '@ionic/vue'
-import {
-  closeOutline, searchOutline, mapOutline, starOutline, locationOutline, addCircleOutline,
-} from 'ionicons/icons'
-import GeoMap from './GeoMap.vue'
-import type { GeoPoint, MapMarker } from './GeoMap.vue'
-import LocationDisplay from './LocationDisplay.vue'
-import {
-  getLocationsGeoV1LocationsGet,
-  getAddressesGeoV1AddressesGet,
-  createLocationFromAddressGeoV1LocationsFromAddressPost,
-  createLocationGeoV1LocationsPost,
-} from '@/api/generated/almaEventFlow'
-import type { AddressRead, LocationRead } from '@/api/generated/almaEventFlow'
-import { useToast } from '@/composables/useToast'
+import { computed, ref } from 'vue'
+import { IonIcon, IonSpinner } from '@ionic/vue'
+import { addOutline, closeOutline, locationOutline, mapOutline, openOutline, searchOutline } from 'ionicons/icons'
+import GeoResultList from './GeoResultList.vue'
+import LocationPickerModal from './LocationPickerModal.vue'
+import MapLinkMenu from './MapLinkMenu.vue'
+import type { GeoPoint } from './GeoMap.vue'
+import type { LocationRead } from '@/api/generated/almaEventFlow'
+import { useComboNav } from '@/composables/useComboNav'
+import { useLocationResolver } from '@/composables/useLocationResolver'
+import { canOfferCreate, geoOptionId, locationLabel, mapLinkLabel, useGeoSearch } from '@/composables/useGeoSearch'
+import type { GeoResult, LocationDraft } from '@/composables/useGeoSearch'
 
-type ResultItem =
-  | { kind: 'location'; item: LocationRead }
-  | { kind: 'address'; item: AddressRead }
-
-withDefaults(
+const props = withDefaults(
   defineProps<{ modelValue: LocationRead | null; placeholder?: string }>(),
-  { placeholder: 'Локация или адрес...' },
+  { placeholder: 'Локация или адрес' },
 )
 const emit = defineEmits<{ 'update:modelValue': [value: LocationRead | null] }>()
 
-const { showError } = useToast()
+const listId = `lf-${Math.random().toString(36).slice(2, 8)}`
+const { query, results, searching, clear, refresh } = useGeoSearch({ limit: 8 })
+const { resolving, resolve } = useLocationResolver()
 
-const search = ref('')
 const dropdownOpen = ref(false)
-const mapOpen = ref(false)
-const results = ref<ResultItem[]>([])
-const searching = ref(false)
-const creating = ref(false)
-const pendingAddress = ref<AddressRead | null>(null)
-const pendingPoint = ref<GeoPoint | null>(null)
-const pendingName = ref('')
-const geoMapRef = ref<InstanceType<typeof GeoMap>>()
+const modalOpen = ref(false)
+const modalDraft = ref<LocationDraft | null>(null)
+const modalSeed = ref('')
 
-function resultLabel(r: ResultItem): string {
-  return r.kind === 'location' ? (r.item.name || r.item.address?.name || 'Без названия') : r.item.name
-}
+const canCreate = computed(() => canOfferCreate(results.value, query.value))
+const optionCount = computed(() => results.value.length + (canCreate.value ? 1 : 0))
+const { active, next, prev, reset } = useComboNav(optionCount)
 
-async function runSearch() {
-  const q = search.value.trim()
-  if (!q) {
-    results.value = []
-    return
-  }
-  searching.value = true
-  try {
-    const [locRes, addrRes] = await Promise.all([
-      getLocationsGeoV1LocationsGet({ search: q, limit: 8 }),
-      getAddressesGeoV1AddressesGet({ search: q, limit: 8 }),
-    ])
-    results.value = [
-      ...locRes.data.items.map((item) => ({ kind: 'location' as const, item })),
-      ...addrRes.data.items.map((item) => ({ kind: 'address' as const, item })),
-    ]
-  } catch {
-    results.value = []
-  } finally {
-    searching.value = false
-  }
-}
-
-let searchTimer: ReturnType<typeof setTimeout> | null = null
-watch(search, () => {
-  if (searchTimer) clearTimeout(searchTimer)
-  searchTimer = setTimeout(runSearch, 300)
+const showDropdown = computed(
+  () => !props.modelValue && dropdownOpen.value && (!!query.value.trim() || results.value.length > 0 || searching.value),
+)
+const selectedPoint = computed<GeoPoint | null>(() => {
+  const point = props.modelValue?.spot ?? props.modelValue?.address?.spot
+  return point ? { lat: point.lat, lon: point.lon } : null
+})
+const subtitle = computed(() => {
+  const location = props.modelValue
+  if (!location) return ''
+  if (location.name && location.address) return location.address.name
+  return location.address ? '' : 'Точка на карте'
 })
 
-const mapMarkers = computed<MapMarker[]>(() => {
-  const out: MapMarker[] = []
-  for (const r of results.value) {
-    if (r.kind === 'address') {
-      if (!r.item.spot) continue
-      out.push({ id: r.item.id, kind: 'address', lat: r.item.spot.lat, lon: r.item.spot.lon, label: r.item.name })
-    } else {
-      const point = r.item.spot || r.item.address?.spot
-      if (!point) continue
-      out.push({ id: r.item.id, kind: 'location', lat: point.lat, lon: point.lon, label: r.item.name || r.item.address?.name || 'Без названия' })
-    }
-  }
-  return out
-})
-
-const mapCenter = computed<GeoPoint | undefined>(() => {
-  const first = mapMarkers.value[0]
-  return first ? { lat: first.lat, lon: first.lon } : undefined
-})
-
-function onBlur() {
-  setTimeout(() => { dropdownOpen.value = false }, 150)
+function onFocus() {
+  dropdownOpen.value = true
+  if (!query.value.trim()) refresh()
 }
 
-function openMap() {
-  mapOpen.value = true
+function closeSoon() {
+  setTimeout(() => {
+    dropdownOpen.value = false
+    reset()
+  }, 150)
+}
+
+function resetSearch() {
   dropdownOpen.value = false
+  clear()
+  reset()
 }
 
-async function onMapPresented() {
-  await nextTick()
-  geoMapRef.value?.invalidateSize()
+async function pick(result: GeoResult) {
+  const location = await resolve(result)
+  if (!location) return
+  resetSearch()
+  emit('update:modelValue', location)
 }
 
-function pickResult(r: ResultItem) {
+function select(location: LocationRead) {
+  resetSearch()
+  emit('update:modelValue', location)
+}
+
+function openModal(draft: LocationDraft | null = null) {
+  modalDraft.value = draft
+  modalSeed.value = draft ? '' : query.value
   dropdownOpen.value = false
-  mapOpen.value = false
-  search.value = ''
-  results.value = []
-  pendingPoint.value = null
-  pendingName.value = ''
-  if (r.kind === 'location') {
-    pendingAddress.value = null
-    emit('update:modelValue', r.item)
-  } else {
-    emit('update:modelValue', null)
-    pendingAddress.value = r.item
-  }
+  modalOpen.value = true
 }
 
-function onMarkerClick(marker: MapMarker) {
-  const r = results.value.find((r) => r.kind === marker.kind && r.item.id === marker.id)
-  if (r) pickResult(r)
+function clearQuery() {
+  clear()
+  reset()
+  refresh()
 }
 
-function onMapPick(point: GeoPoint) {
-  pendingPoint.value = point
-  pendingName.value = ''
-}
-
-async function createFromPendingAddress() {
-  if (!pendingAddress.value) return
-  creating.value = true
-  try {
-    const res = await createLocationFromAddressGeoV1LocationsFromAddressPost({
-      address_id: pendingAddress.value.id,
-      name: null,
-    })
-    pendingAddress.value = null
-    emit('update:modelValue', res.data)
-  } catch (err) {
-    showError(err, 'Не удалось создать локацию')
-  } finally {
-    creating.value = false
-  }
-}
-
-async function createFromPoint() {
-  if (!pendingPoint.value) return
-  creating.value = true
-  try {
-    const res = await createLocationGeoV1LocationsPost({
-      name: pendingName.value || null,
-      spot: pendingPoint.value,
-    })
-    pendingPoint.value = null
-    pendingName.value = ''
-    mapOpen.value = false
-    emit('update:modelValue', res.data)
-  } catch (err) {
-    showError(err, 'Не удалось создать локацию')
-  } finally {
-    creating.value = false
-  }
-}
-
-function clearAll() {
+function clearValue() {
   emit('update:modelValue', null)
-  pendingAddress.value = null
-  search.value = ''
-  results.value = []
-  dropdownOpen.value = false
-  mapOpen.value = false
-  pendingPoint.value = null
-  pendingName.value = ''
+  resetSearch()
 }
 
-defineExpose({ reset: clearAll })
+function onKeydown(event: KeyboardEvent) {
+  if (event.key === 'ArrowDown') {
+    event.preventDefault()
+    dropdownOpen.value = true
+    next()
+  } else if (event.key === 'ArrowUp') {
+    event.preventDefault()
+    prev()
+  } else if (event.key === 'Enter') {
+    event.preventDefault()
+    if (!showDropdown.value) return
+    const index = active.value >= 0 ? active.value : 0
+    if (index < results.value.length) pick(results.value[index])
+    else if (canCreate.value) openModal({ name: query.value.trim() })
+  } else if (event.key === 'Escape') {
+    dropdownOpen.value = false
+    reset()
+  }
+}
+
+defineExpose({ reset: clearValue })
 </script>
 
 <style scoped>
-.loc-field {
+.lf {
   position: relative;
   width: 100%;
 }
 
-.loc-combo {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.loc-input-wrap {
-  position: relative;
+.lf-control {
   display: flex;
   align-items: center;
-}
-
-.loc-input-icon {
-  position: absolute;
-  left: 12px;
-  font-size: 16px;
-  color: var(--ion-color-medium);
-  pointer-events: none;
-}
-
-.loc-input {
-  padding-left: 36px;
-  padding-right: 44px;
-  width: 100%;
+  gap: 8px;
+  min-height: 48px;
+  padding: 0 6px 0 12px;
   border: 1.5px solid var(--ion-border-color);
-  border-radius: 10px;
-  background: var(--ion-card-background);
-  font-family: inherit;
-  font-size: 14px;
-  color: var(--ion-text-color);
-  padding-top: 10px;
-  padding-bottom: 10px;
-  outline: none;
-  transition: border-color 0.15s;
-}
-
-.loc-input:focus {
-  border-color: var(--ion-color-primary);
-}
-
-.loc-map-btn {
-  position: absolute;
-  right: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--ion-color-medium);
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.loc-map-btn:hover,
-.loc-map-btn--active {
-  background: rgba(var(--ion-color-primary-rgb), 0.1);
-  color: var(--ion-color-primary);
-}
-
-.loc-suggestions {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  border: 1px solid var(--ion-border-color);
   border-radius: 12px;
-  padding: 6px;
-  max-height: 240px;
-  overflow-y: auto;
   background: var(--ion-card-background);
+  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
 
-.loc-suggestion {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  font-family: inherit;
-  font-size: 14px;
-  color: var(--ion-text-color);
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.15s;
+.lf-control:focus-within {
+  border-color: var(--ion-color-primary);
+  box-shadow: 0 0 0 3px rgba(var(--ion-color-primary-rgb), 0.16);
 }
 
-.loc-suggestion:hover {
-  background: var(--ion-background-color);
-}
-
-.loc-suggestion-icon {
-  font-size: 18px;
-  flex-shrink: 0;
-}
-
-.loc-suggestion-icon--location {
-  color: var(--ion-color-primary);
-}
-
-.loc-suggestion-icon--address {
-  color: var(--ion-color-medium);
-}
-
-.loc-suggestion-name {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.loc-suggestion-kind {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: var(--ion-color-step-400);
-  flex-shrink: 0;
-}
-
-.loc-suggestions-empty {
-  margin: 0;
-  padding: 12px;
-  text-align: center;
-  font-size: 13px;
-  color: var(--ion-color-medium);
-}
-
-.loc-chip {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border: 1.5px solid var(--ion-color-primary);
-  border-radius: 10px;
+.lf-control--selected {
+  border-color: rgba(var(--ion-color-primary-rgb), 0.5);
   background: rgba(var(--ion-color-primary-rgb), 0.06);
-  font-size: 14px;
 }
 
-.loc-chip--address {
-  border-color: var(--ion-color-medium);
-  background: var(--ion-background-color);
-}
-
-.loc-chip--address > ion-icon:first-child {
-  color: var(--ion-color-medium);
+.lf-search-icon {
   flex-shrink: 0;
+  font-size: 18px;
+  color: var(--ion-color-medium);
 }
 
-.loc-chip-label {
+.lf-input {
   flex: 1;
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-weight: 600;
-}
-
-.loc-chip-kind {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: var(--ion-color-step-400);
-  flex-shrink: 0;
-}
-
-.loc-chip-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 10px;
-  border: 1.5px solid var(--ion-color-primary);
-  border-radius: 999px;
+  padding: 12px 0;
+  border: none;
+  outline: none;
   background: transparent;
-  color: var(--ion-color-primary);
+  color: var(--ion-text-color);
   font-family: inherit;
-  font-size: 12px;
-  font-weight: 600;
-  cursor: pointer;
+  font-size: 15px;
+}
+
+.lf-input::placeholder {
+  color: var(--ion-color-step-400);
+}
+
+.lf-spinner {
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
-  transition: background 0.15s;
 }
 
-.loc-chip-action:hover {
-  background: rgba(var(--ion-color-primary-rgb), 0.1);
-}
-
-.loc-chip-action ion-spinner {
-  width: 14px;
-  height: 14px;
-}
-
-.loc-chip-clear {
+.lf-tile {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--ion-color-medium);
-  font-size: 16px;
-  cursor: pointer;
   flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  background: rgba(var(--ion-color-primary-rgb), 0.14);
+  color: var(--ion-color-primary);
+  font-size: 17px;
 }
 
-.loc-chip-clear:hover {
+.lf-value {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  padding: 8px 0;
+}
+
+.lf-title {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--ion-text-color);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lf-sub {
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.3;
+  color: var(--ion-color-medium);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lf-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ion-color-medium);
+  font-size: 18px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.lf-btn:hover:not(:disabled),
+.lf-btn:focus-visible {
+  background: rgba(var(--ion-text-color-rgb), 0.07);
+  color: var(--ion-text-color);
+  outline: none;
+}
+
+.lf-btn--map {
+  color: var(--ion-color-primary);
+}
+
+.lf-btn--map:hover:not(:disabled),
+.lf-btn--map:focus-visible,
+.lf-btn--active {
+  background: rgba(var(--ion-color-primary-rgb), 0.12);
+  color: var(--ion-color-primary);
+}
+
+.lf-btn--danger:hover:not(:disabled),
+.lf-btn--danger:focus-visible {
+  background: rgba(255, 71, 87, 0.12);
   color: var(--ion-color-danger);
 }
 
-.loc-map-suggestions {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding: 8px;
-  border-bottom: 1px solid var(--ion-border-color);
+.lf-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
 }
 
-.loc-map {
-  height: 50vh;
-  min-height: 320px;
-}
-
-.loc-new-card {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  padding: 12px 16px;
-}
-
-.loc-new-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 8px;
-}
-
-.loc-map-hint {
-  margin: 0;
-  padding: 10px 16px;
-  font-size: 12px;
-  color: var(--ion-color-medium);
+.lf-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  left: 0;
+  z-index: 40;
+  max-height: 340px;
+  overflow-y: auto;
+  border: 1px solid var(--ion-border-color);
+  border-radius: 16px;
+  background: var(--ion-card-background);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
 }
 </style>
