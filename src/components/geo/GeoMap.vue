@@ -151,6 +151,12 @@ function renderMarkers() {
 
 function fitToMarkers() {
   if (!map || !props.fit || props.markers.length === 0) return
+  // A picked point already positioned the view (see renderPick) -- search
+  // results always include the full curated location list regardless of
+  // where that point is, so fitting bounds to all of them here would yank
+  // the map back out to cover everything between the pick and wherever
+  // those unrelated locations happen to be.
+  if (props.pickedPoint) return
   const bounds = L.latLngBounds(props.markers.map((m) => [m.lat, m.lon] as [number, number]))
   map.fitBounds(bounds, { padding: [40, 40], maxZoom: 17 })
 }

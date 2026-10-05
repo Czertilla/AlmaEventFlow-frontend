@@ -16,7 +16,7 @@
           :sort-options="sortOptions"
           default-sort="name"
           add-label="Добавить"
-          @add="openAddressCreate"
+          @add="openAddressCreate()"
           @edit="openAddressEdit"
           @delete="handleAddressDelete"
         />
@@ -28,23 +28,38 @@
 
           :columns="locationColumns"
           :get-label="(l) => l.name || l.address?.name || 'Без названия'"
-          :get-subtitle="(l) => l.address_id || 'Своя точка'"
+          :get-subtitle="(l) => l.address?.name || 'Своя точка'"
           :fetch-items="fetchLocations"
           :sort-options="sortOptions"
           default-sort="name"
           add-label="Добавить"
-          @add="openLocationCreate"
+          @add="openLocationCreate()"
           @edit="openLocationEdit"
           @delete="handleLocationDelete"
         />
       </div>
 
       <div v-else class="ion-padding-top">
-        <GeoMap :markers="mapMarkers" class="admin-map" @bbox="onMapBbox" @marker-click="onMapMarkerClick" />
-        <p class="map-hint">
-          Переместите/приблизьте карту, чтобы подгрузить объекты в этой
-          области -- адреса и места показаны разными метками. Клик по метке
-          открывает форму редактирования.
+        <ion-searchbar v-model="mapQuery" placeholder="Найти адрес или место на карте..." class="map-search" />
+        <GeoMap
+          pickable
+          :fit="!!mapQuery.trim()"
+          :markers="visibleMarkers"
+          :picked-point="pickedPoint"
+          class="admin-map"
+          @bbox="onMapBbox"
+          @pick="pickedPoint = $event"
+          @marker-click="onMapMarkerClick"
+        />
+        <div v-if="pickedPoint" class="pick-card">
+          <span class="pick-coords">{{ pickedPoint.lat.toFixed(5) }}, {{ pickedPoint.lon.toFixed(5) }}</span>
+          <ion-button size="small" @click="createAddressAtPoint">Новый адрес здесь</ion-button>
+          <ion-button size="small" fill="outline" @click="createLocationAtPoint">Новое место здесь</ion-button>
+          <ion-button size="small" fill="clear" color="medium" @click="pickedPoint = null">Отмена</ion-button>
+        </div>
+        <p v-else class="map-hint">
+          Введите запрос — найденные адреса и места появятся на карте. Без запроса показываются объекты в видимой
+          области. Клик по метке открывает форму редактирования, клик по свободному месту — создание нового объекта.
         </p>
       </div>
 
@@ -72,12 +87,13 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { IonSegment, IonSegmentButton, IonModal } from '@ionic/vue'
+import { computed, ref, watch } from 'vue'
+import { IonSegment, IonSegmentButton, IonModal, IonSearchbar, IonButton } from '@ionic/vue'
 import ResourceTable from '@/components/admin/ResourceTable.vue'
 import ResourceFormModal from '@/components/admin/ResourceFormModal.vue'
 import GeoMap from '@/components/geo/GeoMap.vue'
-import type { MapMarker, MapBBox } from '@/components/geo/GeoMap.vue'
+import type { GeoPoint, MapMarker, MapBBox } from '@/components/geo/GeoMap.vue'
+import { locationMarker, useGeoSearch } from '@/composables/useGeoSearch'
 import {
   getAddressesGeoV1AddressesGet, createAddressGeoV1AddressesPost,
   patchAddressGeoV1AddressesAddressIdPatch, deleteAddressGeoV1AddressesAddressIdDelete,
@@ -153,9 +169,9 @@ function openAddressEdit(item: any) {
   addressModal.value = true
 }
 
-function openAddressCreate() {
+function openAddressCreate(spot: GeoPoint | null = null) {
   isAddressCreating.value = true
-  editingAddress.value = null
+  editingAddress.value = spot ? { spot } : null
   addressModal.value = true
 }
 
@@ -168,6 +184,7 @@ async function saveAddress(data: any) {
   }
   addressModal.value = false
   addressTableRef.value?.loadData()
+  afterMapEdit()
 }
 
 async function handleAddressDelete(item: any) {
@@ -193,6 +210,7 @@ const locationFields: FormField[] = [
       const res = await getAddressesGeoV1AddressesGet({ search, limit: 20 })
       return res.data.items
     },
+    initialSelected: (l) => l.address ?? null,
     displayField: 'name',
   },
   { key: 'spot', label: 'Точка на карте (если без адреса)', type: 'map' },
@@ -212,9 +230,9 @@ function openLocationEdit(item: any) {
   locationModal.value = true
 }
 
-function openLocationCreate() {
+function openLocationCreate(spot: GeoPoint | null = null) {
   isLocationCreating.value = true
-  editingLocation.value = null
+  editingLocation.value = spot ? { spot } : null
   locationModal.value = true
 }
 
@@ -230,6 +248,7 @@ async function saveLocation(data: any) {
   }
   locationModal.value = false
   locationTableRef.value?.loadData()
+  afterMapEdit()
 }
 
 async function handleLocationDelete(item: any) {
@@ -237,12 +256,22 @@ async function handleLocationDelete(item: any) {
   catch (err) { console.error(err) }
 }
 
-// Map browse tab
-const mapMarkers = ref<MapMarker[]>([])
+// Map tab
+const bboxMarkers = ref<MapMarker[]>([])
 const mapAddressById = new Map<string, AddressRead>()
 const mapLocationById = new Map<string, LocationRead>()
+const pickedPoint = ref<GeoPoint | null>(null)
+const { query: mapQuery, results: mapResults, markers: searchMarkers } = useGeoSearch({
+  limit: 30,
+  namedLocationsOnly: false,
+})
+let lastBox: MapBBox | null = null
+
+const visibleMarkers = computed(() => (mapQuery.value.trim() ? searchMarkers.value : bboxMarkers.value))
 
 async function onMapBbox(box: MapBBox) {
+  lastBox = box
+  if (mapQuery.value.trim()) return
   try {
     const res = await getMapGeoV1MapGet({
       min_lat: box.minLat, min_lon: box.minLon, max_lat: box.maxLat, max_lon: box.maxLon,
@@ -257,25 +286,41 @@ async function onMapBbox(box: MapBBox) {
       markers.push({ id: a.id, kind: 'address', lat: a.spot.lat, lon: a.spot.lon, label: a.name })
     }
     for (const l of res.data.locations.items) {
-      const point = l.spot || l.address?.spot
-      if (!point) continue
+      const marker = locationMarker(l)
+      if (!marker) continue
       mapLocationById.set(l.id, l)
-      markers.push({ id: l.id, kind: 'location', lat: point.lat, lon: point.lon, label: l.name || l.address?.name || 'Без названия' })
+      markers.push(marker)
     }
-    mapMarkers.value = markers
+    bboxMarkers.value = markers
   } catch {
-    mapMarkers.value = []
+    bboxMarkers.value = []
   }
 }
 
+watch(mapQuery, (q) => {
+  if (!q.trim() && lastBox) onMapBbox(lastBox)
+})
+
 function onMapMarkerClick(marker: MapMarker) {
-  if (marker.kind === 'address') {
-    const addr = mapAddressById.get(marker.id)
-    if (addr) openAddressEdit(addr)
-  } else {
-    const loc = mapLocationById.get(marker.id)
-    if (loc) openLocationEdit(loc)
-  }
+  pickedPoint.value = null
+  const found = mapResults.value.find((r) => r.kind === marker.kind && r.item.id === marker.id)
+  const entity = found?.item ?? (marker.kind === 'address' ? mapAddressById.get(marker.id) : mapLocationById.get(marker.id))
+  if (!entity) return
+  if (marker.kind === 'address') openAddressEdit(entity)
+  else openLocationEdit(entity)
+}
+
+function createAddressAtPoint() {
+  if (pickedPoint.value) openAddressCreate(pickedPoint.value)
+}
+
+function createLocationAtPoint() {
+  if (pickedPoint.value) openLocationCreate(pickedPoint.value)
+}
+
+function afterMapEdit() {
+  pickedPoint.value = null
+  if (lastBox) onMapBbox(lastBox)
 }
 </script>
 
@@ -290,6 +335,24 @@ function onMapMarkerClick(marker: MapMarker) {
 .map-hint {
   margin: 8px 4px 0;
   font-size: 13px;
+  color: var(--ion-color-medium);
+}
+
+.map-search {
+  padding: 0 0 8px;
+}
+
+.pick-card {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.pick-coords {
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
   color: var(--ion-color-medium);
 }
 </style>

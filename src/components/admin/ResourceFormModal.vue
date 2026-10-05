@@ -140,6 +140,7 @@ export interface FormField {
   /** Кастомная подпись для результатов поиска (например, ФИО из нескольких полей) */
   displayFn?: (opt: any) => string
   valueField?: string
+  initialSelected?: (item: any) => any | null
 }
 
 const props = defineProps<{
@@ -182,7 +183,10 @@ onMounted(() => {
       form[field.key] = val
       searchQuery[field.key] = ''
       searchResults[field.key] = []
-      if (val && field.fetchOptions) {
+      const preset = val && props.item ? field.initialSelected?.(props.item) : null
+      if (preset) {
+        selectedItem[field.key] = preset
+      } else if (val && field.fetchOptions) {
         field.fetchOptions('').then((results) => {
           const found = results.find((r: any) => (r[field.valueField || 'id']) === val)
           if (found) selectedItem[field.key] = found
