@@ -892,13 +892,13 @@ onIonViewWillEnter(async () => {
 }
 
 .page-state ion-icon {
-  font-size: 40px;
+  font-size: var(--icon-hero);
   opacity: 0.4;
 }
 
 .page-state p {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-md);
 }
 
 .loading-spinner {
@@ -930,8 +930,8 @@ onIonViewWillEnter(async () => {
 
 .info-card-top h2 {
   margin: 0;
-  font-size: 20px;
-  font-weight: 700;
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
   color: var(--ion-text-color);
 }
 
@@ -946,8 +946,8 @@ onIonViewWillEnter(async () => {
   flex-shrink: 0;
   padding: 4px 12px;
   border-radius: 999px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
 }
 
 .edit-btn {
@@ -960,7 +960,7 @@ onIonViewWillEnter(async () => {
   border-radius: 50%;
   background: transparent;
   color: var(--ion-color-medium);
-  font-size: 16px;
+  font-size: var(--fs-lg);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -986,8 +986,8 @@ onIonViewWillEnter(async () => {
 }
 
 .form-field > label {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   color: var(--ion-text-color);
 }
 
@@ -1005,8 +1005,8 @@ onIonViewWillEnter(async () => {
   border: 1.5px solid var(--ion-border-color);
   border-radius: 10px;
   background: var(--ion-background-color);
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
   color: var(--ion-text-color);
 }
 
@@ -1020,7 +1020,7 @@ onIonViewWillEnter(async () => {
   border-radius: 50%;
   background: transparent;
   color: var(--ion-color-medium);
-  font-size: 16px;
+  font-size: var(--fs-lg);
   cursor: pointer;
 }
 
@@ -1044,11 +1044,10 @@ onIonViewWillEnter(async () => {
   border: none;
   border-radius: 8px;
   background: transparent;
-  font-size: 14px;
+  font-size: var(--fs-md);
   color: var(--ion-text-color);
   text-align: left;
   cursor: pointer;
-  font-family: inherit;
   transition: background 0.15s;
 }
 
@@ -1081,10 +1080,9 @@ onIonViewWillEnter(async () => {
   border: none;
   background: none;
   color: var(--ion-color-primary);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   cursor: pointer;
-  font-family: inherit;
 }
 
 .stage-edit {
@@ -1119,8 +1117,8 @@ onIonViewWillEnter(async () => {
 }
 
 .stage-date-label {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
   color: var(--ion-color-medium);
 }
 
@@ -1148,9 +1146,8 @@ onIonViewWillEnter(async () => {
   border: 1.5px dashed var(--ion-border-color);
   border-radius: 10px;
   background: transparent;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   color: var(--ion-color-medium);
   cursor: pointer;
   transition: all 0.15s;
@@ -1173,17 +1170,17 @@ onIonViewWillEnter(async () => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--ion-color-medium);
 }
 
 .info-meta-item ion-icon {
-  font-size: 15px;
+  font-size: var(--fs-lg);
 }
 
 .info-description {
   margin: 14px 0 0;
-  font-size: 14px;
+  font-size: var(--fs-md);
   line-height: 1.6;
   color: var(--ion-text-color);
   white-space: pre-wrap;
@@ -1191,21 +1188,21 @@ onIonViewWillEnter(async () => {
 
 .card-title {
   margin: 0 0 14px;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
   color: var(--ion-text-color);
 }
 
 .section-title {
   margin: 4px 0;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
   color: var(--ion-text-color);
 }
 
 .card-empty {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--ion-color-step-400);
 }
 
@@ -1249,21 +1246,21 @@ onIonViewWillEnter(async () => {
 
 .stage-name {
   display: block;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
   color: var(--ion-text-color);
 }
 
 .stage-time {
   display: block;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ion-color-medium);
   margin-top: 2px;
 }
 
 .stage-desc {
   margin: 6px 0 0;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--ion-color-medium);
   line-height: 1.5;
 }
@@ -1297,8 +1294,8 @@ onIonViewWillEnter(async () => {
 }
 
 .collective-name {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
   color: var(--ion-text-color);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1311,8 +1308,8 @@ onIonViewWillEnter(async () => {
   border-radius: 8px;
   background: rgba(var(--ion-color-primary-rgb), 0.08);
   color: var(--ion-color-primary);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
 }
 
 .collective-card-head-right {
@@ -1324,25 +1321,25 @@ onIonViewWillEnter(async () => {
 
 .form-static {
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
   color: var(--ion-text-color);
 }
 
 .form-hint {
   margin: 2px 0 0;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ion-color-medium);
 }
 
 .form-hint-warn {
   color: var(--ion-color-danger);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
 }
 
 .char-counter {
   align-self: flex-end;
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   color: var(--ion-color-step-400);
 }
 
@@ -1355,8 +1352,8 @@ onIonViewWillEnter(async () => {
 
 .my-attendance-label {
   display: block;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
   text-transform: uppercase;
   letter-spacing: 0.4px;
   color: var(--ion-color-step-400);
@@ -1378,10 +1375,9 @@ onIonViewWillEnter(async () => {
   border: none;
   background: none;
   color: var(--ion-color-primary);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   cursor: pointer;
-  font-family: inherit;
 }
 
 .attendance-list {
@@ -1394,8 +1390,8 @@ onIonViewWillEnter(async () => {
 .attendance-divider {
   margin: 6px 0 2px;
   padding: 0 2px;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-bold);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--ion-color-medium);
@@ -1423,8 +1419,8 @@ onIonViewWillEnter(async () => {
 .attendance-member {
   flex: 1 1 110px;
   min-width: 0;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
   color: var(--ion-text-color);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1484,7 +1480,7 @@ onIonViewWillEnter(async () => {
   border-radius: 50%;
   background: transparent;
   color: var(--ion-color-medium);
-  font-size: 14px;
+  font-size: var(--fs-md);
   cursor: pointer;
   transition: all 0.15s;
   flex-shrink: 0;
@@ -1521,8 +1517,7 @@ onIonViewWillEnter(async () => {
   border: 1.5px solid var(--ion-border-color);
   border-radius: 10px;
   background: var(--ion-card-background);
-  font-family: inherit;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--ion-text-color);
   padding: 9px 12px;
   outline: none;

@@ -250,8 +250,8 @@ async function go(path: string) {
 
 .admin-nav-group-label {
   padding: 0 12px 6px;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-bold);
   text-transform: uppercase;
   letter-spacing: 0.6px;
   color: var(--ion-color-step-400);
@@ -265,9 +265,8 @@ async function go(path: string) {
   border: none;
   background: transparent;
   border-radius: 10px;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
   color: var(--ion-color-medium);
   text-decoration: none;
   text-align: left;
@@ -276,7 +275,7 @@ async function go(path: string) {
 }
 
 .admin-nav-link ion-icon {
-  font-size: 17px;
+  font-size: var(--fs-xl);
 }
 
 .admin-nav-link:hover {
@@ -287,12 +286,12 @@ async function go(path: string) {
 .admin-nav-link--active {
   color: var(--ion-color-primary);
   background: rgba(var(--ion-color-primary-rgb), 0.08);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
 }
 
 .admin-nav-link--home {
   color: var(--ion-color-primary);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
 }
 
 .admin-main {
@@ -302,8 +301,8 @@ async function go(path: string) {
 
 .admin-title {
   margin: 0 0 16px;
-  font-size: 22px;
-  font-weight: 700;
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
   color: var(--ion-text-color);
 }
 

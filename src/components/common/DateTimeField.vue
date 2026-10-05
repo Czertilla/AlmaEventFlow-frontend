@@ -41,14 +41,14 @@
       <ion-icon :icon="mode === 'time' ? timeOutline : calendarOutline" />
     </button>
     <ion-modal :is-open="open" :class="['dtf-modal', `dtf-modal--${mode}`]" @did-dismiss="open = false">
-      <div class="dtf-sheet">
-        <div class="dtf-sheet-head">
-          <span class="dtf-sheet-title">{{ title ?? TITLES[mode] }}</span>
+      <div class="ui-sheet">
+        <div class="ui-sheet-head">
+          <h3 class="ui-sheet-title">{{ title ?? TITLES[mode] }}</h3>
           <button type="button" class="ui-icon-btn" aria-label="Закрыть" @click="open = false">
             <ion-icon :icon="closeOutline" />
           </button>
         </div>
-        <div class="dtf-sheet-body">
+        <div class="ui-sheet-body">
           <div class="dtf-quick">
             <button
               v-for="chip in chips"
@@ -80,7 +80,7 @@
             </div>
           </div>
         </div>
-        <div class="dtf-sheet-actions">
+        <div class="ui-sheet-actions">
           <button type="button" class="ui-btn ui-btn--ghost" @click="clear">Очистить</button>
           <button type="button" class="ui-btn ui-btn--primary" @click="confirm">Готово</button>
         </div>
@@ -324,7 +324,7 @@ function clear() {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 0.78em;
+  font-size: var(--fs-xs);
 }
 
 .dtf-input {
@@ -396,33 +396,6 @@ ion-modal.dtf-modal--time {
   }
 }
 
-.dtf-sheet {
-  display: flex;
-  flex-direction: column;
-  max-height: 94vh;
-  background: var(--ion-card-background);
-  color: var(--ion-text-color);
-}
-
-.dtf-sheet-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 16px 12px 4px 20px;
-}
-
-.dtf-sheet-title {
-  font-size: var(--fs-xl);
-  font-weight: var(--fw-bold);
-}
-
-.dtf-sheet-body {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  padding: 0 12px;
-}
-
 .dtf-quick {
   display: flex;
   flex-wrap: wrap;
@@ -477,12 +450,6 @@ ion-datetime.dtf-picker {
   --ion-color-step-500: var(--ion-color-medium);
   --ion-color-step-650: var(--ion-text-color);
   width: 100%;
-}
-
-.dtf-sheet-actions {
-  display: flex;
-  gap: 10px;
-  padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
 }
 
 </style>

@@ -134,12 +134,11 @@ function roleLabel(collectiveId: string): string {
   border: 1.5px solid var(--ion-border-color);
   border-radius: 10px;
   background: transparent;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
   color: var(--ion-color-medium);
   cursor: pointer;
   transition: all 0.2s;
-  font-family: inherit;
 }
 
 .filter-chip:hover {
@@ -166,12 +165,12 @@ function roleLabel(collectiveId: string): string {
 }
 
 .filter-chip-name {
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
 }
 
 .filter-chip-role {
-  font-size: 10px;
-  font-weight: 500;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-medium);
   color: var(--ion-color-step-400);
 }
 
@@ -187,7 +186,7 @@ function roleLabel(collectiveId: string): string {
 }
 
 .filters-empty {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--ion-color-step-400);
 }
 
@@ -199,8 +198,8 @@ function roleLabel(collectiveId: string): string {
 
 .filters-sublabel {
   display: block;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
   text-transform: uppercase;
   letter-spacing: 0.4px;
   color: var(--ion-color-step-400);
@@ -231,9 +230,8 @@ function roleLabel(collectiveId: string): string {
   border: 1.5px solid var(--ion-border-color);
   border-radius: 10px;
   background: var(--ion-background-color);
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
   color: var(--ion-text-color);
   outline: none;
   cursor: pointer;

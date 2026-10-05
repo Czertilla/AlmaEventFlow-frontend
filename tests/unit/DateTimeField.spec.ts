@@ -374,6 +374,6 @@ describe('DateTimeField picker', () => {
   test('an explicit title replaces the default one', async () => {
     const wrapper = await opened({ modelValue: '', mode: 'datetime', title: 'Окончание этапа' })
 
-    expect(wrapper.get('.dtf-sheet-title').text()).toBe('Окончание этапа')
+    expect(wrapper.get('.ui-sheet-title').text()).toBe('Окончание этапа')
   })
 })

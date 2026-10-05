@@ -469,22 +469,6 @@ function handleScroll() {
      поверх нашей компенсации, из-за чего рывок не исчезает, а просто меняет
      форму. Отключаем, чтобы источник истины был ровно один. */
   overflow-anchor: none;
-  /* Custom scrollbar */
-  scrollbar-width: thin;
-  scrollbar-color: var(--ion-color-step-200) transparent;
-}
-
-.event-list::-webkit-scrollbar {
-  width: 4px;
-}
-
-.event-list::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.event-list::-webkit-scrollbar-thumb {
-  background: var(--ion-color-step-200);
-  border-radius: 2px;
 }
 
 /* sticky month-separator — висит над списком, затухает при остановке скролла */
@@ -510,8 +494,8 @@ function handleScroll() {
   padding: 4px 14px;
   border-radius: 999px;
   background: var(--ion-background-color);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
   color: var(--ion-color-medium);
   text-transform: capitalize;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
@@ -542,10 +526,10 @@ function handleScroll() {
 }
 
 .end-label {
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   color: var(--ion-color-step-400);
   white-space: nowrap;
-  font-weight: 500;
+  font-weight: var(--fw-medium);
 }
 
 /* Низ списка: сообщение + распорка до самого низа экрана */
@@ -559,13 +543,13 @@ function handleScroll() {
 }
 
 .list-end ion-icon {
-  font-size: 32px;
+  font-size: var(--icon-xl);
   opacity: 0.5;
 }
 
 .list-end span {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
 }
 
 /* Распорка в самом низу — даёт последней карточке дойти до верха окна списка */

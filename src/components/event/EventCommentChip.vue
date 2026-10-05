@@ -103,9 +103,8 @@ function save() {
   border: 1.5px solid var(--ion-border-color);
   background: transparent;
   color: var(--ion-color-medium);
-  font-size: 12px;
-  font-weight: 600;
-  font-family: inherit;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
   cursor: pointer;
   transition: all 0.15s ease;
   line-height: 1;
@@ -113,7 +112,7 @@ function save() {
 }
 
 .comment-chip ion-icon {
-  font-size: 14px;
+  font-size: var(--fs-md);
   flex-shrink: 0;
 }
 
@@ -161,7 +160,7 @@ function save() {
     padding: 7px;
   }
   .comment-chip ion-icon {
-    font-size: 16px;
+    font-size: var(--fs-lg);
   }
   .comment-chip-label {
     display: none;
@@ -191,8 +190,8 @@ function save() {
 
 .comment-editor-header h3 {
   margin: 0;
-  font-size: 17px;
-  font-weight: 700;
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
   color: var(--ion-text-color);
 }
 
@@ -206,7 +205,7 @@ function save() {
   border-radius: 50%;
   background: var(--ion-background-color);
   color: var(--ion-color-medium);
-  font-size: 18px;
+  font-size: var(--fs-xl);
   cursor: pointer;
   transition: background 0.15s;
 }
@@ -220,8 +219,7 @@ function save() {
   border: 1.5px solid var(--ion-border-color);
   border-radius: 12px;
   padding: 12px 14px;
-  font-size: 15px;
-  font-family: inherit;
+  font-size: var(--fs-md);
   color: var(--ion-text-color);
   background: var(--ion-background-color);
   resize: vertical;
@@ -247,7 +245,7 @@ function save() {
 }
 
 .comment-editor-count {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ion-color-step-400);
 }
 
@@ -260,9 +258,8 @@ function save() {
   padding: 10px 18px;
   border-radius: 10px;
   border: none;
-  font-size: 14px;
-  font-weight: 600;
-  font-family: inherit;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }

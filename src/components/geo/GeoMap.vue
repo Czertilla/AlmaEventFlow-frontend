@@ -251,7 +251,7 @@ defineExpose({
   border-radius: 50%;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.5);
   color: #ffffff;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   line-height: 1;
 }
 
@@ -267,7 +267,7 @@ defineExpose({
   border: none;
   background: none;
   box-shadow: none;
-  font-size: 22px;
+  font-size: var(--fs-2xl);
 }
 
 :deep(.geo-marker-popup-wrap .leaflet-popup-content-wrapper) {
@@ -294,8 +294,8 @@ defineExpose({
 
 :deep(.geo-marker-popup-title) {
   overflow: hidden;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   line-height: 1.3;
   color: var(--ion-text-color);
   text-overflow: ellipsis;
@@ -315,9 +315,8 @@ defineExpose({
   border-radius: 8px;
   background: var(--ion-card-background);
   color: var(--ion-text-color);
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
   cursor: pointer;
 }
 

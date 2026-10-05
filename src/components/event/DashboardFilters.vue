@@ -114,8 +114,8 @@ function selectAllRoles() {
 }
 
 .filter-row-label {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
   color: var(--ion-color-medium);
   flex-shrink: 0;
 }
@@ -131,11 +131,10 @@ function selectAllRoles() {
   border: 1.5px solid var(--ion-border-color);
   border-radius: 999px;
   background: transparent;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
   color: var(--ion-color-medium);
   cursor: pointer;
-  font-family: inherit;
   transition: all 0.15s;
 }
 
@@ -147,7 +146,7 @@ function selectAllRoles() {
 
 .range-dash {
   color: var(--ion-color-step-400);
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .range-date {
@@ -165,11 +164,10 @@ function selectAllRoles() {
   border: 1.5px solid var(--ion-border-color);
   border-radius: 12px;
   background: transparent;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   color: var(--ion-color-medium);
   cursor: pointer;
-  font-family: inherit;
   transition: all 0.15s;
 }
 

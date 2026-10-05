@@ -311,15 +311,15 @@ onMounted(async () => {
 .back-link {
   display: inline-flex; align-items: center; gap: 6px; margin-bottom: 12px;
   border: none; background: transparent; color: var(--ion-color-primary);
-  font-weight: 600; font-size: 14px; cursor: pointer; font-family: inherit;
+  font-weight: var(--fw-semibold); font-size: var(--fs-md); cursor: pointer; 
 }
-.dossier-name { margin: 0 0 14px; font-size: 20px; font-weight: 700; }
+.dossier-name { margin: 0 0 14px; font-size: var(--fs-2xl); font-weight: var(--fw-bold); }
 .state-box { display: flex; justify-content: center; padding: 60px 0; }
 .tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
 .tab {
   padding: 8px 16px; border: 1.5px solid var(--ion-border-color); border-radius: 999px;
-  background: transparent; font-weight: 600; font-size: 13px; color: var(--ion-color-medium);
-  cursor: pointer; font-family: inherit; transition: all 0.15s;
+  background: transparent; font-weight: var(--fw-semibold); font-size: var(--fs-sm); color: var(--ion-color-medium);
+  cursor: pointer; transition: all 0.15s;
 }
 .tab--active { border-color: var(--ion-color-primary); color: var(--ion-color-primary); background: rgba(var(--ion-color-primary-rgb), 0.08); }
 .card {
@@ -328,13 +328,12 @@ onMounted(async () => {
 }
 .field { display: flex; flex-direction: column; gap: 4px; }
 .field--row { flex-direction: row; align-items: center; justify-content: space-between; }
-.field > label { font-size: 13px; font-weight: 600; color: var(--ion-text-color); }
+.field > label { font-size: var(--fs-sm); font-weight: var(--fw-semibold); color: var(--ion-text-color); }
 .native-input {
   width: 100%; padding: 10px 12px; border: 1.5px solid var(--ion-border-color);
-  border-radius: 10px; background: var(--ion-background-color); color: var(--ion-text-color);
-  font-family: inherit; font-size: 14px;
+  border-radius: 10px; background: var(--ion-background-color); color: var(--ion-text-color);font-size: var(--fs-md);
 }
-.hint { margin: 0; font-size: 13px; color: var(--ion-color-medium); }
+.hint { margin: 0; font-size: var(--fs-sm); color: var(--ion-color-medium); }
 .hint--warn { color: var(--ion-color-warning, #d9822b); }
 .contact { display: flex; flex-direction: column; gap: 2px; }
 .contact-row { display: flex; align-items: center; gap: 8px; }
@@ -342,13 +341,13 @@ onMounted(async () => {
 .contact-value { flex: 1; }
 .chip-toggle {
   width: 34px; height: 34px; border-radius: 8px; border: 1.5px solid var(--ion-border-color);
-  background: transparent; color: var(--ion-color-medium); cursor: pointer; font-size: 16px;
+  background: transparent; color: var(--ion-color-medium); cursor: pointer; font-size: var(--fs-lg);
 }
 .chip-toggle--on { border-color: var(--ion-color-warning, #f0b429); color: var(--ion-color-warning, #f0b429); }
 .icon-btn {
   display: flex; align-items: center; justify-content: center; width: 34px; height: 34px;
   border: none; border-radius: 8px; background: transparent; color: var(--ion-color-medium);
-  font-size: 18px; cursor: pointer;
+  font-size: var(--fs-xl); cursor: pointer;
 }
 .icon-btn--danger:hover { color: var(--ion-color-danger); }
 </style>

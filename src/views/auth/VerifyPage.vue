@@ -160,19 +160,19 @@ onMounted(() => {
 }
 
 .auth-logo ion-icon {
-  font-size: 32px;
+  font-size: var(--icon-xl);
   color: white;
 }
 
 .auth-brand h1 {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
   margin: 0 0 4px;
   color: var(--ion-text-color);
 }
 
 .auth-subtitle {
-  font-size: 14px;
+  font-size: var(--fs-md);
   color: var(--ion-color-medium);
   margin: 0;
 }
@@ -216,12 +216,12 @@ onMounted(() => {
 }
 
 .verify-icon ion-icon {
-  font-size: 36px;
+  font-size: var(--icon-hero);
   color: var(--ion-color-primary);
 }
 
 .verify-text {
-  font-size: 15px;
+  font-size: var(--fs-md);
   color: var(--ion-color-medium);
   line-height: 1.5;
   margin: 0;
@@ -233,8 +233,8 @@ onMounted(() => {
   gap: 8px;
   padding: 10px 16px;
   border-radius: 10px;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
   color: var(--ion-color-medium);
   background: var(--ion-background-color);
 }
@@ -244,7 +244,7 @@ onMounted(() => {
 }
 
 .verify-timer ion-icon {
-  font-size: 18px;
+  font-size: var(--fs-xl);
 }
 
 .auth-btn {
@@ -254,8 +254,8 @@ onMounted(() => {
   border-radius: 12px;
   background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
   color: white;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
   cursor: pointer;
   transition: all 0.2s;
   display: flex;

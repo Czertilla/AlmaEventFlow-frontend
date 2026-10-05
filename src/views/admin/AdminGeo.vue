@@ -347,7 +347,7 @@ function afterMapEdit() {
 
 .map-hint {
   margin: 8px 4px 0;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--ion-color-medium);
 }
 
@@ -364,7 +364,7 @@ function afterMapEdit() {
 }
 
 .pick-coords {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-variant-numeric: tabular-nums;
   color: var(--ion-color-medium);
 }

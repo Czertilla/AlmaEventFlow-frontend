@@ -717,15 +717,15 @@ onIonViewWillEnter(initLoad)
 }
 
 .home-greeting {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
   margin: 0;
   color: var(--ion-text-color);
 }
 
 .home-date {
   margin: 4px 0 0;
-  font-size: 14px;
+  font-size: var(--fs-md);
   color: var(--ion-color-medium);
 }
 
@@ -745,7 +745,6 @@ onIonViewWillEnter(initLoad)
   background: rgba(255, 184, 0, 0.14);
   color: var(--ion-color-warning);
   cursor: pointer;
-  font-family: inherit;
   transition: transform 0.15s, box-shadow 0.15s;
 }
 
@@ -755,7 +754,7 @@ onIonViewWillEnter(initLoad)
 }
 
 .pending-chip ion-icon {
-  font-size: 20px;
+  font-size: var(--fs-xl);
   flex-shrink: 0;
 }
 
@@ -767,13 +766,13 @@ onIonViewWillEnter(initLoad)
 }
 
 .pending-chip-num {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
 }
 
 .pending-chip-label {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
   text-transform: uppercase;
   letter-spacing: 0.3px;
   opacity: 0.85;
@@ -790,15 +789,15 @@ onIonViewWillEnter(initLoad)
 }
 
 .stat-num {
-  font-size: 20px;
-  font-weight: 700;
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
   color: var(--ion-color-primary);
 }
 
 .stat-label {
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   color: var(--ion-color-medium);
-  font-weight: 500;
+  font-weight: var(--fw-medium);
 }
 
 .home-content {
@@ -852,8 +851,8 @@ onIonViewWillEnter(initLoad)
 
 .section-card-header h3 {
   margin: 0;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
   color: var(--ion-text-color);
 }
 
@@ -867,8 +866,8 @@ onIonViewWillEnter(initLoad)
   border-radius: 11px;
   background: rgba(var(--ion-color-primary-rgb), 0.1);
   color: var(--ion-color-primary);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
 }
 
 .events-section {
@@ -895,7 +894,7 @@ onIonViewWillEnter(initLoad)
 }
 
 .events-empty ion-icon {
-  font-size: 40px;
+  font-size: var(--icon-hero);
   opacity: 0.4;
 }
 
@@ -906,7 +905,7 @@ onIonViewWillEnter(initLoad)
 
 .events-empty p {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-md);
 }
 
 /* Скелетон списка мероприятий -- форма .event-card (см. EventPreview.vue) */

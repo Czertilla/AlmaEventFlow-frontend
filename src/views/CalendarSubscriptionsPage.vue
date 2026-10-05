@@ -281,8 +281,8 @@ onIonViewWillEnter(() => store.refresh())
 
 .page-title {
   margin: 4px 0 0;
-  font-size: 22px;
-  font-weight: 700;
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
   color: var(--ion-text-color);
 }
 
@@ -296,14 +296,14 @@ onIonViewWillEnter(() => store.refresh())
 }
 
 .calsub-intro ion-icon {
-  font-size: 22px;
+  font-size: var(--fs-2xl);
   color: var(--ion-color-primary);
   flex-shrink: 0;
 }
 
 .calsub-intro p {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   line-height: 1.5;
   color: var(--ion-color-medium);
 }
@@ -317,8 +317,8 @@ onIonViewWillEnter(() => store.refresh())
 .calsub-section-title {
   margin: 0;
   padding: 0 4px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--ion-color-medium);
@@ -345,7 +345,7 @@ onIonViewWillEnter(() => store.refresh())
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: var(--fs-xl);
   flex-shrink: 0;
 }
 
@@ -358,13 +358,13 @@ onIonViewWillEnter(() => store.refresh())
 }
 
 .calsub-row-label {
-  font-size: 15px;
-  font-weight: 500;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-medium);
   color: var(--ion-text-color);
 }
 
 .calsub-row-hint {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ion-color-medium);
 }
 
@@ -396,7 +396,7 @@ onIonViewWillEnter(() => store.refresh())
 .calsub-url code {
   flex: 1;
   min-width: 0;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -413,7 +413,7 @@ onIonViewWillEnter(() => store.refresh())
   display: flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ion-color-medium);
 }
 
@@ -429,7 +429,7 @@ onIonViewWillEnter(() => store.refresh())
   justify-content: center;
   gap: 8px;
   padding: 24px;
-  font-size: 14px;
+  font-size: var(--fs-md);
   color: var(--ion-color-medium);
   text-align: center;
 }

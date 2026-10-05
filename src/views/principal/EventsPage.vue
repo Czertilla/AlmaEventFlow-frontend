@@ -997,7 +997,7 @@ useLayoutAddButton('Новое мероприятие', openCreate)
 .ev-search-icon {
   position: absolute;
   left: 14px;
-  font-size: 18px;
+  font-size: var(--fs-xl);
   color: var(--ion-color-medium);
   pointer-events: none;
 }
@@ -1009,8 +1009,7 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   border: 1.5px solid var(--ion-border-color);
   border-radius: 12px;
   background: var(--ion-card-background);
-  font-family: inherit;
-  font-size: 14px;
+  font-size: var(--fs-md);
   color: var(--ion-text-color);
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -1033,7 +1032,7 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   border-radius: 50%;
   background: transparent;
   color: var(--ion-color-medium);
-  font-size: 15px;
+  font-size: var(--fs-lg);
   cursor: pointer;
 }
 
@@ -1060,16 +1059,15 @@ useLayoutAddButton('Новое мероприятие', openCreate)
 }
 
 .ev-sort-icon {
-  font-size: 17px;
+  font-size: var(--fs-xl);
   color: var(--ion-color-medium);
 }
 
 .ev-sort-select {
   border: none;
   background: transparent;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
   color: var(--ion-text-color);
   outline: none;
   cursor: pointer;
@@ -1086,7 +1084,7 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   border-radius: 8px;
   background: transparent;
   color: var(--ion-color-medium);
-  font-size: 16px;
+  font-size: var(--fs-lg);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1106,13 +1104,13 @@ useLayoutAddButton('Новое мероприятие', openCreate)
 }
 
 .page-state ion-icon {
-  font-size: 40px;
+  font-size: var(--icon-hero);
   opacity: 0.4;
 }
 
 .page-state p {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-md);
 }
 
 .loading-spinner {
@@ -1144,7 +1142,6 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   background: var(--ion-card-background);
   box-shadow: var(--ion-card-shadow);
   cursor: pointer;
-  font-family: inherit;
   text-align: left;
   transition: transform 0.15s, box-shadow 0.15s;
 }
@@ -1170,8 +1167,8 @@ useLayoutAddButton('Новое мероприятие', openCreate)
 }
 
 .event-row-name {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
   color: var(--ion-text-color);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1179,13 +1176,13 @@ useLayoutAddButton('Новое мероприятие', openCreate)
 }
 
 .event-row-date {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ion-color-medium);
 }
 
 .event-row-badge {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
   flex-shrink: 0;
 }
 
@@ -1204,8 +1201,8 @@ useLayoutAddButton('Новое мероприятие', openCreate)
 }
 
 .form-field > label {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   color: var(--ion-text-color);
   display: flex;
   align-items: center;
@@ -1213,8 +1210,8 @@ useLayoutAddButton('Новое мероприятие', openCreate)
 }
 
 .auto-badge {
-  font-size: 10px;
-  font-weight: 700;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-bold);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   padding: 2px 8px;
@@ -1232,19 +1229,19 @@ useLayoutAddButton('Новое мероприятие', openCreate)
 
 .form-hint {
   margin: 4px 0 0;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ion-color-medium);
 }
 
 .char-counter {
   align-self: flex-end;
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   color: var(--ion-color-step-400);
 }
 
 .form-hint-warn {
   color: var(--ion-color-danger);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
 }
 
 .stage-list {
@@ -1287,8 +1284,8 @@ useLayoutAddButton('Новое мероприятие', openCreate)
 }
 
 .stage-date-label {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
   color: var(--ion-color-medium);
 }
 
@@ -1307,8 +1304,8 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   position: absolute;
   top: -7px;
   right: 12px;
-  font-size: 10px;
-  font-weight: 700;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-bold);
   text-transform: uppercase;
   letter-spacing: 0.4px;
   padding: 1px 8px;
@@ -1327,7 +1324,7 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   border-radius: 50%;
   background: transparent;
   color: var(--ion-color-medium);
-  font-size: 14px;
+  font-size: var(--fs-md);
   cursor: pointer;
   transition: all 0.15s;
   flex-shrink: 0;
@@ -1347,9 +1344,8 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   border: 1.5px dashed var(--ion-border-color);
   border-radius: 10px;
   background: transparent;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   color: var(--ion-color-medium);
   cursor: pointer;
   transition: all 0.15s;
@@ -1370,8 +1366,8 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   border: 1.5px solid var(--ion-border-color);
   border-radius: 10px;
   background: var(--ion-background-color);
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
   color: var(--ion-text-color);
 }
 
@@ -1385,7 +1381,7 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   border-radius: 50%;
   background: transparent;
   color: var(--ion-color-medium);
-  font-size: 16px;
+  font-size: var(--fs-lg);
   cursor: pointer;
 }
 
@@ -1409,11 +1405,10 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   border: none;
   border-radius: 8px;
   background: transparent;
-  font-size: 14px;
+  font-size: var(--fs-md);
   color: var(--ion-text-color);
   text-align: left;
   cursor: pointer;
-  font-family: inherit;
   transition: background 0.15s;
 }
 
@@ -1429,7 +1424,7 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   padding: 12px 14px;
   border-radius: 12px;
   background: var(--ion-background-color);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--ion-color-medium);
 }
 
@@ -1437,10 +1432,9 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   border: none;
   background: none;
   color: var(--ion-color-primary);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   cursor: pointer;
-  font-family: inherit;
   flex-shrink: 0;
 }
 
@@ -1466,11 +1460,10 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   border: 1.5px solid var(--ion-border-color);
   border-radius: 999px;
   background: transparent;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
   color: var(--ion-color-medium);
   cursor: pointer;
-  font-family: inherit;
   transition: all 0.15s;
 }
 
@@ -1497,7 +1490,7 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   gap: 10px;
   padding: 8px 10px;
   border-radius: 8px;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--ion-text-color);
   cursor: pointer;
 }
@@ -1512,7 +1505,7 @@ useLayoutAddButton('Новое мероприятие', openCreate)
 
 .member-roles {
   margin-left: auto;
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   color: var(--ion-color-step-400);
 }
 
@@ -1533,7 +1526,7 @@ useLayoutAddButton('Новое мероприятие', openCreate)
 .source-input-icon {
   position: absolute;
   left: 12px;
-  font-size: 16px;
+  font-size: var(--fs-lg);
   color: var(--ion-color-medium);
   pointer-events: none;
 }
@@ -1556,7 +1549,7 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   border-radius: 8px;
   background: transparent;
   color: var(--ion-color-medium);
-  font-size: 16px;
+  font-size: var(--fs-lg);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1581,16 +1574,15 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   border: 1.5px solid var(--ion-border-color);
   border-radius: 999px;
   background: transparent;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
   color: var(--ion-color-medium);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .source-filter-chip ion-icon {
-  font-size: 14px;
+  font-size: var(--fs-md);
 }
 
 .source-filter-chip--active {
@@ -1605,9 +1597,8 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   border: 1.5px solid var(--ion-border-color);
   border-radius: 999px;
   background: transparent;
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
   color: var(--ion-color-medium);
   cursor: pointer;
   outline: none;
@@ -1638,8 +1629,7 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   border: none;
   border-radius: 8px;
   background: transparent;
-  font-family: inherit;
-  font-size: 14px;
+  font-size: var(--fs-md);
   color: var(--ion-text-color);
   text-align: left;
   cursor: pointer;
@@ -1651,7 +1641,7 @@ useLayoutAddButton('Новое мероприятие', openCreate)
 }
 
 .source-suggestion-icon {
-  font-size: 18px;
+  font-size: var(--fs-xl);
   flex-shrink: 0;
 }
 
@@ -1672,8 +1662,8 @@ useLayoutAddButton('Новое мероприятие', openCreate)
 }
 
 .source-suggestion-kind {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
   text-transform: uppercase;
   letter-spacing: 0.4px;
   color: var(--ion-color-step-400);
@@ -1684,7 +1674,7 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   margin: 0;
   padding: 12px;
   text-align: center;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--ion-color-medium);
 }
 
@@ -1696,12 +1686,12 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   border: 1.5px solid var(--ion-color-primary);
   border-radius: 10px;
   background: rgba(var(--ion-color-primary-rgb), 0.06);
-  font-size: 14px;
+  font-size: var(--fs-md);
   color: var(--ion-text-color);
 }
 
 .source-selected > ion-icon {
-  font-size: 18px;
+  font-size: var(--fs-xl);
   color: var(--ion-color-primary);
   flex-shrink: 0;
 }
@@ -1709,15 +1699,15 @@ useLayoutAddButton('Новое мероприятие', openCreate)
 .source-selected-name {
   flex: 1;
   min-width: 0;
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .source-selected-kind {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
   text-transform: uppercase;
   letter-spacing: 0.4px;
   color: var(--ion-color-primary);
@@ -1734,7 +1724,7 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   border-radius: 50%;
   background: transparent;
   color: var(--ion-color-medium);
-  font-size: 16px;
+  font-size: var(--fs-lg);
   cursor: pointer;
   flex-shrink: 0;
 }
@@ -1755,8 +1745,8 @@ useLayoutAddButton('Новое мероприятие', openCreate)
 }
 
 .participants-editor-title {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
   color: var(--ion-color-medium);
 }
 </style>

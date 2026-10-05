@@ -39,8 +39,8 @@ const strength = computed(() => passwordStrength(props.password))
 }
 
 .strength-label {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
   min-width: 56px;
   text-align: right;
 }

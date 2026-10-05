@@ -233,9 +233,8 @@ function onCollectiveChange(id: string) {
   border: none;
   outline: none;
   background: transparent;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
   color: var(--ion-text-color);
   padding: 10px 22px 10px 0;
   cursor: pointer;
@@ -252,7 +251,7 @@ function onCollectiveChange(id: string) {
 .collective-select-arrow {
   position: absolute;
   right: 10px;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--ion-color-medium);
   pointer-events: none;
 }
@@ -276,8 +275,8 @@ function onCollectiveChange(id: string) {
 }
 
 .collective-title-name {
-  font-size: 22px;
-  font-weight: 700;
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
   color: var(--ion-text-color);
   overflow: hidden;
   white-space: nowrap;
@@ -328,13 +327,13 @@ function onCollectiveChange(id: string) {
 
 .collective-select--toolbar .collective-select-input {
   padding: 0;
-  font-size: 17px;
+  font-size: var(--fs-xl);
   max-width: 200px;
 }
 
 .collective-select--toolbar .collective-select-arrow {
   position: static;
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .principal-tabs {
@@ -375,9 +374,8 @@ function onCollectiveChange(id: string) {
   border: none;
   border-radius: 9px;
   background: transparent;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   color: var(--ion-color-medium);
   text-decoration: none;
   white-space: nowrap;
@@ -386,7 +384,7 @@ function onCollectiveChange(id: string) {
 }
 
 .principal-tab ion-icon {
-  font-size: 15px;
+  font-size: var(--fs-lg);
 }
 
 .principal-tab:hover {
@@ -417,9 +415,8 @@ function onCollectiveChange(id: string) {
   border-radius: 12px;
   background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
   color: white;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -430,6 +427,6 @@ function onCollectiveChange(id: string) {
 }
 
 .add-btn-desktop ion-icon {
-  font-size: 17px;
+  font-size: var(--fs-xl);
 }
 </style>

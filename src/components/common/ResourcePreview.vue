@@ -28,8 +28,8 @@ const fallback = computed(() => (props.id ? `#${shortId(props.id)}` : '—'))
 
 .resource-preview--missing {
   color: var(--ion-color-medium);
-  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
-  font-size: 0.9em;
+  font-family: var(--font-mono);
+  font-size: var(--fs-md);
 }
 
 .resource-preview-skeleton {

@@ -198,14 +198,14 @@ async function handleSubmit() {
 }
 
 .auth-brand h1 {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
   margin: 0 0 4px;
   color: var(--ion-text-color);
 }
 
 .auth-subtitle {
-  font-size: 14px;
+  font-size: var(--fs-md);
   color: var(--ion-color-medium);
   margin: 0;
 }
@@ -239,8 +239,8 @@ async function handleSubmit() {
 }
 
 .field-label {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   color: var(--ion-text-color);
 }
 
@@ -264,7 +264,7 @@ async function handleSubmit() {
 }
 
 .field-icon {
-  font-size: 18px;
+  font-size: var(--fs-xl);
   color: var(--ion-color-medium);
   flex-shrink: 0;
 }
@@ -274,10 +274,9 @@ async function handleSubmit() {
   border: none;
   outline: none;
   background: transparent;
-  font-size: 15px;
+  font-size: var(--fs-md);
   padding: 14px 0;
   color: var(--ion-text-color);
-  font-family: inherit;
 }
 
 .field-input input::placeholder {
@@ -292,12 +291,12 @@ async function handleSubmit() {
   background: rgba(255, 71, 87, 0.1);
   border-radius: 10px;
   color: var(--ion-color-danger);
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
 }
 
 .auth-error ion-icon {
-  font-size: 18px;
+  font-size: var(--fs-xl);
   flex-shrink: 0;
 }
 
@@ -308,8 +307,8 @@ async function handleSubmit() {
   border-radius: 12px;
   background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
   color: white;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
@@ -350,7 +349,7 @@ async function handleSubmit() {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 30px;
+  font-size: var(--icon-xl);
 }
 
 .auth-done-icon--error {
@@ -360,7 +359,7 @@ async function handleSubmit() {
 
 .auth-done-text {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-md);
   line-height: 1.5;
   color: var(--ion-color-medium);
 }

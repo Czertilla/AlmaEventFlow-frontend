@@ -105,8 +105,8 @@ const weekDaysRow = computed(() => {
 
 .mini-title {
   flex: 1;
-  font-weight: 600;
-  font-size: 14px;
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-md);
   text-transform: capitalize;
   color: var(--ion-text-color);
   text-align: center;
@@ -116,8 +116,8 @@ const weekDaysRow = computed(() => {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   text-align: center;
-  font-size: 11px;
-  font-weight: 500;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-medium);
   color: var(--ion-color-medium);
   padding: 4px 0 2px;
 }
@@ -143,8 +143,8 @@ const weekDaysRow = computed(() => {
   height: 30px;
   border-radius: 50%;
   border: 1.5px solid transparent;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
   color: var(--ion-text-color);
   transition: background 0.15s, border-color 0.15s;
 }
@@ -156,14 +156,14 @@ const weekDaysRow = computed(() => {
 .mini-day-circle--today {
   border-color: var(--ion-color-primary);
   color: var(--ion-color-primary);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
 }
 
 .mini-day-circle--selected {
   background: var(--ion-color-primary);
   border-color: var(--ion-color-primary);
   color: #fff;
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
 }
 
 .mini-day-dot {

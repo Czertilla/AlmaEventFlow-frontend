@@ -171,7 +171,7 @@ onBeforeUnmount(() => {
 
 .ass-search-icon {
   flex-shrink: 0;
-  font-size: 18px;
+  font-size: var(--fs-xl);
   color: var(--ion-color-medium);
 }
 
@@ -183,8 +183,7 @@ onBeforeUnmount(() => {
   outline: none;
   background: transparent;
   color: var(--ion-text-color);
-  font-family: inherit;
-  font-size: 15px;
+  font-size: var(--fs-md);
 }
 
 .ass-input::placeholder {
@@ -208,7 +207,7 @@ onBeforeUnmount(() => {
   border-radius: 9px;
   background: rgba(var(--ion-color-primary-rgb), 0.12);
   color: var(--ion-color-primary);
-  font-size: 17px;
+  font-size: var(--fs-xl);
 }
 
 .ass-text {
@@ -221,14 +220,14 @@ onBeforeUnmount(() => {
 
 .ass-title {
   overflow: hidden;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .ass-sub {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ion-color-medium);
 }
 
@@ -243,7 +242,7 @@ onBeforeUnmount(() => {
   border-radius: 8px;
   background: transparent;
   color: var(--ion-color-medium);
-  font-size: 18px;
+  font-size: var(--fs-xl);
   cursor: pointer;
 }
 

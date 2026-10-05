@@ -84,16 +84,15 @@ function handleToggle() {
   padding: 6px 12px;
   border-radius: 999px;
   border: 1.5px solid transparent;
-  font-size: 12px;
-  font-weight: 600;
-  font-family: inherit;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
   cursor: pointer;
   transition: all 0.15s ease;
   line-height: 1;
 }
 
 .att-chip ion-icon {
-  font-size: 15px;
+  font-size: var(--fs-lg);
 }
 
 .att-chip-spinner {
@@ -187,7 +186,7 @@ function handleToggle() {
   background: var(--ion-color-step-50, #f4f5f8);
   border: 1.5px solid var(--ion-border-color);
   color: var(--ion-color-medium);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   flex-shrink: 0;
 }
 
@@ -197,7 +196,7 @@ function handleToggle() {
     padding: 7px;
   }
   .att-chip ion-icon {
-    font-size: 17px;
+    font-size: var(--fs-xl);
   }
   .att-chip-label {
     display: none;

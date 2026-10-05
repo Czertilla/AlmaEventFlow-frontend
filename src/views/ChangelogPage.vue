@@ -174,8 +174,8 @@ onMounted(async () => {
 
 .page-title {
   margin: 4px 0 0;
-  font-size: 22px;
-  font-weight: 700;
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
   color: var(--ion-text-color);
 }
 
@@ -189,7 +189,7 @@ onMounted(async () => {
 }
 
 .changelog-status--error {
-  font-size: 14px;
+  font-size: var(--fs-md);
 }
 
 .changelog-releases {
@@ -207,9 +207,8 @@ onMounted(async () => {
   border: 1.5px solid var(--ion-border-color);
   border-radius: 12px;
   background: var(--ion-card-background);
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
   color: var(--ion-color-medium);
   cursor: pointer;
   transition: all 0.15s;
@@ -247,12 +246,12 @@ onMounted(async () => {
   border-radius: 999px;
   background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
   color: white;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
 }
 
 .release-date {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--ion-color-medium);
 }
 
@@ -265,8 +264,8 @@ onMounted(async () => {
 .release-group-title {
   margin: 0;
   padding: 0 2px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--ion-color-medium);
@@ -284,7 +283,7 @@ onMounted(async () => {
 .release-list li {
   position: relative;
   padding-left: 16px;
-  font-size: 14px;
+  font-size: var(--fs-md);
   line-height: 1.5;
   color: var(--ion-text-color);
 }
@@ -301,6 +300,6 @@ onMounted(async () => {
 }
 
 .release-list :deep(strong) {
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
 }
 </style>

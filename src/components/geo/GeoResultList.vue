@@ -129,7 +129,7 @@ function subtitle(r: GeoResult): string {
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  font-size: 18px;
+  font-size: var(--fs-xl);
 }
 
 .grl-tile--location {
@@ -157,8 +157,8 @@ function subtitle(r: GeoResult): string {
 
 .grl-title {
   overflow: hidden;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
   line-height: 1.3;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -170,7 +170,7 @@ function subtitle(r: GeoResult): string {
 
 .grl-sub {
   overflow: hidden;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1.3;
   color: var(--ion-color-medium);
   text-overflow: ellipsis;
@@ -188,15 +188,14 @@ function subtitle(r: GeoResult): string {
   border-radius: 999px;
   background: transparent;
   color: var(--ion-color-primary);
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
   cursor: pointer;
   transition: background 0.12s, border-color 0.12s;
 }
 
 .grl-action ion-icon {
-  font-size: 16px;
+  font-size: var(--fs-lg);
 }
 
 .grl-action:hover,
@@ -212,7 +211,7 @@ function subtitle(r: GeoResult): string {
   justify-content: center;
   gap: 8px;
   padding: 14px 12px;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--ion-color-medium);
 }
 

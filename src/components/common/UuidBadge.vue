@@ -33,8 +33,8 @@ async function copy() {
   border-radius: 6px;
   background: var(--ion-background-color);
   color: var(--ion-color-medium);
-  font-size: 11px;
-  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: var(--fs-2xs);
+  font-family: var(--font-mono);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -45,6 +45,6 @@ async function copy() {
 }
 
 .uuid-badge ion-icon {
-  font-size: 12px;
+  font-size: var(--fs-xs);
 }
 </style>

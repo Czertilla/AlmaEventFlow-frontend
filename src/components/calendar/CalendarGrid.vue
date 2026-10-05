@@ -102,8 +102,8 @@ const days = computed(() => {
 }
 
 .calendar-title {
-  font-weight: 600;
-  font-size: 15px;
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-lg);
   text-transform: capitalize;
   color: var(--ion-text-color);
 }
@@ -112,8 +112,8 @@ const days = computed(() => {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
   text-align: center;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-medium);
   color: var(--ion-color-medium);
   padding: 4px 0;
 }
@@ -144,8 +144,8 @@ const days = computed(() => {
   height: 32px;
   border-radius: 50%;
   border: 1.5px solid transparent;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
   color: var(--ion-text-color);
   transition: background 0.15s, border-color 0.15s;
 }
@@ -158,7 +158,7 @@ const days = computed(() => {
 .day-circle--today {
   border-color: var(--ion-color-primary);
   color: var(--ion-color-primary);
-  font-weight: 700;
+  font-weight: var(--fw-bold);
 }
 
 /* Выбранная дата — обводка с заливкой (ТЗ) */
@@ -166,7 +166,7 @@ const days = computed(() => {
   background: var(--ion-color-primary);
   border-color: var(--ion-color-primary);
   color: #fff;
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
 }
 
 .day-cell:hover .day-circle--selected {

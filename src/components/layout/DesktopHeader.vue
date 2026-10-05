@@ -150,14 +150,14 @@ function toggleProfileMenu() {
 }
 
 .header-title {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-bold);
 }
 
 .beta-badge {
   display: inline-block;
-  font-size: 10px;
-  font-weight: 700;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-bold);
   color: #fff;
   background: var(--ion-color-primary);
   border-radius: 4px;
@@ -176,8 +176,8 @@ function toggleProfileMenu() {
 .nav-link {
   padding: 8px 16px;
   border-radius: 8px;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
   color: var(--ion-color-medium);
   text-decoration: none;
   transition: all 0.2s;
@@ -187,7 +187,6 @@ function toggleProfileMenu() {
   cursor: pointer;
   border: none;
   background: none;
-  font-family: inherit;
 }
 
 .nav-link:hover {
@@ -205,7 +204,7 @@ function toggleProfileMenu() {
   background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
   color: white;
   border-radius: 10px;
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
 }
 
 .nav-link--login:hover {
@@ -218,7 +217,7 @@ function toggleProfileMenu() {
 }
 
 .nav-dropdown-trigger ion-icon {
-  font-size: 14px;
+  font-size: var(--fs-md);
   transition: transform 0.2s;
 }
 
@@ -248,7 +247,7 @@ function toggleProfileMenu() {
   display: block;
   padding: 10px 14px;
   border-radius: 8px;
-  font-size: 14px;
+  font-size: var(--fs-md);
   color: var(--ion-text-color);
   text-decoration: none;
   transition: background 0.15s;
@@ -261,7 +260,7 @@ function toggleProfileMenu() {
 
 .dropdown-item--active {
   color: var(--ion-color-primary);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   background: rgba(var(--ion-color-primary-rgb), 0.08);
 }
 
@@ -277,8 +276,8 @@ function toggleProfileMenu() {
   border: none;
   background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
   color: white;
-  font-size: 13px;
-  font-weight: 700;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-bold);
   cursor: pointer;
   transition: transform 0.2s;
   display: flex;

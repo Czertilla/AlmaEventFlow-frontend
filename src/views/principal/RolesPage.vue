@@ -160,8 +160,8 @@ useLayoutAddButton('Новая роль', openCreate)
 }
 
 .role-name {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
   color: var(--ion-text-color);
 }
 
@@ -180,7 +180,7 @@ useLayoutAddButton('Новая роль', openCreate)
   border-radius: 8px;
   background: transparent;
   color: var(--ion-color-medium);
-  font-size: 16px;
+  font-size: var(--fs-lg);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -198,7 +198,7 @@ useLayoutAddButton('Новая роль', openCreate)
 .empty-text {
   text-align: center;
   color: var(--ion-color-medium);
-  font-size: 14px;
+  font-size: var(--fs-md);
   padding: 40px 0;
 }
 </style>

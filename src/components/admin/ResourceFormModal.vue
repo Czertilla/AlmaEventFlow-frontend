@@ -1,10 +1,10 @@
 <template>
-  <div class="modal-header">
+  <div class="ui-sheet-head">
     <div class="modal-header-title">
-      <h3>{{ title }}</h3>
+      <h3 class="ui-sheet-title">{{ title }}</h3>
       <UuidBadge v-if="item?.id" :id="item.id" />
     </div>
-    <button class="modal-close" aria-label="Закрыть" @click="$emit('close')">
+    <button class="ui-icon-btn" aria-label="Закрыть" @click="$emit('close')">
       <ion-icon :icon="closeOutline" />
     </button>
   </div>
@@ -109,13 +109,13 @@
 
     <div v-if="error" class="form-error">{{ error }}</div>
 
-    <div class="form-actions">
-      <ion-button expand="block" class="save-btn" :disabled="saving" @click="submit" mode="md">
-        <ion-spinner v-if="saving" slot="start" name="crescent" />
-        Сохранить
-      </ion-button>
-    </div>
   </ion-content>
+  <div class="ui-sheet-actions">
+    <button class="ui-btn ui-btn--primary" :disabled="saving" @click="submit">
+      <ion-spinner v-if="saving" name="crescent" />
+      Сохранить
+    </button>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -250,14 +250,6 @@ async function submit() {
 </script>
 
 <style scoped>
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px 20px 12px;
-  background: var(--ion-card-background);
-}
-
 .modal-meta {
   padding: 0 20px 10px;
   background: var(--ion-card-background);
@@ -267,32 +259,6 @@ async function submit() {
   display: flex;
   align-items: center;
   gap: 10px;
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--ion-text-color);
-}
-
-.modal-close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 50%;
-  background: var(--ion-background-color);
-  color: var(--ion-color-medium);
-  font-size: 18px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.modal-close:hover {
-  background: var(--ion-border-color);
 }
 
 .form-list {
@@ -309,14 +275,14 @@ async function submit() {
 }
 
 .form-item ion-label {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
 }
 
 .form-error {
   color: var(--ion-color-danger);
   padding: 4px 16px 0;
-  font-size: 0.9rem;
+  font-size: var(--fs-md);
 }
 
 .required {
@@ -327,17 +293,8 @@ async function submit() {
 .char-counter {
   display: block;
   text-align: right;
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   color: var(--ion-color-step-400);
-}
-
-.form-actions {
-  padding: 16px;
-}
-
-.save-btn {
-  font-weight: 600;
-  --border-radius: 10px;
 }
 
 /* ── Search field ── */
@@ -349,7 +306,7 @@ async function submit() {
   --padding-start: 8px;
   --padding-end: 8px;
   --min-height: 36px;
-  font-size: 0.9rem;
+  font-size: var(--fs-md);
   --border-radius: 8px;
   --box-shadow: none;
 }
@@ -372,7 +329,7 @@ async function submit() {
 }
 
 .search-selected-label {
-  font-size: 0.9rem;
+  font-size: var(--fs-md);
   flex: 1;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -393,7 +350,7 @@ async function submit() {
 .search-result-item {
   padding: 10px 12px;
   cursor: pointer;
-  font-size: 0.9rem;
+  font-size: var(--fs-md);
   border-bottom: 1px solid var(--ion-color-step-100, #f0f0f0);
   transition: background 0.12s;
 }
@@ -422,12 +379,12 @@ async function submit() {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 0.85rem;
+  font-size: var(--fs-md);
   color: var(--ion-color-medium);
   margin-top: 4px;
 }
 
 .map-field-hint {
-  font-size: 0.8rem;
+  font-size: var(--fs-sm);
 }
 </style>

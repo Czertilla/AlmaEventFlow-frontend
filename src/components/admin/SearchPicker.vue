@@ -95,7 +95,7 @@ watch(() => props.modelValue, (val, old) => {
   background: var(--ion-background-color); cursor: pointer; color: var(--ion-text-color);
 }
 .picker-selected:hover { border-color: var(--ion-color-medium); }
-.picker-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 14px; }
+.picker-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-md); }
 .picker-label-skeleton {
   display: inline-block; width: 100px; height: 12px; border-radius: 4px;
   background: var(--ion-color-step-200); animation: picker-label-pulse 1.4s ease-in-out infinite;
@@ -108,7 +108,7 @@ watch(() => props.modelValue, (val, old) => {
 }
 .picker-result {
   display: block; width: 100%; text-align: left; padding: 10px 12px; border: none;
-  background: transparent; font-family: inherit; font-size: 14px; color: var(--ion-text-color);
+  background: transparent; font-size: var(--fs-md); color: var(--ion-text-color);
   cursor: pointer; border-bottom: 1px solid var(--ion-color-step-100, #f0f0f0);
 }
 .picker-result:last-child { border-bottom: none; }

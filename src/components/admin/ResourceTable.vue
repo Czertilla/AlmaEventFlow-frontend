@@ -497,7 +497,7 @@ defineExpose({ loadData: reload })
 .rt-search-icon {
   position: absolute;
   left: 14px;
-  font-size: 18px;
+  font-size: var(--fs-xl);
   color: var(--ion-color-medium);
   pointer-events: none;
 }
@@ -509,8 +509,7 @@ defineExpose({ loadData: reload })
   border: 1.5px solid var(--ion-border-color);
   border-radius: 12px;
   background: var(--ion-card-background);
-  font-family: inherit;
-  font-size: 14px;
+  font-size: var(--fs-md);
   color: var(--ion-text-color);
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -533,7 +532,7 @@ defineExpose({ loadData: reload })
   border-radius: 50%;
   background: transparent;
   color: var(--ion-color-medium);
-  font-size: 15px;
+  font-size: var(--fs-lg);
   cursor: pointer;
 }
 
@@ -557,16 +556,15 @@ defineExpose({ loadData: reload })
   border: 1.5px solid var(--ion-border-color);
   border-radius: 12px;
   background: var(--ion-card-background);
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
   color: var(--ion-color-medium);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .rt-tool-btn ion-icon {
-  font-size: 18px;
+  font-size: var(--fs-xl);
 }
 
 .rt-tool-btn:hover {
@@ -590,8 +588,8 @@ defineExpose({ loadData: reload })
   border-radius: 9px;
   background: var(--ion-color-primary);
   color: #fff;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-bold);
 }
 
 .rt-sort {
@@ -606,16 +604,15 @@ defineExpose({ loadData: reload })
 }
 
 .rt-sort-icon {
-  font-size: 17px;
+  font-size: var(--fs-xl);
   color: var(--ion-color-medium);
 }
 
 .rt-sort-select {
   border: none;
   background: transparent;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
   color: var(--ion-text-color);
   outline: none;
   cursor: pointer;
@@ -632,7 +629,7 @@ defineExpose({ loadData: reload })
   border-radius: 8px;
   background: transparent;
   color: var(--ion-color-medium);
-  font-size: 16px;
+  font-size: var(--fs-lg);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -644,7 +641,7 @@ defineExpose({ loadData: reload })
 
 .add-btn-desktop {
   display: none;
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   height: 44px;
 }
 
@@ -670,8 +667,8 @@ defineExpose({ loadData: reload })
 }
 
 .rt-filter-label {
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
   color: var(--ion-color-medium);
 }
 
@@ -681,8 +678,7 @@ defineExpose({ loadData: reload })
   border: 1.5px solid var(--ion-border-color);
   border-radius: 10px;
   background: var(--ion-background-color);
-  font-family: inherit;
-  font-size: 14px;
+  font-size: var(--fs-md);
   color: var(--ion-text-color);
   outline: none;
 }
@@ -710,9 +706,8 @@ defineExpose({ loadData: reload })
   border: 1.5px solid var(--ion-border-color);
   border-radius: 10px;
   background: transparent;
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   color: var(--ion-color-medium);
   cursor: pointer;
   transition: all 0.15s;
@@ -736,7 +731,7 @@ defineExpose({ loadData: reload })
 
 .state-box p {
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--fs-lg);
 }
 
 .state-box.error {
@@ -772,8 +767,8 @@ defineExpose({ loadData: reload })
 .resource-desktop-table th {
   cursor: pointer;
   user-select: none;
-  font-weight: 600;
-  font-size: 0.8rem;
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-sm);
   text-transform: uppercase;
   letter-spacing: 0.6px;
   color: var(--ion-color-medium);
@@ -791,7 +786,7 @@ defineExpose({ loadData: reload })
 }
 
 .sort-icon {
-  font-size: 14px;
+  font-size: var(--fs-md);
   opacity: 0.7;
 }
 
@@ -844,13 +839,13 @@ defineExpose({ loadData: reload })
 }
 
 .mobile-card-title {
-  font-weight: 600;
-  font-size: 1rem;
+  font-weight: var(--fw-semibold);
+  font-size: var(--fs-lg);
   color: var(--ion-text-color, #000);
 }
 
 .mobile-card-subtitle {
-  font-size: 0.85rem;
+  font-size: var(--fs-md);
   color: var(--ion-color-medium);
 }
 
@@ -858,7 +853,7 @@ defineExpose({ loadData: reload })
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
-  font-size: 0.8rem;
+  font-size: var(--fs-sm);
   color: var(--ion-color-medium);
 }
 

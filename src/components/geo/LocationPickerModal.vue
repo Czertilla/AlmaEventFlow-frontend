@@ -347,7 +347,7 @@ ion-modal.loc-modal {
 
 .pm-search-icon {
   flex-shrink: 0;
-  font-size: 19px;
+  font-size: var(--fs-xl);
   color: var(--ion-color-medium);
 }
 
@@ -359,8 +359,7 @@ ion-modal.loc-modal {
   outline: none;
   background: transparent;
   color: var(--ion-text-color);
-  font-family: inherit;
-  font-size: 16px;
+  font-size: var(--fs-lg);
 }
 
 .pm-search-input::placeholder {
@@ -385,7 +384,7 @@ ion-modal.loc-modal {
   border-radius: 10px;
   background: transparent;
   color: var(--ion-color-medium);
-  font-size: 19px;
+  font-size: var(--fs-xl);
   cursor: pointer;
 }
 
@@ -426,13 +425,13 @@ ion-modal.loc-modal {
 }
 
 .pm-card-title {
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
   color: var(--ion-text-color);
 }
 
 .pm-card-sub {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   font-variant-numeric: tabular-nums;
   color: var(--ion-color-medium);
 }
@@ -442,9 +441,8 @@ ion-modal.loc-modal {
   padding: 0 16px;
   border: 1.5px solid transparent;
   border-radius: 12px;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
   white-space: nowrap;
   cursor: pointer;
   transition: background 0.15s;
@@ -474,7 +472,7 @@ ion-modal.loc-modal {
   background: rgba(var(--ion-background-color-rgb), 0.92);
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
   color: var(--ion-color-medium);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   text-align: center;
   backdrop-filter: blur(6px);
 }

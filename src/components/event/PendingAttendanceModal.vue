@@ -98,14 +98,14 @@ function itemsFor(eventId: string): CollectiveAttendanceItem[] {
 }
 
 .pending-state ion-icon {
-  font-size: 44px;
+  font-size: var(--icon-hero);
   color: var(--ion-color-success);
   opacity: 0.8;
 }
 
 .pending-state p {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-md);
 }
 
 .pending-list {
@@ -116,7 +116,7 @@ function itemsFor(eventId: string): CollectiveAttendanceItem[] {
 
 .pending-hint {
   margin: 0 0 8px;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--ion-color-medium);
 }
 

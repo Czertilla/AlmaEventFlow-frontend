@@ -86,8 +86,8 @@ async function handleLogout() {
 
 .page-title {
   margin: 4px 0 0;
-  font-size: 22px;
-  font-weight: 700;
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
   color: var(--ion-text-color);
 }
 
@@ -110,8 +110,8 @@ async function handleLogout() {
 }
 
 .profile-name {
-  font-size: 17px;
-  font-weight: 700;
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
   color: var(--ion-text-color);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -119,7 +119,7 @@ async function handleLogout() {
 }
 
 .profile-email {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--ion-color-medium);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -144,9 +144,8 @@ async function handleLogout() {
   border-radius: 12px;
   border: none;
   background: none;
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 500;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-medium);
   color: var(--ion-text-color);
   text-decoration: none;
   text-align: left;
@@ -160,7 +159,7 @@ async function handleLogout() {
 }
 
 .profile-action ion-icon:first-child {
-  font-size: 20px;
+  font-size: var(--fs-xl);
   color: var(--ion-color-medium);
 }
 
@@ -169,7 +168,7 @@ async function handleLogout() {
 }
 
 .action-arrow {
-  font-size: 16px;
+  font-size: var(--fs-lg);
   color: var(--ion-color-step-400);
 }
 

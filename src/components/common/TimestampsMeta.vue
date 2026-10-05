@@ -29,7 +29,7 @@ defineProps<{
   flex-wrap: wrap;
   gap: 6px 16px;
   margin: 4px 0 0;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ion-color-medium);
 }
 
@@ -40,6 +40,6 @@ defineProps<{
 }
 
 .timestamps-item ion-icon {
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 </style>

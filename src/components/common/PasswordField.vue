@@ -69,7 +69,7 @@ const revealed = ref(false)
 }
 
 .field-icon {
-  font-size: 18px;
+  font-size: var(--fs-xl);
   color: var(--ion-color-medium);
   flex-shrink: 0;
 }
@@ -80,10 +80,9 @@ const revealed = ref(false)
   border: none;
   outline: none;
   background: transparent;
-  font-size: 15px;
+  font-size: var(--fs-md);
   padding: 14px 0;
   color: var(--ion-text-color);
-  font-family: inherit;
 }
 
 .field-input input::placeholder {
@@ -101,7 +100,7 @@ const revealed = ref(false)
   border-radius: 8px;
   background: transparent;
   color: var(--ion-color-medium);
-  font-size: 18px;
+  font-size: var(--fs-xl);
   cursor: pointer;
   -webkit-user-select: none;
   user-select: none;

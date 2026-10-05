@@ -32,6 +32,8 @@ import '@ionic/vue/css/display.css';
 /* @import '@ionic/vue/css/palettes/dark.class.css'; */
 import '@ionic/vue/css/palettes/dark.class.css';
 
+import '@fontsource-variable/inter/wght.css';
+
 import './theme/variables.css';
 import './theme/autofill.css';
 import './theme/components.css';

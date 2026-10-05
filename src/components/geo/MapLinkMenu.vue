@@ -89,9 +89,8 @@ onBeforeUnmount(() => {
   padding: 10px 12px;
   border-radius: 8px;
   color: var(--ion-text-color);
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
   text-decoration: none;
   cursor: pointer;
 }

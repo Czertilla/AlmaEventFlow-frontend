@@ -1085,7 +1085,7 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
 .ev-search-icon {
   position: absolute;
   left: 14px;
-  font-size: 18px;
+  font-size: var(--fs-xl);
   color: var(--ion-color-medium);
   pointer-events: none;
 }
@@ -1097,8 +1097,7 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
   border: 1.5px solid var(--ion-border-color);
   border-radius: 12px;
   background: var(--ion-card-background);
-  font-family: inherit;
-  font-size: 14px;
+  font-size: var(--fs-md);
   color: var(--ion-text-color);
   outline: none;
   transition: border-color 0.15s, box-shadow 0.15s;
@@ -1121,7 +1120,7 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
   border-radius: 50%;
   background: transparent;
   color: var(--ion-color-medium);
-  font-size: 15px;
+  font-size: var(--fs-lg);
   cursor: pointer;
 }
 
@@ -1148,16 +1147,15 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
 }
 
 .ev-sort-icon {
-  font-size: 17px;
+  font-size: var(--fs-xl);
   color: var(--ion-color-medium);
 }
 
 .ev-sort-select {
   border: none;
   background: transparent;
-  font-family: inherit;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-medium);
   color: var(--ion-text-color);
   outline: none;
   cursor: pointer;
@@ -1174,7 +1172,7 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
   border-radius: 8px;
   background: transparent;
   color: var(--ion-color-medium);
-  font-size: 16px;
+  font-size: var(--fs-lg);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -1194,11 +1192,10 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
   border: 1.5px solid var(--ion-border-color);
   border-radius: 12px;
   background: transparent;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   color: var(--ion-color-medium);
   cursor: pointer;
-  font-family: inherit;
   transition: all 0.15s;
 }
 
@@ -1233,13 +1230,13 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
 }
 
 .page-state ion-icon {
-  font-size: 40px;
+  font-size: var(--icon-hero);
   opacity: 0.4;
 }
 
 .page-state p {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-md);
   max-width: 320px;
 }
 
@@ -1260,9 +1257,6 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
   box-shadow: var(--ion-card-shadow);
   background: var(--ion-card-background);
   cursor: grab;
-  /* Скроллбары видны всегда, а не только по ховеру -- иначе на полотне такого
-     размера непонятно, что можно скроллить вбок. */
-  scrollbar-width: thin;
   /* Только ГОРИЗОНТАЛЬНЫЙ overscroll зажат: на границе слева/справа свайп
      иначе "перетекает" на страницу целиком -- в Firefox это срабатывает как
      переход назад/вперёд по истории. Раньше contain стоял на обе оси сразу и
@@ -1302,16 +1296,15 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
   border: 1.5px solid var(--ion-border-color);
   border-radius: 10px;
   background: var(--ion-card-background);
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   color: var(--ion-text-color);
   cursor: pointer;
   transition: all 0.15s;
 }
 
 .matrix-nav-btn ion-icon {
-  font-size: 16px;
+  font-size: var(--fs-lg);
 }
 
 .matrix-nav-btn:hover:not(:disabled) {
@@ -1335,9 +1328,8 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
   border: 1.5px solid var(--ion-color-primary);
   border-radius: 10px;
   background: rgba(var(--ion-color-primary-rgb), 0.08);
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   color: var(--ion-color-primary);
   cursor: pointer;
   white-space: nowrap;
@@ -1349,7 +1341,7 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
 }
 
 .matrix-today-badge ion-icon {
-  font-size: 16px;
+  font-size: var(--fs-lg);
 }
 
 .matrix {
@@ -1380,8 +1372,8 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
   background: var(--ion-card-background);
   border-bottom: 1px solid var(--ion-border-color);
   border-left: 1px solid var(--ion-border-color);
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-bold);
   text-transform: uppercase;
   letter-spacing: 0.03em;
   color: var(--ion-color-medium);
@@ -1458,8 +1450,8 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
 
 .matrix-event-name {
   display: -webkit-box;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   line-height: 17px;
   color: var(--ion-text-color);
   overflow: hidden;
@@ -1479,13 +1471,13 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
   margin-top: 4px;
   padding-top: 3px;
   border-top: 1px solid var(--ion-border-color);
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   color: var(--ion-color-medium);
 }
 
 .matrix-event-location {
   margin-top: 3px;
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1533,8 +1525,8 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
   left: 12px;
   display: inline-block;
   padding: 10px 0 4px;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-bold);
   text-transform: uppercase;
   letter-spacing: 0.04em;
   color: var(--ion-color-medium);
@@ -1547,8 +1539,8 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
    ломая соседние ряды (у каждого <tr> высота независимая). */
 .matrix-member-name {
   display: block;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   line-height: 16px;
   color: var(--ion-text-color);
   white-space: normal;
@@ -1557,7 +1549,7 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
 
 .matrix-member-roles {
   display: block;
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   color: var(--ion-color-medium);
   white-space: nowrap;
   overflow: hidden;
@@ -1616,7 +1608,7 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
 }
 
 .matrix-chip :deep(.att-chip ion-icon) {
-  font-size: 18px;
+  font-size: var(--fs-xl);
 }
 
 /* Кнопка создания отметки -- для ячеек без записи об участии ("нет данных").
@@ -1648,7 +1640,7 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
 }
 
 .matrix-add-btn ion-icon {
-  font-size: 17px;
+  font-size: var(--fs-xl);
 }
 
 .matrix-cell-spinner {
@@ -1674,7 +1666,7 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
 }
 
 .matrix-cell-badge {
-  font-size: 11px;
+  font-size: var(--fs-2xs);
   color: var(--ion-color-medium);
 }
 
@@ -1690,12 +1682,12 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ion-color-medium);
 }
 
 .legend-item ion-icon {
-  font-size: 16px;
+  font-size: var(--fs-lg);
 }
 
 /* Компактная матрица на мобильном -- чтобы за раз помещалось больше отметок,
@@ -1710,7 +1702,7 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
 
   .matrix-month-row th {
     padding: 0 6px;
-    font-size: 9px;
+    font-size: var(--fs-2xs);
   }
 
   .matrix-col-head {
@@ -1720,17 +1712,17 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
   }
 
   .matrix-event-name {
-    font-size: 11px;
+    font-size: var(--fs-2xs);
     line-height: 14px;
     min-height: 28px;
   }
 
   .matrix-event-date {
-    font-size: 10px;
+    font-size: var(--fs-2xs);
   }
 
   .matrix-event-location {
-    font-size: 10px;
+    font-size: var(--fs-2xs);
     max-width: 70px;
   }
 
@@ -1739,11 +1731,11 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
   }
 
   .matrix-member-name {
-    font-size: 12px;
+    font-size: var(--fs-xs);
   }
 
   .matrix-member-roles {
-    font-size: 10px;
+    font-size: var(--fs-2xs);
   }
 
   .matrix-cell {
@@ -1753,7 +1745,7 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
   }
 
   .matrix-cell-inner ion-icon {
-    font-size: 16px;
+    font-size: var(--fs-lg);
   }
 
   .matrix-chip :deep(.att-chip) {
@@ -1762,7 +1754,7 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
   }
 
   .matrix-chip :deep(.att-chip ion-icon) {
-    font-size: 16px;
+    font-size: var(--fs-lg);
   }
 
   .matrix-add-btn {
@@ -1771,7 +1763,7 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
   }
 
   .matrix-group-divider-label {
-    font-size: 10px;
+    font-size: var(--fs-2xs);
     padding: 8px 0 3px;
   }
 }

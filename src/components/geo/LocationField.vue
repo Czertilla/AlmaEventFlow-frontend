@@ -233,7 +233,7 @@ defineExpose({ reset: clearValue })
 
 .lf-search-icon {
   flex-shrink: 0;
-  font-size: 18px;
+  font-size: var(--fs-xl);
   color: var(--ion-color-medium);
 }
 
@@ -245,8 +245,7 @@ defineExpose({ reset: clearValue })
   outline: none;
   background: transparent;
   color: var(--ion-text-color);
-  font-family: inherit;
-  font-size: 15px;
+  font-size: var(--fs-md);
 }
 
 .lf-input::placeholder {
@@ -269,7 +268,7 @@ defineExpose({ reset: clearValue })
   border-radius: 9px;
   background: rgba(var(--ion-color-primary-rgb), 0.14);
   color: var(--ion-color-primary);
-  font-size: 17px;
+  font-size: var(--fs-xl);
 }
 
 .lf-value {
@@ -282,8 +281,8 @@ defineExpose({ reset: clearValue })
 
 .lf-title {
   overflow: hidden;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
   line-height: 1.3;
   color: var(--ion-text-color);
   text-overflow: ellipsis;
@@ -292,7 +291,7 @@ defineExpose({ reset: clearValue })
 
 .lf-sub {
   overflow: hidden;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1.3;
   color: var(--ion-color-medium);
   text-overflow: ellipsis;

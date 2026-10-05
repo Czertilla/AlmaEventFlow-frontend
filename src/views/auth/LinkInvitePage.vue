@@ -184,14 +184,14 @@ async function handleLink() {
 }
 
 .auth-brand h1 {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
   margin: 0 0 4px;
   color: var(--ion-text-color);
 }
 
 .auth-subtitle {
-  font-size: 14px;
+  font-size: var(--fs-md);
   color: var(--ion-color-medium);
   margin: 0;
 }
@@ -230,7 +230,7 @@ async function handleLink() {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 30px;
+  font-size: var(--icon-xl);
 }
 
 .link-icon--error {
@@ -240,7 +240,7 @@ async function handleLink() {
 
 .link-text {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--fs-md);
   line-height: 1.5;
   color: var(--ion-color-medium);
 }
@@ -252,8 +252,8 @@ async function handleLink() {
   border-radius: 12px;
   background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
   color: white;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
   cursor: pointer;
   transition: all 0.2s;
   display: flex;

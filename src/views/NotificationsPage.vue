@@ -312,8 +312,8 @@ onIonViewWillEnter(reload)
 
 .page-title {
   margin: 4px 0 0;
-  font-size: 22px;
-  font-weight: 700;
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
   color: var(--ion-text-color);
 }
 
@@ -327,14 +327,14 @@ onIonViewWillEnter(reload)
 }
 
 .notif-intro ion-icon {
-  font-size: 22px;
+  font-size: var(--fs-2xl);
   color: var(--ion-color-primary);
   flex-shrink: 0;
 }
 
 .notif-intro p {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--fs-sm);
   line-height: 1.5;
   color: var(--ion-color-medium);
 }
@@ -348,8 +348,8 @@ onIonViewWillEnter(reload)
 .notif-section-title {
   margin: 0;
   padding: 0 4px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--ion-color-medium);
@@ -376,7 +376,7 @@ onIonViewWillEnter(reload)
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 18px;
+  font-size: var(--fs-xl);
   flex-shrink: 0;
 }
 
@@ -389,8 +389,8 @@ onIonViewWillEnter(reload)
 }
 
 .notif-row-label {
-  font-size: 15px;
-  font-weight: 500;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-medium);
   color: var(--ion-text-color);
 }
 
@@ -398,8 +398,8 @@ onIonViewWillEnter(reload)
   margin-left: 6px;
   padding: 1px 6px;
   border-radius: 6px;
-  font-size: 10px;
-  font-weight: 600;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
   text-transform: uppercase;
   letter-spacing: 0.3px;
   background: rgba(var(--ion-color-primary-rgb), 0.12);
@@ -407,7 +407,7 @@ onIonViewWillEnter(reload)
 }
 
 .notif-row-hint {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ion-color-medium);
 }
 
@@ -415,13 +415,12 @@ onIonViewWillEnter(reload)
   border: none;
   background: none;
   width: 100%;
-  font-family: inherit;
   text-align: left;
   cursor: pointer;
 }
 
 .notif-row-arrow {
-  font-size: 16px;
+  font-size: var(--fs-lg);
   color: var(--ion-color-step-400);
   flex-shrink: 0;
 }
@@ -435,7 +434,7 @@ onIonViewWillEnter(reload)
 .notif-foot-hint {
   margin: 0;
   padding: 0 4px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ion-color-medium);
 }
 
@@ -445,7 +444,7 @@ onIonViewWillEnter(reload)
   justify-content: center;
   gap: 8px;
   padding: 24px;
-  font-size: 14px;
+  font-size: var(--fs-md);
   color: var(--ion-color-medium);
   text-align: center;
 }

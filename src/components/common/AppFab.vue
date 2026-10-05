@@ -36,7 +36,7 @@ defineEmits<{ click: [] }>()
   border-radius: 50%;
   background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
   color: #fff;
-  font-size: 26px;
+  font-size: var(--icon-xl);
   cursor: pointer;
   box-shadow: 0 6px 20px rgba(var(--ion-color-primary-rgb), 0.4);
   transition: transform 0.15s;

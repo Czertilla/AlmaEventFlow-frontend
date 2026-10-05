@@ -317,14 +317,14 @@ async function handleRegister() {
 }
 
 .auth-brand h1 {
-  font-size: 24px;
-  font-weight: 700;
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
   margin: 0 0 4px;
   color: var(--ion-text-color);
 }
 
 .auth-subtitle {
-  font-size: 14px;
+  font-size: var(--fs-md);
   color: var(--ion-color-medium);
   margin: 0;
 }
@@ -354,8 +354,8 @@ async function handleRegister() {
 }
 
 .auth-tab {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
   color: var(--ion-color-medium);
   text-decoration: none;
   padding-bottom: 12px;
@@ -384,18 +384,18 @@ async function handleRegister() {
   border: 1px solid rgba(var(--ion-color-primary-rgb), 0.25);
   border-radius: 12px;
   color: var(--ion-color-primary);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   line-height: 1.4;
 }
 
 .invite-notice ion-icon {
-  font-size: 18px;
+  font-size: var(--fs-xl);
   flex-shrink: 0;
   margin-top: 1px;
 }
 
 .invite-notice strong {
-  font-weight: 700;
+  font-weight: var(--fw-bold);
 }
 
 .invite-notice--error {
@@ -417,8 +417,8 @@ async function handleRegister() {
 }
 
 .field-label {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   color: var(--ion-text-color);
 }
 
@@ -442,7 +442,7 @@ async function handleRegister() {
 }
 
 .field-icon {
-  font-size: 18px;
+  font-size: var(--fs-xl);
   color: var(--ion-color-medium);
   flex-shrink: 0;
 }
@@ -452,10 +452,9 @@ async function handleRegister() {
   border: none;
   outline: none;
   background: transparent;
-  font-size: 15px;
+  font-size: var(--fs-md);
   padding: 14px 0;
   color: var(--ion-text-color);
-  font-family: inherit;
 }
 
 .field-input input::placeholder {
@@ -463,16 +462,16 @@ async function handleRegister() {
 }
 
 .field-error {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ion-color-danger);
-  font-weight: 500;
+  font-weight: var(--fw-medium);
   padding-left: 4px;
 }
 
 .field-success {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ion-color-success);
-  font-weight: 500;
+  font-weight: var(--fw-medium);
   padding-left: 4px;
 }
 
@@ -506,7 +505,7 @@ async function handleRegister() {
 }
 
 .checkbox-custom ion-icon {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: white;
   opacity: 0;
   transition: opacity 0.2s;
@@ -517,7 +516,7 @@ async function handleRegister() {
 }
 
 .checkbox-label {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   color: var(--ion-color-medium);
   line-height: 1.4;
 }
@@ -530,12 +529,12 @@ async function handleRegister() {
   background: rgba(255, 71, 87, 0.1);
   border-radius: 10px;
   color: var(--ion-color-danger);
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
 }
 
 .auth-error ion-icon {
-  font-size: 18px;
+  font-size: var(--fs-xl);
   flex-shrink: 0;
 }
 
@@ -546,8 +545,8 @@ async function handleRegister() {
   border-radius: 12px;
   background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
   color: white;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
   cursor: pointer;
   transition: all 0.2s;
   display: flex;

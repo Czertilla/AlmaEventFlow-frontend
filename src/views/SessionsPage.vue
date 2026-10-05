@@ -200,8 +200,8 @@ onIonViewWillEnter(load)
 
 .page-title {
   margin: 4px 0 0;
-  font-size: 22px;
-  font-weight: 700;
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
   color: var(--ion-text-color);
 }
 
@@ -233,7 +233,7 @@ onIonViewWillEnter(load)
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 20px;
+  font-size: var(--fs-xl);
   flex-shrink: 0;
   background: var(--ion-background-color);
   color: var(--ion-color-medium);
@@ -253,8 +253,8 @@ onIonViewWillEnter(load)
 }
 
 .session-device {
-  font-size: 15px;
-  font-weight: 500;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-medium);
   color: var(--ion-text-color);
   display: flex;
   align-items: center;
@@ -262,8 +262,8 @@ onIonViewWillEnter(load)
 }
 
 .session-badge {
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
   text-transform: uppercase;
   letter-spacing: 0.3px;
   color: #6C63FF;
@@ -273,7 +273,7 @@ onIonViewWillEnter(load)
 }
 
 .session-meta {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ion-color-medium);
 }
 
@@ -284,7 +284,7 @@ onIonViewWillEnter(load)
   border: none;
   background: rgba(255, 71, 87, 0.1);
   color: var(--ion-color-danger);
-  font-size: 18px;
+  font-size: var(--fs-xl);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -309,7 +309,7 @@ onIonViewWillEnter(load)
 .sessions-empty {
   padding: 32px 0;
   text-align: center;
-  font-size: 14px;
+  font-size: var(--fs-md);
   color: var(--ion-color-medium);
 }
 
@@ -320,8 +320,8 @@ onIonViewWillEnter(load)
   border-radius: 12px;
   background: rgba(255, 71, 87, 0.1);
   color: var(--ion-color-danger);
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
   cursor: pointer;
   transition: background 0.2s;
   display: flex;

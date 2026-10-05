@@ -1,7 +1,7 @@
 <template>
-  <div class="modal-header">
-    <h3>Пригласительная ссылка</h3>
-    <button class="modal-close" aria-label="Закрыть" @click="$emit('close')">
+  <div class="ui-sheet-head">
+    <h3 class="ui-sheet-title">Пригласительная ссылка</h3>
+    <button class="ui-icon-btn" aria-label="Закрыть" @click="$emit('close')">
       <ion-icon :icon="closeOutline" />
     </button>
   </div>
@@ -12,9 +12,9 @@
         <input v-model.number="expiresIn" type="number" min="1" max="720" class="native-input" />
       </div>
 
-      <ion-button expand="block" :disabled="creating" @click="createInvite">
+      <button class="ui-btn ui-btn--primary" :disabled="creating" @click="createInvite">
         {{ creating ? 'Создание...' : 'Создать ссылку' }}
-      </ion-button>
+      </button>
 
       <div v-if="inviteLink" class="invite-result">
         <span class="invite-link">{{ inviteLink }}</span>
@@ -29,7 +29,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { IonButton, IonContent, IonIcon } from '@ionic/vue'
+import { IonContent, IonIcon } from '@ionic/vue'
 import { closeOutline, copyOutline, checkmarkOutline } from 'ionicons/icons'
 import { createInviteTokenUserV1UsersInvitePost } from '@/api/generated/almaEventFlow'
 
@@ -64,40 +64,6 @@ async function copy() {
 </script>
 
 <style scoped>
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 18px 20px 12px;
-  background: var(--ion-card-background);
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 17px;
-  font-weight: 700;
-  color: var(--ion-text-color);
-}
-
-.modal-close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 50%;
-  background: var(--ion-background-color);
-  color: var(--ion-color-medium);
-  font-size: 18px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.modal-close:hover {
-  background: var(--ion-border-color);
-}
-
 .invite-form {
   display: flex;
   flex-direction: column;
@@ -111,8 +77,8 @@ async function copy() {
 }
 
 .form-field label {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   color: var(--ion-text-color);
 }
 
@@ -127,8 +93,8 @@ async function copy() {
 }
 
 .invite-link {
-  font-size: 12px;
-  font-family: ui-monospace, 'Cascadia Code', Consolas, monospace;
+  font-size: var(--fs-xs);
+  font-family: var(--font-mono);
   color: var(--ion-text-color);
   word-break: break-all;
 }
@@ -143,9 +109,8 @@ async function copy() {
   border-radius: 999px;
   background: transparent;
   color: var(--ion-color-primary);
-  font-family: inherit;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
   cursor: pointer;
   transition: all 0.15s;
 }

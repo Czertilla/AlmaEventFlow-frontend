@@ -233,8 +233,8 @@ async function handleSave() {
 
 .page-title {
   margin: 4px 0 0;
-  font-size: 22px;
-  font-weight: 700;
+  font-size: var(--fs-2xl);
+  font-weight: var(--fw-bold);
   color: var(--ion-text-color);
 }
 
@@ -247,8 +247,8 @@ async function handleSave() {
 .edit-section-title {
   margin: 0;
   padding: 0 4px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   color: var(--ion-color-medium);
@@ -271,8 +271,8 @@ async function handleSave() {
 }
 
 .field-label {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   color: var(--ion-text-color);
 }
 
@@ -292,7 +292,7 @@ async function handleSave() {
 }
 
 .field-icon {
-  font-size: 18px;
+  font-size: var(--fs-xl);
   color: var(--ion-color-medium);
   flex-shrink: 0;
 }
@@ -302,10 +302,9 @@ async function handleSave() {
   border: none;
   outline: none;
   background: transparent;
-  font-size: 15px;
+  font-size: var(--fs-md);
   padding: 13px 0;
   color: var(--ion-text-color);
-  font-family: inherit;
 }
 
 .field-input input::placeholder {
@@ -313,7 +312,7 @@ async function handleSave() {
 }
 
 .field-hint {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ion-color-medium);
   padding: 0 4px;
 }
@@ -325,7 +324,7 @@ async function handleSave() {
 }
 
 .telegram-icon {
-  font-size: 22px;
+  font-size: var(--fs-2xl);
   color: var(--ion-color-primary);
   flex-shrink: 0;
 }
@@ -339,8 +338,8 @@ async function handleSave() {
 }
 
 .telegram-title {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
   color: var(--ion-text-color);
 }
 
@@ -351,8 +350,8 @@ async function handleSave() {
   border-radius: 10px;
   background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
   color: white;
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-semibold);
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
@@ -385,12 +384,12 @@ async function handleSave() {
   background: rgba(255, 71, 87, 0.1);
   border-radius: 10px;
   color: var(--ion-color-danger);
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
 }
 
 .edit-error ion-icon {
-  font-size: 18px;
+  font-size: var(--fs-xl);
   flex-shrink: 0;
 }
 
@@ -401,8 +400,8 @@ async function handleSave() {
   border-radius: 12px;
   background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
   color: white;
-  font-size: 16px;
-  font-weight: 600;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
   cursor: pointer;
   transition: all 0.2s;
   display: flex;

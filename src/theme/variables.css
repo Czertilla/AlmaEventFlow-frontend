@@ -46,7 +46,7 @@
   --ion-card-shadow: 0 2px 16px rgba(var(--ion-color-primary-rgb), 0.08);
 
   /* Typography */
-  --ion-font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --ion-font-family: 'Inter Variable', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 
   --fs-2xs: 11px;
   --fs-xs: 12px;
@@ -55,6 +55,10 @@
   --fs-lg: 16px;
   --fs-xl: 18px;
   --fs-2xl: 22px;
+
+  --icon-xl: 28px;
+  --icon-hero: 40px;
+  --font-mono: ui-monospace, 'Cascadia Code', Consolas, monospace;
 
   --fw-regular: 400;
   --fw-medium: 500;
@@ -141,8 +145,15 @@ ion-toolbar {
 
 ion-button {
   --border-radius: 12px;
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   letter-spacing: 0.3px;
+}
+
+ion-input.hydrated,
+ion-textarea.hydrated,
+ion-searchbar.hydrated,
+ion-searchbar.hydrated .searchbar-input {
+  font-size: var(--fs-md);
 }
 
 ion-input, ion-textarea {
@@ -161,7 +172,7 @@ ion-item.item-has-focus ion-input {
 
 ion-chip {
   --border-radius: 8px;
-  font-weight: 500;
+  font-weight: var(--fw-medium);
 }
 
 ion-menu ion-content {
@@ -170,8 +181,8 @@ ion-menu ion-content {
 
 /* Modals — единый стиль по всему приложению */
 ion-modal {
-  --border-radius: 20px;
-  --box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+  --border-radius: var(--radius-xl);
+  --box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
   --background: var(--ion-card-background);
 }
 
@@ -185,13 +196,41 @@ ion-modal {
 
 ion-modal ion-toolbar {
   --background: var(--ion-card-background);
-  --padding-start: 8px;
+  --padding-start: 20px;
   --padding-end: 8px;
+  --padding-top: 12px;
+  --padding-bottom: 0;
+  --min-height: 0;
+  --border-width: 0;
 }
 
 ion-modal ion-title {
-  font-size: 17px;
-  font-weight: 700;
+  padding: 0;
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
+}
+
+ion-modal ion-buttons ion-button.button.button-clear.button-has-icon-only {
+  --padding-top: 0;
+  --padding-bottom: 0;
+  --padding-start: 0;
+  --padding-end: 0;
+  --border-radius: var(--radius-sm);
+  --background: transparent;
+  --background-hover: rgba(var(--ion-text-color-rgb), 0.07);
+  --background-hover-opacity: 1;
+  --background-activated: rgba(var(--ion-text-color-rgb), 0.07);
+  --background-activated-opacity: 1;
+  --color: var(--ion-color-medium);
+  --color-hover: var(--ion-text-color);
+  width: 34px;
+  min-width: 0;
+  height: 34px;
+  margin: 0;
+}
+
+ion-modal ion-buttons ion-button.button ion-icon[slot="icon-only"] {
+  font-size: var(--fs-xl);
 }
 
 ion-modal ion-content {
@@ -289,18 +328,6 @@ ion-tab-bar {
 .skeleton--text {
   height: 12px;
   border-radius: 4px;
-}
-
-/* Scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: var(--ion-color-step-300);
-  border-radius: 3px;
 }
 
 /* Резервируем место под вертикальный скроллбар у всех прокручиваемых областей,

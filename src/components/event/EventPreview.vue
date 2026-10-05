@@ -193,8 +193,8 @@ const statusLabel = computed(() => {
 
 .event-name {
   margin: 0;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
   color: var(--ion-text-color);
   white-space: nowrap;
   overflow: hidden;
@@ -205,18 +205,18 @@ const statusLabel = computed(() => {
   display: flex;
   align-items: center;
   gap: 4px;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ion-color-medium);
   margin-top: 2px;
 }
 
 .event-location {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   margin-top: 2px;
 }
 
 .event-date ion-icon {
-  font-size: 13px;
+  font-size: var(--fs-sm);
 }
 
 .event-members {
@@ -230,8 +230,8 @@ const statusLabel = computed(() => {
   border-radius: 8px;
   background: rgba(var(--ion-color-primary-rgb), 0.08);
   color: var(--ion-color-primary);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
 }
 
 .event-card-body {
@@ -289,8 +289,8 @@ const statusLabel = computed(() => {
 }
 
 .collective-name {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-medium);
   color: var(--ion-color-medium);
   white-space: nowrap;
   overflow: hidden;
@@ -314,7 +314,7 @@ const statusLabel = computed(() => {
   background: var(--ion-color-step-50, #f4f5f8);
   border: 1.5px solid var(--ion-border-color);
   color: var(--ion-color-medium);
-  font-size: 13px;
+  font-size: var(--fs-sm);
   flex-shrink: 0;
 }
 </style>

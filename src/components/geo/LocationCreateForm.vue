@@ -136,8 +136,8 @@ async function submit() {
 }
 
 .lcf-label {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   color: var(--ion-text-color);
 }
 
@@ -150,8 +150,7 @@ async function submit() {
   outline: none;
   background: var(--ion-card-background);
   color: var(--ion-text-color);
-  font-family: inherit;
-  font-size: 15px;
+  font-size: var(--fs-md);
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 
@@ -166,7 +165,7 @@ async function submit() {
 
 .lcf-hint {
   margin: 0;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   line-height: 1.45;
   color: var(--ion-color-medium);
 }
@@ -180,9 +179,8 @@ async function submit() {
   border: none;
   background: none;
   color: var(--ion-color-primary);
-  font-family: inherit;
   font-size: inherit;
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
   cursor: pointer;
 }
 
@@ -208,7 +206,7 @@ async function submit() {
 }
 
 .lcf-coords {
-  font-size: 13px;
+  font-size: var(--fs-sm);
   font-variant-numeric: tabular-nums;
   color: var(--ion-text-color);
 }
@@ -234,9 +232,8 @@ async function submit() {
   padding: 0 20px;
   border: 1.5px solid transparent;
   border-radius: 12px;
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
   cursor: pointer;
   transition: opacity 0.15s, background 0.15s, transform 0.1s;
 }

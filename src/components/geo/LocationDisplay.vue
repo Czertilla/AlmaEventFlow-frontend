@@ -38,7 +38,7 @@ const point = computed<GeoPoint | null>(() => {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 14px;
+  font-size: var(--fs-md);
   color: var(--ion-text-color, #1a1a1a);
 }
 
@@ -57,7 +57,7 @@ const point = computed<GeoPoint | null>(() => {
 }
 
 .location-display-external {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   opacity: 0.6;
 }
 </style>

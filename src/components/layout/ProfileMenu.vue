@@ -78,14 +78,14 @@ async function logout() {
 
 .profile-info h3 {
   margin: 0;
-  font-size: 18px;
-  font-weight: 600;
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-semibold);
   color: var(--ion-text-color);
 }
 
 .profile-info p {
   margin: 2px 0 0;
-  font-size: 14px;
+  font-size: var(--fs-md);
   color: var(--ion-color-medium);
 }
 
@@ -104,14 +104,13 @@ async function logout() {
   border-radius: 12px;
   text-decoration: none;
   color: var(--ion-text-color);
-  font-size: 15px;
-  font-weight: 500;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-medium);
   cursor: pointer;
   transition: background 0.15s;
   border: none;
   background: none;
   width: 100%;
-  font-family: inherit;
   text-align: left;
 }
 
@@ -120,7 +119,7 @@ async function logout() {
 }
 
 .menu-item ion-icon:first-child {
-  font-size: 20px;
+  font-size: var(--fs-xl);
   color: var(--ion-color-medium);
 }
 
@@ -129,7 +128,7 @@ async function logout() {
 }
 
 .menu-arrow {
-  font-size: 16px;
+  font-size: var(--fs-lg);
   color: var(--ion-color-step-400);
 }
 

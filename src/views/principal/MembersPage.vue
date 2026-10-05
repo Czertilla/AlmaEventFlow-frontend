@@ -396,11 +396,10 @@ useLayoutAddButton('Добавить участника', openAdd)
   border: 1.5px solid var(--ion-border-color);
   border-radius: 12px;
   background: transparent;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   color: var(--ion-color-medium);
   cursor: pointer;
-  font-family: inherit;
   transition: all 0.15s;
 }
 
@@ -431,8 +430,8 @@ useLayoutAddButton('Добавить участника', openAdd)
   border-radius: 50%;
   background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
   color: white;
-  font-size: 14px;
-  font-weight: 700;
+  font-size: var(--fs-md);
+  font-weight: var(--fw-bold);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -448,8 +447,8 @@ useLayoutAddButton('Добавить участника', openAdd)
 }
 
 .member-name {
-  font-size: 15px;
-  font-weight: 600;
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
   color: var(--ion-text-color);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -457,7 +456,7 @@ useLayoutAddButton('Добавить участника', openAdd)
 }
 
 .member-roles {
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ion-color-medium);
 }
 
@@ -465,8 +464,8 @@ useLayoutAddButton('Добавить участника', openAdd)
   flex-shrink: 0;
   padding: 4px 10px;
   border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semibold);
 }
 
 .member-status--active {
@@ -495,7 +494,7 @@ useLayoutAddButton('Добавить участника', openAdd)
   border-radius: 8px;
   background: transparent;
   color: var(--ion-color-medium);
-  font-size: 16px;
+  font-size: var(--fs-lg);
   cursor: pointer;
   transition: all 0.15s;
 }
@@ -513,7 +512,7 @@ useLayoutAddButton('Добавить участника', openAdd)
 .empty-text {
   text-align: center;
   color: var(--ion-color-medium);
-  font-size: 14px;
+  font-size: var(--fs-md);
   padding: 40px 0;
 }
 
@@ -538,20 +537,20 @@ useLayoutAddButton('Добавить участника', openAdd)
 }
 
 .form-field > label {
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
   color: var(--ion-text-color);
 }
 
 .form-hint {
   margin: 4px 0 0;
-  font-size: 12px;
+  font-size: var(--fs-xs);
   color: var(--ion-color-medium);
 }
 
 .form-static {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--fs-md);
   color: var(--ion-text-color);
 }
 
@@ -576,11 +575,10 @@ useLayoutAddButton('Добавить участника', openAdd)
   border: none;
   border-radius: 8px;
   background: transparent;
-  font-size: 14px;
+  font-size: var(--fs-md);
   color: var(--ion-text-color);
   text-align: left;
   cursor: pointer;
-  font-family: inherit;
   transition: background 0.15s;
 }
 
@@ -591,7 +589,7 @@ useLayoutAddButton('Добавить участника', openAdd)
 .person-option--selected {
   background: rgba(var(--ion-color-primary-rgb), 0.1);
   color: var(--ion-color-primary);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
 }
 
 .role-chips {
@@ -605,11 +603,10 @@ useLayoutAddButton('Добавить участника', openAdd)
   border: 1.5px solid var(--ion-border-color);
   border-radius: 999px;
   background: transparent;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
   color: var(--ion-color-medium);
   cursor: pointer;
-  font-family: inherit;
   transition: all 0.15s;
 }
 
