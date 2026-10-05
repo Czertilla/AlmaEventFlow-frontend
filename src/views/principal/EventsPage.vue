@@ -1247,23 +1247,6 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   font-weight: 600;
 }
 
-.native-input {
-  width: 100%;
-  border: 1.5px solid var(--ion-border-color);
-  border-radius: 10px;
-  background: var(--ion-card-background);
-  font-family: inherit;
-  font-size: 14px;
-  color: var(--ion-text-color);
-  padding: 10px 12px;
-  outline: none;
-  transition: border-color 0.15s;
-}
-
-.native-input:focus {
-  border-color: var(--ion-color-primary);
-}
-
 .stage-list {
   display: flex;
   flex-direction: column;

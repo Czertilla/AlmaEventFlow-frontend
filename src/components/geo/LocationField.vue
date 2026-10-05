@@ -10,18 +10,18 @@
         <button
           v-if="modelValue.address"
           type="button"
-          class="lf-btn"
+          class="ui-icon-btn"
           aria-label="Создать локацию по этому адресу"
           @click="openModal({ address: modelValue.address })"
         >
           <ion-icon :icon="addOutline" />
         </button>
         <MapLinkMenu v-if="selectedPoint" :point="selectedPoint" :label="mapLinkLabel(modelValue)" v-slot="{ toggle }">
-          <button type="button" class="lf-btn" aria-label="Открыть на карте" @click="toggle">
+          <button type="button" class="ui-icon-btn" aria-label="Открыть на карте" @click="toggle">
             <ion-icon :icon="openOutline" />
           </button>
         </MapLinkMenu>
-        <button type="button" class="lf-btn lf-btn--danger" aria-label="Убрать локацию" @click="clearValue">
+        <button type="button" class="ui-icon-btn ui-icon-btn--danger" aria-label="Убрать локацию" @click="clearValue">
           <ion-icon :icon="closeOutline" />
         </button>
       </template>
@@ -44,15 +44,15 @@
           @keydown="onKeydown"
         />
         <ion-spinner v-if="searching || resolving" class="lf-spinner" name="crescent" />
-        <button v-if="query" type="button" class="lf-btn" aria-label="Очистить" @click="clearQuery">
+        <button v-if="query" type="button" class="ui-icon-btn" aria-label="Очистить" @click="clearQuery">
           <ion-icon :icon="closeOutline" />
         </button>
       </template>
 
       <button
         type="button"
-        class="lf-btn lf-btn--map"
-        :class="{ 'lf-btn--active': modalOpen }"
+        class="ui-icon-btn ui-icon-btn--primary"
+        :class="{ 'ui-icon-btn--active': modalOpen }"
         aria-label="Выбрать на карте"
         :disabled="resolving"
         @click="openModal()"
@@ -297,52 +297,6 @@ defineExpose({ reset: clearValue })
   color: var(--ion-color-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.lf-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 34px;
-  height: 34px;
-  border: none;
-  border-radius: 10px;
-  background: transparent;
-  color: var(--ion-color-medium);
-  font-size: 18px;
-  text-decoration: none;
-  cursor: pointer;
-  transition: background 0.12s, color 0.12s;
-}
-
-.lf-btn:hover:not(:disabled),
-.lf-btn:focus-visible {
-  background: rgba(var(--ion-text-color-rgb), 0.07);
-  color: var(--ion-text-color);
-  outline: none;
-}
-
-.lf-btn--map {
-  color: var(--ion-color-primary);
-}
-
-.lf-btn--map:hover:not(:disabled),
-.lf-btn--map:focus-visible,
-.lf-btn--active {
-  background: rgba(var(--ion-color-primary-rgb), 0.12);
-  color: var(--ion-color-primary);
-}
-
-.lf-btn--danger:hover:not(:disabled),
-.lf-btn--danger:focus-visible {
-  background: rgba(255, 71, 87, 0.12);
-  color: var(--ion-color-danger);
-}
-
-.lf-btn:disabled {
-  opacity: 0.5;
-  cursor: default;
 }
 
 .lf-popover {

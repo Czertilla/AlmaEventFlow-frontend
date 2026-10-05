@@ -145,22 +145,6 @@ function selectAllRoles() {
   color: var(--ion-color-primary);
 }
 
-.native-input {
-  border: 1.5px solid var(--ion-border-color);
-  border-radius: 10px;
-  background: var(--ion-card-background);
-  font-family: inherit;
-  font-size: 14px;
-  color: var(--ion-text-color);
-  padding: 10px 12px;
-  outline: none;
-  transition: border-color 0.15s;
-}
-
-.native-input:focus {
-  border-color: var(--ion-color-primary);
-}
-
 .range-dash {
   color: var(--ion-color-step-400);
   font-size: 13px;
