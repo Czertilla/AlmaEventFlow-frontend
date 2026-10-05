@@ -1,140 +1,136 @@
 import { mount } from '@vue/test-utils'
-import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { afterEach, describe, expect, test } from 'vitest'
+import { defineComponent, h, ref } from 'vue'
 import TimeSpinner from '@/components/common/TimeSpinner.vue'
 
-function spinner(modelValue = '07:05', presets?: number[]) {
-  return mount(TimeSpinner, {
-    props: presets ? { modelValue, presets } : { modelValue },
-    global: { stubs: { IonIcon: true } },
-  })
+const mounted: ReturnType<typeof mount>[] = []
+
+function host(initial = '07:05', presets?: number[]) {
+  const model = ref(initial)
+  const wrapper = mount(
+    defineComponent({
+      setup: () => () =>
+        h(TimeSpinner, {
+          modelValue: model.value,
+          presets,
+          'onUpdate:modelValue': (value: string) => {
+            model.value = value
+          },
+        }),
+    }),
+    { attachTo: document.body },
+  )
+  mounted.push(wrapper)
+  return { wrapper, model }
 }
 
-const step = (wrapper: ReturnType<typeof spinner>, label: string) =>
-  wrapper.findAll('.ts-step').find((button) => button.attributes('aria-label') === label)!
+afterEach(() => {
+  mounted.splice(0).forEach((wrapper) => wrapper.unmount())
+})
 
-const last = (wrapper: ReturnType<typeof spinner>) => wrapper.emitted('update:modelValue')!.at(-1)
+type Host = ReturnType<typeof host>
+
+const boxes = (wrapper: Host['wrapper']) =>
+  wrapper.findAll('.ts-value').map((input) => (input.element as HTMLInputElement).value)
+
+async function typeInto(wrapper: Host['wrapper'], label: string, chars: string) {
+  const box = wrapper.findAll('.ts-value').find((input) => input.attributes('aria-label') === label)!
+  await box.trigger('focus')
+  await box.trigger('input', { data: chars, inputType: 'insertText' })
+}
 
 describe('TimeSpinner', () => {
-  test('shows the hours and minutes of the model', () => {
-    const wrapper = spinner('07:05')
-
-    expect(wrapper.findAll('.ts-value').map((input) => (input.element as HTMLInputElement).value)).toEqual([
-      '07',
-      '05',
-    ])
+  test('shows the hours and the minutes of the model in two fields', () => {
+    expect(boxes(host('07:05').wrapper)).toEqual(['07', '05'])
   })
 
   test('an empty model starts from 00:00', () => {
-    const wrapper = spinner('')
-
-    expect(wrapper.findAll('.ts-value').map((input) => (input.element as HTMLInputElement).value)).toEqual([
-      '00',
-      '00',
-    ])
+    expect(boxes(host('').wrapper)).toEqual(['00', '00'])
   })
 
-  test.each([
-    ['Часы: больше', '23:30', '00:30'],
-    ['Часы: меньше', '00:30', '23:30'],
-    ['Минуты: больше', '10:59', '10:00'],
-    ['Минуты: меньше', '10:00', '10:59'],
-    ['Минуты: больше', '10:08', '10:09'],
-  ])('%s from %s gives %s without touching the other unit', async (label, from, expected) => {
-    const wrapper = spinner(from)
+  test('there are no plus and minus buttons and only the fields and the presets take focus', () => {
+    const { wrapper } = host()
 
-    await step(wrapper, label).trigger('click')
-
-    expect(last(wrapper)).toEqual([expected])
+    expect(wrapper.findAll('.ts-step')).toHaveLength(0)
+    const focusable = wrapper
+      .findAll('input, button')
+      .filter((element) => element.attributes('tabindex') !== '-1')
+      .map((element) => element.attributes('aria-label') ?? element.text())
+    expect(focusable).toEqual(['Часы', 'Минуты', ':00', ':15', ':30', ':45'])
   })
 
-  test('a mouse press steps once and the click that follows does not step again', async () => {
-    const wrapper = spinner('10:00')
-    const button = step(wrapper, 'Минуты: больше')
+  test('typing the hours changes only the hours', async () => {
+    const { wrapper, model } = host('07:05')
 
-    await button.trigger('pointerdown')
-    await button.trigger('pointerup')
-    button.element.dispatchEvent(new MouseEvent('click', { detail: 1, bubbles: true }))
+    await typeInto(wrapper, 'Часы', '18')
 
-    expect(wrapper.emitted('update:modelValue')).toEqual([['10:01']])
+    expect(model.value).toBe('18:05')
   })
 
-  describe('holding a step button', () => {
-    beforeEach(() => vi.useFakeTimers())
-    afterEach(() => vi.useRealTimers())
+  test('typing continues in the minutes without a click or a tab', async () => {
+    const { wrapper, model } = host('07:05')
 
-    test('repeats after a delay and stops on release', async () => {
-      const wrapper = spinner('10:00')
-      const button = step(wrapper, 'Часы: больше')
+    await typeInto(wrapper, 'Часы', '1845')
 
-      await button.trigger('pointerdown')
-      expect(wrapper.emitted('update:modelValue')).toHaveLength(1)
-
-      await vi.advanceTimersByTimeAsync(400)
-      await vi.advanceTimersByTimeAsync(90 * 3)
-      const whileHeld = wrapper.emitted('update:modelValue')!.length
-      expect(whileHeld).toBeGreaterThan(2)
-
-      await button.trigger('pointerup')
-      await vi.advanceTimersByTimeAsync(1000)
-      expect(wrapper.emitted('update:modelValue')).toHaveLength(whileHeld)
-    })
+    expect(model.value).toBe('18:45')
+    expect(document.activeElement).toBe(wrapper.findAll('.ts-value')[1]!.element)
   })
 
-  test('typing a unit replaces it and is clamped to its range', async () => {
-    const wrapper = spinner('07:05')
+  test('typing digit by digit continues in the minutes too', async () => {
+    const { wrapper, model } = host('07:05')
+    ;(wrapper.findAll('.ts-value')[0]!.element as HTMLInputElement).focus()
+
+    for (const char of '2145') {
+      const active = document.activeElement as HTMLElement
+      await wrapper
+        .findAll('.ts-value')
+        .find((input) => input.element === active)!
+        .trigger('input', { data: char, inputType: 'insertText' })
+    }
+
+    expect(model.value).toBe('21:45')
+  })
+
+  test('an hour that cannot take a second digit hands it to the minutes', async () => {
+    const { wrapper, model } = host('07:05')
+
+    await typeInto(wrapper, 'Часы', '25')
+
+    expect(model.value).toBe('02:05')
+    expect((wrapper.findAll('.ts-value')[1]!.element as HTMLInputElement).value).toBe('5')
+  })
+
+  test('backspace in an untouched minutes field returns to the hours', async () => {
+    const { wrapper } = host('07:05')
+    await typeInto(wrapper, 'Часы', '18')
+
+    await wrapper.findAll('.ts-value')[1]!.trigger('keydown', { key: 'Backspace' })
+
+    expect(document.activeElement).toBe(wrapper.findAll('.ts-value')[0]!.element)
+  })
+
+  test('the arrow keys move between the fields', async () => {
+    const { wrapper } = host('07:05')
     const [hours, minutes] = wrapper.findAll('.ts-value')
-
     await hours!.trigger('focus')
-    ;(hours!.element as HTMLInputElement).value = '18'
-    await hours!.trigger('input')
-    expect(last(wrapper)).toEqual(['18:05'])
 
-    await minutes!.trigger('focus')
-    ;(minutes!.element as HTMLInputElement).value = '75'
-    await minutes!.trigger('input')
-    expect(last(wrapper)).toEqual(['07:59'])
-  })
+    await hours!.trigger('keydown', { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(minutes!.element)
 
-  test('letters are dropped and an empty box emits nothing', async () => {
-    const wrapper = spinner('07:05')
-    const hours = wrapper.findAll('.ts-value')[0]!
-
-    await hours.trigger('focus')
-    ;(hours.element as HTMLInputElement).value = 'ab'
-    await hours.trigger('input')
-
-    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
-    expect((hours.element as HTMLInputElement).value).toBe('')
-  })
-
-  test('arrow keys and the mouse wheel step the focused unit', async () => {
-    const wrapper = spinner('07:05')
-    const minutes = wrapper.findAll('.ts-value')[1]!
-
-    await minutes.trigger('keydown', { key: 'ArrowUp' })
-    expect(last(wrapper)).toEqual(['07:06'])
-
-    await minutes.trigger('keydown', { key: 'ArrowDown' })
-    expect(last(wrapper)).toEqual(['07:04'])
-
-    await minutes.trigger('wheel', { deltaY: -100 })
-    expect(last(wrapper)).toEqual(['07:06'])
-
-    await minutes.trigger('wheel', { deltaY: 100 })
-    expect(last(wrapper)).toEqual(['07:04'])
+    await minutes!.trigger('keydown', { key: 'ArrowLeft' })
+    expect(document.activeElement).toBe(hours!.element)
   })
 
   test('a preset sets the minutes and the current one is highlighted', async () => {
-    const wrapper = spinner('07:05')
+    const { wrapper, model } = host('07:05')
 
-    await wrapper.findAll('.ts-preset').find((chip) => chip.text() === ':30')!.trigger('click')
-    expect(last(wrapper)).toEqual(['07:30'])
+    await wrapper.findAll('.ui-chip').find((chip) => chip.text() === ':30')!.trigger('click')
 
-    await wrapper.setProps({ modelValue: '07:30' })
-    expect(wrapper.findAll('.ts-preset--on').map((chip) => chip.text())).toEqual([':30'])
+    expect(model.value).toBe('07:30')
+    expect(wrapper.findAll('.ui-chip--active').map((chip) => chip.text())).toEqual([':30'])
   })
 
   test('presets can be turned off', () => {
-    expect(spinner('07:05', []).find('.ts-presets').exists()).toBe(false)
+    expect(host('07:05', []).wrapper.find('.ts-presets').exists()).toBe(false)
   })
 })

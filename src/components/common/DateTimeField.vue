@@ -2,7 +2,20 @@
   <div class="dtf">
     <div class="dtf-box" :class="{ 'dtf-box--invalid': invalid, 'dtf-box--disabled': disabled }">
       <span class="dtf-ghost" aria-hidden="true">
-        <span class="dtf-ghost-typed">{{ text }}</span>{{ FIELD_HINTS[mode].slice(text.length) }}
+        <span class="dtf-ghost-line">
+          <span
+            v-for="(cell, index) in ghostCells"
+            :key="index"
+            class="dtf-cell"
+            :class="{ 'dtf-cell--letter': cell.letter, 'dtf-cell--hidden': cell.hidden }"
+            :data-char="cell.char"
+            :data-hidden="cell.hidden"
+          >
+            <template v-if="cell.letter"
+              ><span class="dtf-cell-zero">0</span><span class="dtf-cell-letter">{{ cell.char }}</span></template
+            ><template v-else>{{ cell.char }}</template>
+          </span>
+        </span>
       </span>
       <input
         class="dtf-input"
@@ -18,7 +31,7 @@
     </div>
     <button
       type="button"
-      class="dtf-button"
+      class="ui-icon-btn ui-icon-btn--primary dtf-button"
       :disabled="disabled"
       :aria-label="mode === 'time' ? 'Выбрать время' : 'Выбрать дату'"
       @click="openPicker"
@@ -29,7 +42,7 @@
       <div class="dtf-sheet">
         <div class="dtf-sheet-head">
           <span class="dtf-sheet-title">{{ title ?? TITLES[mode] }}</span>
-          <button type="button" class="dtf-sheet-close" aria-label="Закрыть" @click="open = false">
+          <button type="button" class="ui-icon-btn" aria-label="Закрыть" @click="open = false">
             <ion-icon :icon="closeOutline" />
           </button>
         </div>
@@ -39,7 +52,7 @@
               v-for="chip in chips"
               :key="chip.label"
               type="button"
-              class="dtf-chip"
+              class="ui-chip"
               :disabled="chip.disabled"
               @click="setDraft(chip.value)"
             >
@@ -66,8 +79,8 @@
           </div>
         </div>
         <div class="dtf-sheet-actions">
-          <button type="button" class="dtf-action dtf-action--ghost" @click="clear">Очистить</button>
-          <button type="button" class="dtf-action dtf-action--primary" @click="confirm">Готово</button>
+          <button type="button" class="ui-btn ui-btn--ghost" @click="clear">Очистить</button>
+          <button type="button" class="ui-btn ui-btn--primary" @click="confirm">Готово</button>
         </div>
       </div>
     </ion-modal>
@@ -132,6 +145,14 @@ const invalid = computed(
   () =>
     text.value.length === FIELD_HINTS[props.mode].length &&
     parseFieldText(text.value, props.mode) === null,
+)
+
+const ghostCells = computed(() =>
+  [...FIELD_HINTS[props.mode]].map((char, index) => ({
+    char,
+    letter: /[А-ЯЁ]/.test(char),
+    hidden: index < text.value.length,
+  })),
 )
 
 const draftDate = computed(() => (props.mode === 'time' ? '' : draft.value.slice(0, 10)))
@@ -239,7 +260,7 @@ function clear() {
   position: relative;
   flex: 1;
   min-width: 0;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: var(--dtf-bg, var(--ion-card-background));
 }
 
@@ -247,10 +268,9 @@ function clear() {
 .dtf-input {
   box-sizing: border-box;
   width: 100%;
-  border: 1.5px solid transparent;
+  border: var(--border-w) solid transparent;
   padding: 10px 48px 10px 12px;
-  font-family: inherit;
-  font-size: 14px;
+  font-size: var(--fs-md);
   font-variant-numeric: tabular-nums;
   letter-spacing: normal;
 }
@@ -266,8 +286,29 @@ function clear() {
   pointer-events: none;
 }
 
-.dtf-ghost-typed {
+.dtf-ghost-line {
+  white-space: pre;
+}
+
+.dtf-cell--letter {
+  position: relative;
+  display: inline-block;
+}
+
+.dtf-cell--hidden {
   visibility: hidden;
+}
+
+.dtf-cell-zero {
+  visibility: hidden;
+}
+
+.dtf-cell-letter {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 0.78em;
 }
 
 .dtf-input {
@@ -275,7 +316,7 @@ function clear() {
   display: block;
   min-width: 0;
   border-color: var(--ion-border-color);
-  border-radius: 10px;
+  border-radius: var(--radius-md);
   background: transparent;
   color: var(--ion-text-color);
   outline: none;
@@ -299,30 +340,7 @@ function clear() {
   position: absolute;
   top: 50%;
   right: 5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  padding: 0;
   transform: translateY(-50%);
-  border: none;
-  border-radius: 8px;
-  background: rgba(var(--ion-color-primary-rgb), 0.1);
-  color: var(--ion-color-primary);
-  font-size: 18px;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.dtf-button:hover:not(:disabled),
-.dtf-button:focus-visible {
-  background: rgba(var(--ion-color-primary-rgb), 0.2);
-}
-
-.dtf-button:disabled {
-  cursor: default;
-  opacity: 0.5;
 }
 </style>
 
@@ -339,7 +357,7 @@ ion-modal.dtf-modal {
   --width: min(92vw, 380px);
   --height: fit-content;
   --max-height: 94vh;
-  --border-radius: 20px;
+  --border-radius: var(--radius-xl);
   --background: var(--ion-card-background);
   --box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
 }
@@ -357,7 +375,7 @@ ion-modal.dtf-modal--time {
 @media (max-width: 575px) {
   ion-modal.dtf-modal {
     --width: 100%;
-    --border-radius: 20px 20px 0 0;
+    --border-radius: var(--radius-xl) var(--radius-xl) 0 0;
     align-items: flex-end;
   }
 }
@@ -368,7 +386,6 @@ ion-modal.dtf-modal--time {
   max-height: 94vh;
   background: var(--ion-card-background);
   color: var(--ion-text-color);
-  font-family: var(--ion-font-family);
 }
 
 .dtf-sheet-head {
@@ -379,28 +396,8 @@ ion-modal.dtf-modal--time {
 }
 
 .dtf-sheet-title {
-  font-size: 17px;
-  font-weight: 700;
-}
-
-.dtf-sheet-close {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  padding: 0;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--ion-color-medium);
-  font-size: 22px;
-  cursor: pointer;
-}
-
-.dtf-sheet-close:hover {
-  background: rgba(var(--ion-color-primary-rgb), 0.1);
-  color: var(--ion-color-primary);
+  font-size: var(--fs-xl);
+  font-weight: var(--fw-bold);
 }
 
 .dtf-sheet-body {
@@ -415,29 +412,6 @@ ion-modal.dtf-modal--time {
   flex-wrap: wrap;
   gap: 8px;
   padding: 8px 8px 4px;
-}
-
-.dtf-chip {
-  padding: 6px 14px;
-  border: 1.5px solid var(--ion-border-color);
-  border-radius: 999px;
-  background: transparent;
-  color: var(--ion-color-primary);
-  font-family: inherit;
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.dtf-chip:hover:not(:disabled) {
-  border-color: var(--ion-color-primary);
-  background: rgba(var(--ion-color-primary-rgb), 0.1);
-}
-
-.dtf-chip:disabled {
-  opacity: 0.4;
-  cursor: default;
 }
 
 .dtf-body {
@@ -456,8 +430,8 @@ ion-modal.dtf-modal--time {
 .dtf-time-title {
   align-self: flex-start;
   color: var(--ion-color-medium);
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
   letter-spacing: 0.04em;
   text-transform: uppercase;
 }
@@ -495,36 +469,4 @@ ion-datetime.dtf-picker {
   padding: 12px 16px calc(16px + env(safe-area-inset-bottom));
 }
 
-.dtf-action {
-  flex: 1;
-  min-height: 48px;
-  border-radius: 12px;
-  font-family: inherit;
-  font-size: 15px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.dtf-action--ghost {
-  border: 1.5px solid var(--ion-border-color);
-  background: transparent;
-  color: var(--ion-text-color);
-}
-
-.dtf-action--ghost:hover {
-  border-color: var(--ion-color-primary);
-  color: var(--ion-color-primary);
-}
-
-.dtf-action--primary {
-  border: none;
-  background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
-  color: #fff;
-}
-
-.dtf-action--primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 16px rgba(var(--ion-color-primary-rgb), 0.3);
-}
 </style>

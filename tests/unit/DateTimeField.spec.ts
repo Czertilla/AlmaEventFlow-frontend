@@ -102,12 +102,18 @@ describe('DateTimeField typing', () => {
 })
 
 describe('DateTimeField template', () => {
-  const ghost = (wrapper: Field) => wrapper.get('.dtf-ghost').text()
+  const rest = (wrapper: Field) =>
+    wrapper
+      .findAll('.dtf-cell')
+      .filter((cell) => cell.attributes('data-hidden') !== 'true')
+      .map((cell) => cell.attributes('data-char'))
+      .join('')
+  const visible = (wrapper: Field) => inputValue(wrapper) + rest(wrapper)
 
   test('the whole template is shown while the field is empty', () => {
-    expect(ghost(field({ modelValue: '', mode: 'datetime' }))).toBe('ДД.ММ.ГГГГ ЧЧ:ММ')
-    expect(ghost(field({ modelValue: '', mode: 'date' }))).toBe('ДД.ММ.ГГГГ')
-    expect(ghost(field({ modelValue: '', mode: 'time' }))).toBe('ЧЧ:ММ')
+    expect(visible(field({ modelValue: '', mode: 'datetime' }))).toBe('ДД.ММ.ГГГГ ЧЧ:ММ')
+    expect(visible(field({ modelValue: '', mode: 'date' }))).toBe('ДД.ММ.ГГГГ')
+    expect(visible(field({ modelValue: '', mode: 'time' }))).toBe('ЧЧ:ММ')
   })
 
   test('typed characters replace the start of the template and the rest stays', async () => {
@@ -115,12 +121,22 @@ describe('DateTimeField template', () => {
 
     await type(wrapper, '1203')
 
-    expect(ghost(wrapper)).toBe('12.03.ГГГГ ЧЧ:ММ')
-    expect(wrapper.get('.dtf-ghost-typed').text()).toBe('12.03')
+    expect(visible(wrapper)).toBe('12.03.ГГГГ ЧЧ:ММ')
+    expect(rest(wrapper)).toBe('.ГГГГ ЧЧ:ММ')
   })
 
   test('a complete value leaves nothing of the template', () => {
-    expect(ghost(field({ modelValue: '2026-03-12T15:30', mode: 'datetime' }))).toBe('12.03.2026 15:30')
+    const wrapper = field({ modelValue: '2026-03-12T15:30', mode: 'datetime' })
+
+    expect(rest(wrapper)).toBe('')
+    expect(visible(wrapper)).toBe('12.03.2026 15:30')
+  })
+
+  test('every letter of the template takes the width of a digit, so it does not shift while typing', () => {
+    const letters = field({ modelValue: '', mode: 'datetime' }).findAll('.dtf-cell--letter')
+
+    expect(letters).toHaveLength(12)
+    expect(letters.every((cell) => cell.find('.dtf-cell-zero').text() === '0')).toBe(true)
   })
 
   test('the input has no placeholder of its own and is labelled with the format', () => {
@@ -146,7 +162,12 @@ describe('DateTimeField picker', () => {
   const spinnerValues = (wrapper: Field) =>
     wrapper.findAll('.ts-value').map((input) => (input.element as HTMLInputElement).value).join(':')
 
-  const done = (wrapper: Field) => wrapper.get('.dtf-action--primary').trigger('click')
+  const done = (wrapper: Field) => wrapper.get('.ui-btn--primary').trigger('click')
+
+  const typeInto = async (box: ReturnType<Field['get']>, chars: string) => {
+    await box.trigger('focus')
+    for (const char of chars) await box.trigger('input', { data: char, inputType: 'insertText' })
+  }
 
   test('a datetime opens on the fallback without writing it into the model', async () => {
     const wrapper = await opened({ modelValue: '', mode: 'datetime', fallback: '2026-03-12T15:30' })
@@ -207,10 +228,7 @@ describe('DateTimeField picker', () => {
     const wrapper = await opened({ modelValue: '2026-03-12T10:00', mode: 'datetime' })
 
     await pickDate(wrapper, '2026-04-01T00:00:00')
-    const hours = wrapper.findAll('.ts-value')[0]!
-    await hours.trigger('focus')
-    ;(hours.element as HTMLInputElement).value = '18'
-    await hours.trigger('input')
+    await typeInto(wrapper.findAll('.ts-value')[0]!, '18')
     await done(wrapper)
 
     expect(wrapper.emitted('update:modelValue')).toEqual([['2026-04-01T18:00']])
@@ -219,7 +237,7 @@ describe('DateTimeField picker', () => {
   test('a time picked with a preset is emitted as HH:mm', async () => {
     const wrapper = await opened({ modelValue: '', mode: 'time' })
 
-    await wrapper.findAll('.ts-preset').find((chip) => chip.text() === ':30')!.trigger('click')
+    await wrapper.findAll('.ui-chip').find((chip) => chip.text() === ':30')!.trigger('click')
     await done(wrapper)
 
     expect(wrapper.emitted('update:modelValue')![0]![0]).toMatch(/^\d{2}:30$/)
@@ -233,13 +251,10 @@ describe('DateTimeField picker', () => {
     expect(wrapper.emitted('update:modelValue')).toEqual([['2026-03-12T15:30']])
   })
 
-  test('the time cannot be stepped below min', async () => {
+  test('a time typed below min is raised to it', async () => {
     const wrapper = await opened({ modelValue: '', mode: 'datetime', fallback: '2026-03-12T15:30', min: '2026-03-12T15:30' })
 
-    await wrapper
-      .findAll('.ts-step')
-      .find((button) => button.attributes('aria-label') === 'Часы: меньше')!
-      .trigger('click')
+    await typeInto(wrapper.findAll('.ts-value')[0]!, '10')
 
     expect(spinnerValues(wrapper)).toBe('15:30')
   })
@@ -248,7 +263,7 @@ describe('DateTimeField picker', () => {
     const wrapper = await opened({ modelValue: '2026-03-12', mode: 'date' })
 
     await pickDate(wrapper, '2026-04-01T00:00:00')
-    await wrapper.get('.dtf-sheet-close').trigger('click')
+    await wrapper.get('.ui-icon-btn[aria-label="Закрыть"]').trigger('click')
 
     expect(wrapper.emitted('update:modelValue')).toBeUndefined()
   })
@@ -256,7 +271,7 @@ describe('DateTimeField picker', () => {
   test('clear empties the model', async () => {
     const wrapper = await opened({ modelValue: '2026-03-12', mode: 'date' })
 
-    await wrapper.get('.dtf-action--ghost').trigger('click')
+    await wrapper.get('.ui-btn--ghost').trigger('click')
 
     expect(wrapper.emitted('update:modelValue')).toEqual([['']])
   })
@@ -264,7 +279,7 @@ describe('DateTimeField picker', () => {
   test('the tomorrow chip keeps the chosen time', async () => {
     const wrapper = await opened({ modelValue: '2026-03-12T18:45', mode: 'datetime' })
 
-    await wrapper.findAll('.dtf-chip').find((chip) => chip.text() === 'Завтра')!.trigger('click')
+    await wrapper.findAll('.ui-chip').find((chip) => chip.text() === 'Завтра')!.trigger('click')
 
     expect(spinnerValues(wrapper)).toBe('18:45')
     expect(wrapper.get('.picker').attributes('data-value')! > new Date().toISOString().slice(0, 10)).toBe(true)
@@ -273,7 +288,7 @@ describe('DateTimeField picker', () => {
   test('the now chip sets both the day and the time', async () => {
     const wrapper = await opened({ modelValue: '2000-01-01T01:01', mode: 'datetime' })
 
-    await wrapper.findAll('.dtf-chip').find((chip) => chip.text() === 'Сейчас')!.trigger('click')
+    await wrapper.findAll('.ui-chip').find((chip) => chip.text() === 'Сейчас')!.trigger('click')
 
     expect(wrapper.get('.picker').attributes('data-value')).not.toBe('2000-01-01')
   })
@@ -281,13 +296,13 @@ describe('DateTimeField picker', () => {
   test('chips before the minimum are disabled', async () => {
     const wrapper = await opened({ modelValue: '', mode: 'date', min: '2999-01-01' })
 
-    expect(wrapper.findAll('.dtf-chip').every((chip) => chip.attributes('disabled') !== undefined)).toBe(true)
+    expect(wrapper.findAll('.ui-chip').every((chip) => chip.attributes('disabled') !== undefined)).toBe(true)
   })
 
   test('a time field offers only "now"', async () => {
     const wrapper = await opened({ modelValue: '', mode: 'time' })
 
-    expect(wrapper.findAll('.dtf-chip').map((chip) => chip.text())).toEqual(['Сейчас'])
+    expect(wrapper.findAll('.dtf-quick .ui-chip').map((chip) => chip.text())).toEqual(['Сейчас'])
   })
 
   test('an explicit title replaces the default one', async () => {
