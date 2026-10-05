@@ -1,4 +1,4 @@
-import { onBeforeUnmount, type Ref } from 'vue'
+import { onBeforeUnmount, ref, type Ref } from 'vue'
 
 export interface TelegramWidgetUser {
   id: number
@@ -10,6 +10,8 @@ export interface TelegramWidgetUser {
   hash: string
 }
 
+export type TelegramWidgetStatus = 'idle' | 'loading' | 'ready' | 'failed'
+
 declare global {
   interface Window {
     onTelegramAuth?: (user: TelegramWidgetUser) => void
@@ -17,25 +19,48 @@ declare global {
 }
 
 const WIDGET_SRC = 'https://telegram.org/js/telegram-widget.js?22'
+const WIDGET_ORIGIN = 'https://oauth.telegram.org'
+const READY_TIMEOUT_MS = 6000
 
-/**
- * Injects Telegram's official Login Widget script into `container`. The
- * widget calls back through a global function (its own protocol, no
- * postMessage/redirect option we can hook into instead), so `onAuth` is
- * wired up as `window.onTelegramAuth` for the widget's `data-onauth` to find.
- */
+function isWidgetAlive(event: MessageEvent, container: HTMLElement | null): boolean {
+  if (event.origin !== WIDGET_ORIGIN || typeof event.data !== 'string') return false
+  const iframe = container?.querySelector('iframe')
+  if (!iframe || event.source !== iframe.contentWindow) return false
+  try {
+    const { event: name } = JSON.parse(event.data)
+    return name === 'ready' || name === 'resize'
+  } catch {
+    return false
+  }
+}
+
 export function useTelegramWidget(
   container: Ref<HTMLElement | null>,
   onAuth: (user: TelegramWidgetUser) => void,
 ) {
+  const status = ref<TelegramWidgetStatus>('idle')
+  let timer: ReturnType<typeof setTimeout> | null = null
+
+  function onMessage(event: MessageEvent) {
+    if (isWidgetAlive(event, container.value)) status.value = 'ready'
+  }
+
+  function fail() {
+    if (status.value === 'loading') status.value = 'failed'
+  }
+
   function mount(botUsername: string) {
     if (!container.value) return
     container.value.innerHTML = ''
     window.onTelegramAuth = onAuth
+    window.addEventListener('message', onMessage)
+    status.value = 'loading'
+    timer = setTimeout(fail, READY_TIMEOUT_MS)
 
     const script = document.createElement('script')
     script.src = WIDGET_SRC
     script.async = true
+    script.onerror = fail
     script.setAttribute('data-telegram-login', botUsername)
     script.setAttribute('data-size', 'large')
     script.setAttribute('data-radius', '12')
@@ -44,9 +69,11 @@ export function useTelegramWidget(
   }
 
   onBeforeUnmount(() => {
+    if (timer) clearTimeout(timer)
+    window.removeEventListener('message', onMessage)
     delete window.onTelegramAuth
     if (container.value) container.value.innerHTML = ''
   })
 
-  return { mount }
+  return { mount, status }
 }

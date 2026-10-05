@@ -62,11 +62,16 @@
                 Забыли пароль?
               </router-link>
 
-              <div v-if="botUsername" class="auth-divider">
+              <div v-if="telegramStatus === 'ready'" class="auth-divider">
                 <span>или</span>
               </div>
 
-              <div v-if="botUsername" class="auth-telegram" ref="telegramContainer" />
+              <div
+                v-if="botUsername"
+                ref="telegramContainer"
+                class="auth-telegram"
+                :class="{ 'auth-telegram--pending': telegramStatus !== 'ready' }"
+              />
             </div>
           </div>
         </div>
@@ -96,7 +101,10 @@ const loading = ref(false)
 
 const botUsername = ref<string | null>(null)
 const telegramContainer = ref<HTMLElement | null>(null)
-const { mount: mountTelegramWidget } = useTelegramWidget(telegramContainer, handleTelegramAuth)
+const { mount: mountTelegramWidget, status: telegramStatus } = useTelegramWidget(
+  telegramContainer,
+  handleTelegramAuth,
+)
 
 onMounted(async () => {
   try {
@@ -414,6 +422,13 @@ async function handleTelegramAuth(user: TelegramWidgetUser) {
 .auth-telegram {
   display: flex;
   justify-content: center;
+}
+
+.auth-telegram--pending {
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .btn-spinner {
