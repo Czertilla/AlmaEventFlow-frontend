@@ -691,6 +691,10 @@ defineExpose({ loadData: reload })
   border-color: var(--ion-color-primary);
 }
 
+.rt-filter-field :deep(.dtf) {
+  --dtf-bg: var(--ion-background-color);
+}
+
 .rt-filter-toggle {
   display: flex;
   align-items: center;

@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest'
 import {
   applyFieldInput,
   caretAfterDigits,
+  clampFieldValue,
   currentFieldValue,
   dayFieldValue,
   formatFieldValue,
@@ -172,5 +173,23 @@ describe('dayFieldValue', () => {
 
   test('a datetime without a time to keep takes the current one', () => {
     expect(dayFieldValue('datetime', 1, '', now)).toBe('2026-04-01T07:04')
+  })
+})
+
+describe('clampFieldValue', () => {
+  test('keeps a value inside the bounds', () => {
+    expect(clampFieldValue('2026-03-12T12:00', '2026-03-12T10:00', '2026-03-12T14:00', 'datetime')).toBe(
+      '2026-03-12T12:00',
+    )
+  })
+
+  test('raises a value below min to min and lowers one above max to max', () => {
+    expect(clampFieldValue('2026-03-12T09:00', '2026-03-12T10:00', '', 'datetime')).toBe('2026-03-12T10:00')
+    expect(clampFieldValue('2026-03-12T15:00', '', '2026-03-12T14:00', 'datetime')).toBe('2026-03-12T14:00')
+  })
+
+  test('compares in the format of the mode and ignores empty or malformed bounds', () => {
+    expect(clampFieldValue('2026-03-01', '2026-03-12T10:00', null, 'date')).toBe('2026-03-12')
+    expect(clampFieldValue('07:00', 'nonsense', undefined, 'time')).toBe('07:00')
   })
 })

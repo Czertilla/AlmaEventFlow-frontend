@@ -317,25 +317,20 @@
                   </div>
                   <span class="char-counter">{{ s.name.length }} / {{ STAGE_NAME_MAX }}</span>
                   <div class="stage-edit-row stage-range-row">
-                    <DateTimeField
-                      v-model="s.start_at"
-                      mode="datetime"
-                      class="stage-date"
-                      placeholder="Начало, ДД.ММ.ГГГГ ЧЧ:ММ"
-                      aria-label="Начало этапа"
-                      title="Начало этапа"
-                    />
-                    <span class="stage-dash">—</span>
-                    <DateTimeField
-                      v-model="s.end_at"
-                      mode="datetime"
-                      class="stage-date"
-                      placeholder="Окончание, ДД.ММ.ГГГГ ЧЧ:ММ"
-                      aria-label="Окончание этапа"
-                      title="Окончание этапа"
-                      :fallback="s.start_at"
-                      :min="s.start_at"
-                    />
+                    <div class="stage-date">
+                      <span class="stage-date-label">Начало</span>
+                      <DateTimeField v-model="s.start_at" mode="datetime" title="Начало этапа" />
+                    </div>
+                    <div class="stage-date">
+                      <span class="stage-date-label">Окончание</span>
+                      <DateTimeField
+                        v-model="s.end_at"
+                        mode="datetime"
+                        title="Окончание этапа"
+                        :fallback="s.start_at"
+                        :min="s.start_at"
+                      />
+                    </div>
                   </div>
                   <p v-if="stageEndBeforeStart(s)" class="form-hint form-hint-warn">
                     Окончание не может быть раньше начала
@@ -1296,13 +1291,22 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   flex: 1;
 }
 
-.stage-dash {
-  color: var(--ion-color-step-400);
-  flex-shrink: 0;
+.stage-range-row {
+  align-items: flex-start;
 }
 
-.stage-range-row .stage-date {
+.stage-date {
+  display: flex;
   flex: 1 1 0;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.stage-date-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ion-color-medium);
 }
 
 @media (max-width: 520px) {
@@ -1311,12 +1315,8 @@ useLayoutAddButton('Новое мероприятие', openCreate)
     align-items: stretch;
   }
 
-  .stage-range-row .stage-date {
+  .stage-date {
     flex: none;
-  }
-
-  .stage-range-row .stage-dash {
-    display: none;
   }
 }
 

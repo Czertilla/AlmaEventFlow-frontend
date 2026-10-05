@@ -153,3 +153,16 @@ export function dayFieldValue(
   const kept = normalizeFieldValue(keepTimeOf, 'datetime')
   return kept ? `${target.slice(0, 10)}${kept.slice(10)}` : target
 }
+
+export function clampFieldValue(
+  value: string,
+  min: string | null | undefined,
+  max: string | null | undefined,
+  mode: DateFieldMode,
+): string {
+  const floor = normalizeFieldValue(min, mode)
+  const ceiling = normalizeFieldValue(max, mode)
+  if (floor && value < floor) return floor
+  if (ceiling && value > ceiling) return ceiling
+  return value
+}

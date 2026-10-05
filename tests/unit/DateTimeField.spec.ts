@@ -5,9 +5,15 @@ import DateTimeField from '@/components/common/DateTimeField.vue'
 
 const IonDatetime = defineComponent({
   name: 'IonDatetime',
-  props: { value: String, min: String, presentation: String },
+  props: { value: String, min: String, max: String, presentation: String },
   emits: ['ion-change'],
-  setup: (props) => () => h('div', { class: 'picker', 'data-value': props.value, 'data-min': props.min }),
+  setup: (props) => () =>
+    h('div', {
+      class: 'picker',
+      'data-value': props.value,
+      'data-min': props.min,
+      'data-presentation': props.presentation,
+    }),
 })
 
 const IonModal = defineComponent({
@@ -23,7 +29,11 @@ function field(props: Record<string, unknown>) {
   })
 }
 
-async function type(wrapper: ReturnType<typeof field>, value: string, inputType = 'insertText') {
+type Field = ReturnType<typeof field>
+
+const inputValue = (wrapper: Field) => (wrapper.get('input').element as HTMLInputElement).value
+
+async function type(wrapper: Field, value: string, inputType = 'insertText') {
   const input = wrapper.get('input')
   const element = input.element as HTMLInputElement
   element.value = value
@@ -33,9 +43,7 @@ async function type(wrapper: ReturnType<typeof field>, value: string, inputType 
 
 describe('DateTimeField typing', () => {
   test('shows the model in the display format', () => {
-    expect(field({ modelValue: '2026-03-12T15:30', mode: 'datetime' }).get('input').element.value).toBe(
-      '12.03.2026 15:30',
-    )
+    expect(inputValue(field({ modelValue: '2026-03-12T15:30', mode: 'datetime' }))).toBe('12.03.2026 15:30')
   })
 
   test('emits only once the date is complete and real', async () => {
@@ -47,7 +55,7 @@ describe('DateTimeField typing', () => {
     await type(wrapper, '12032026')
     expect(wrapper.emitted('update:modelValue')).toEqual([['2026-03-12']])
     expect(wrapper.emitted('change')).toEqual([['2026-03-12']])
-    expect((wrapper.get('input').element as HTMLInputElement).value).toBe('12.03.2026')
+    expect(inputValue(wrapper)).toBe('12.03.2026')
   })
 
   test('an impossible date is flagged and never emitted', async () => {
@@ -56,7 +64,7 @@ describe('DateTimeField typing', () => {
     await type(wrapper, '31022026')
 
     expect(wrapper.emitted('update:modelValue')).toBeUndefined()
-    expect(wrapper.get('input').classes()).toContain('dtf-input--invalid')
+    expect(wrapper.get('.dtf-box').classes()).toContain('dtf-box--invalid')
   })
 
   test('leaving an incomplete value restores the model', async () => {
@@ -65,7 +73,7 @@ describe('DateTimeField typing', () => {
     await type(wrapper, '1203')
     await wrapper.get('input').trigger('blur')
 
-    expect((wrapper.get('input').element as HTMLInputElement).value).toBe('12.03.2026')
+    expect(inputValue(wrapper)).toBe('12.03.2026')
   })
 
   test('emptying the input clears the model', async () => {
@@ -89,7 +97,37 @@ describe('DateTimeField typing', () => {
 
     await wrapper.setProps({ modelValue: '2026-12-31' })
 
-    expect((wrapper.get('input').element as HTMLInputElement).value).toBe('31.12.2026')
+    expect(inputValue(wrapper)).toBe('31.12.2026')
+  })
+})
+
+describe('DateTimeField template', () => {
+  const ghost = (wrapper: Field) => wrapper.get('.dtf-ghost').text()
+
+  test('the whole template is shown while the field is empty', () => {
+    expect(ghost(field({ modelValue: '', mode: 'datetime' }))).toBe('ДД.ММ.ГГГГ ЧЧ:ММ')
+    expect(ghost(field({ modelValue: '', mode: 'date' }))).toBe('ДД.ММ.ГГГГ')
+    expect(ghost(field({ modelValue: '', mode: 'time' }))).toBe('ЧЧ:ММ')
+  })
+
+  test('typed characters replace the start of the template and the rest stays', async () => {
+    const wrapper = field({ modelValue: '', mode: 'datetime' })
+
+    await type(wrapper, '1203')
+
+    expect(ghost(wrapper)).toBe('12.03.ГГГГ ЧЧ:ММ')
+    expect(wrapper.get('.dtf-ghost-typed').text()).toBe('12.03')
+  })
+
+  test('a complete value leaves nothing of the template', () => {
+    expect(ghost(field({ modelValue: '2026-03-12T15:30', mode: 'datetime' }))).toBe('12.03.2026 15:30')
+  })
+
+  test('the input has no placeholder of its own and is labelled with the format', () => {
+    const wrapper = field({ modelValue: '', mode: 'datetime', title: 'Окончание этапа' })
+
+    expect(wrapper.get('input').attributes('placeholder')).toBeUndefined()
+    expect(wrapper.get('input').attributes('aria-label')).toBe('Окончание этапа, ДД.ММ.ГГГГ ЧЧ:ММ')
   })
 })
 
@@ -100,17 +138,23 @@ describe('DateTimeField picker', () => {
     return wrapper
   }
 
-  const pick = async (wrapper: ReturnType<typeof field>, value: string | null) => {
+  const pickDate = async (wrapper: Field, value: string | null) => {
     wrapper.getComponent(IonDatetime).vm.$emit('ion-change', { detail: { value } })
     await wrapper.vm.$nextTick()
   }
 
-  test('opens on the fallback without writing it into the model', async () => {
+  const spinnerValues = (wrapper: Field) =>
+    wrapper.findAll('.ts-value').map((input) => (input.element as HTMLInputElement).value).join(':')
+
+  const done = (wrapper: Field) => wrapper.get('.dtf-action--primary').trigger('click')
+
+  test('a datetime opens on the fallback without writing it into the model', async () => {
     const wrapper = await opened({ modelValue: '', mode: 'datetime', fallback: '2026-03-12T15:30' })
 
-    expect(wrapper.get('.picker').attributes('data-value')).toBe('2026-03-12T15:30')
+    expect(wrapper.get('.picker').attributes('data-value')).toBe('2026-03-12')
+    expect(spinnerValues(wrapper)).toBe('15:30')
     expect(wrapper.emitted('update:modelValue')).toBeUndefined()
-    expect((wrapper.get('input').element as HTMLInputElement).value).toBe('')
+    expect(inputValue(wrapper)).toBe('')
   })
 
   test('the model wins over the fallback', async () => {
@@ -120,7 +164,8 @@ describe('DateTimeField picker', () => {
       fallback: '2026-03-12T15:30',
     })
 
-    expect(wrapper.get('.picker').attributes('data-value')).toBe('2026-03-13T18:45')
+    expect(wrapper.get('.picker').attributes('data-value')).toBe('2026-03-13')
+    expect(spinnerValues(wrapper)).toBe('18:45')
   })
 
   test('an empty field opens the picker on the current moment', async () => {
@@ -129,40 +174,80 @@ describe('DateTimeField picker', () => {
     expect(wrapper.get('.picker').attributes('data-value')).toMatch(/^\d{4}-\d{2}-\d{2}$/)
   })
 
-  test('forwards min to the picker', async () => {
-    const wrapper = await opened({ modelValue: '', mode: 'datetime', min: '2026-03-12T15:30' })
+  test('only a date is a calendar, only a time is a spinner and a datetime is both', async () => {
+    const date = await opened({ mode: 'date' })
+    const time = await opened({ mode: 'time' })
+    const both = await opened({ mode: 'datetime' })
 
-    expect(wrapper.get('.picker').attributes('data-min')).toBe('2026-03-12T15:30')
+    expect([date.find('.picker').exists(), date.find('.ts').exists()]).toEqual([true, false])
+    expect([time.find('.picker').exists(), time.find('.ts').exists()]).toEqual([false, true])
+    expect([both.find('.picker').exists(), both.find('.ts').exists()]).toEqual([true, true])
+    expect(both.get('.picker').attributes('data-presentation')).toBe('date')
   })
 
-  test.each([
-    ['date', '2026-03-12T00:00:00', '2026-03-12'],
-    ['datetime', '2026-03-12T18:45:00', '2026-03-12T18:45'],
-    ['time', '2026-03-12T18:45:00', '18:45'],
-  ] as const)('a %s picked in the picker is emitted in the model format on done', async (mode, picked, expected) => {
-    const wrapper = await opened({ modelValue: '', mode })
+  test('the calendar gets the date part of min', async () => {
+    const wrapper = await opened({ modelValue: '', mode: 'datetime', min: '2026-03-12T15:30' })
 
-    await pick(wrapper, picked)
+    expect(wrapper.get('.picker').attributes('data-min')).toBe('2026-03-12')
+  })
+
+  test('a date picked in the calendar is emitted on done', async () => {
+    const wrapper = await opened({ modelValue: '', mode: 'date' })
+
+    await pickDate(wrapper, '2026-03-12T00:00:00')
     expect(wrapper.emitted('update:modelValue')).toBeUndefined()
 
-    await wrapper.get('.dtf-action--primary').trigger('click')
+    await done(wrapper)
 
-    expect(wrapper.emitted('update:modelValue')).toEqual([[expected]])
-    expect(wrapper.emitted('change')).toEqual([[expected]])
+    expect(wrapper.emitted('update:modelValue')).toEqual([['2026-03-12']])
+    expect(wrapper.emitted('change')).toEqual([['2026-03-12']])
+  })
+
+  test('a datetime combines the calendar day with the spinner time', async () => {
+    const wrapper = await opened({ modelValue: '2026-03-12T10:00', mode: 'datetime' })
+
+    await pickDate(wrapper, '2026-04-01T00:00:00')
+    const hours = wrapper.findAll('.ts-value')[0]!
+    await hours.trigger('focus')
+    ;(hours.element as HTMLInputElement).value = '18'
+    await hours.trigger('input')
+    await done(wrapper)
+
+    expect(wrapper.emitted('update:modelValue')).toEqual([['2026-04-01T18:00']])
+  })
+
+  test('a time picked with a preset is emitted as HH:mm', async () => {
+    const wrapper = await opened({ modelValue: '', mode: 'time' })
+
+    await wrapper.findAll('.ts-preset').find((chip) => chip.text() === ':30')!.trigger('click')
+    await done(wrapper)
+
+    expect(wrapper.emitted('update:modelValue')![0]![0]).toMatch(/^\d{2}:30$/)
   })
 
   test('done on an untouched picker commits what it showed', async () => {
     const wrapper = await opened({ modelValue: '', mode: 'datetime', fallback: '2026-03-12T15:30' })
 
-    await wrapper.get('.dtf-action--primary').trigger('click')
+    await done(wrapper)
 
     expect(wrapper.emitted('update:modelValue')).toEqual([['2026-03-12T15:30']])
+  })
+
+  test('the time cannot be stepped below min', async () => {
+    const wrapper = await opened({ modelValue: '', mode: 'datetime', fallback: '2026-03-12T15:30', min: '2026-03-12T15:30' })
+
+    await wrapper
+      .findAll('.ts-step')
+      .find((button) => button.attributes('aria-label') === 'Часы: меньше')!
+      .trigger('click')
+
+    expect(spinnerValues(wrapper)).toBe('15:30')
   })
 
   test('closing the sheet keeps the model', async () => {
     const wrapper = await opened({ modelValue: '2026-03-12', mode: 'date' })
 
-    await pick(wrapper, '2026-04-01T00:00:00')
+    await pickDate(wrapper, '2026-04-01T00:00:00')
     await wrapper.get('.dtf-sheet-close').trigger('click')
 
     expect(wrapper.emitted('update:modelValue')).toBeUndefined()
@@ -176,15 +261,21 @@ describe('DateTimeField picker', () => {
     expect(wrapper.emitted('update:modelValue')).toEqual([['']])
   })
 
-  test('the tomorrow chip keeps the picked time and is committed with done', async () => {
+  test('the tomorrow chip keeps the chosen time', async () => {
     const wrapper = await opened({ modelValue: '2026-03-12T18:45', mode: 'datetime' })
-    const tomorrow = wrapper.findAll('.dtf-chip').find((chip) => chip.text() === 'Завтра')!
 
-    await tomorrow.trigger('click')
-    const shown = wrapper.get('.picker').attributes('data-value')!
+    await wrapper.findAll('.dtf-chip').find((chip) => chip.text() === 'Завтра')!.trigger('click')
 
-    expect(shown.slice(10)).toBe('T18:45')
-    expect(shown.slice(0, 10) > new Date().toISOString().slice(0, 10)).toBe(true)
+    expect(spinnerValues(wrapper)).toBe('18:45')
+    expect(wrapper.get('.picker').attributes('data-value')! > new Date().toISOString().slice(0, 10)).toBe(true)
+  })
+
+  test('the now chip sets both the day and the time', async () => {
+    const wrapper = await opened({ modelValue: '2000-01-01T01:01', mode: 'datetime' })
+
+    await wrapper.findAll('.dtf-chip').find((chip) => chip.text() === 'Сейчас')!.trigger('click')
+
+    expect(wrapper.get('.picker').attributes('data-value')).not.toBe('2000-01-01')
   })
 
   test('chips before the minimum are disabled', async () => {
@@ -193,7 +284,7 @@ describe('DateTimeField picker', () => {
     expect(wrapper.findAll('.dtf-chip').every((chip) => chip.attributes('disabled') !== undefined)).toBe(true)
   })
 
-  test('the time picker offers "now"', async () => {
+  test('a time field offers only "now"', async () => {
     const wrapper = await opened({ modelValue: '', mode: 'time' })
 
     expect(wrapper.findAll('.dtf-chip').map((chip) => chip.text())).toEqual(['Сейчас'])

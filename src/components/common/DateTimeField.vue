@@ -1,18 +1,21 @@
 <template>
   <div class="dtf">
-    <input
-      class="dtf-input"
-      :class="{ 'dtf-input--invalid': invalid }"
-      type="text"
-      inputmode="numeric"
-      autocomplete="off"
-      :value="text"
-      :placeholder="placeholder ?? FIELD_HINTS[mode]"
-      :disabled="disabled"
-      :aria-label="ariaLabel"
-      @input="onInput"
-      @blur="onBlur"
-    />
+    <div class="dtf-box" :class="{ 'dtf-box--invalid': invalid, 'dtf-box--disabled': disabled }">
+      <span class="dtf-ghost" aria-hidden="true">
+        <span class="dtf-ghost-typed">{{ text }}</span>{{ FIELD_HINTS[mode].slice(text.length) }}
+      </span>
+      <input
+        class="dtf-input"
+        type="text"
+        inputmode="numeric"
+        autocomplete="off"
+        :value="text"
+        :disabled="disabled"
+        :aria-label="`${ariaLabel ?? title ?? TITLES[mode]}, ${FIELD_HINTS[mode]}`"
+        @input="onInput"
+        @blur="onBlur"
+      />
+    </div>
     <button
       type="button"
       class="dtf-button"
@@ -22,7 +25,7 @@
     >
       <ion-icon :icon="mode === 'time' ? timeOutline : calendarOutline" />
     </button>
-    <ion-modal :is-open="open" class="dtf-modal" @did-dismiss="open = false">
+    <ion-modal :is-open="open" :class="['dtf-modal', `dtf-modal--${mode}`]" @did-dismiss="open = false">
       <div class="dtf-sheet">
         <div class="dtf-sheet-head">
           <span class="dtf-sheet-title">{{ title ?? TITLES[mode] }}</span>
@@ -32,37 +35,35 @@
         </div>
         <div class="dtf-sheet-body">
           <div class="dtf-quick">
-            <template v-if="mode === 'time'">
-              <button type="button" class="dtf-chip" @click="draft = currentFieldValue('time')">Сейчас</button>
-            </template>
-            <template v-else>
-              <button
-                v-for="chip in dayChips"
-                :key="chip.label"
-                type="button"
-                class="dtf-chip"
-                :disabled="chip.disabled"
-                @click="draft = chip.value"
-              >
-                {{ chip.label }}
-              </button>
-            </template>
+            <button
+              v-for="chip in chips"
+              :key="chip.label"
+              type="button"
+              class="dtf-chip"
+              :disabled="chip.disabled"
+              @click="setDraft(chip.value)"
+            >
+              {{ chip.label }}
+            </button>
           </div>
-          <ion-datetime
-            class="dtf-picker"
-            :presentation="mode === 'datetime' ? 'date-time' : mode"
-            :prefer-wheel="mode === 'time'"
-            :value="draft"
-            :min="min || undefined"
-            :max="max || undefined"
-            size="cover"
-            locale="ru-RU"
-            hour-cycle="h23"
-            :first-day-of-week="1"
-            @ion-change="onPick"
-          >
-            <span slot="time-label">Время</span>
-          </ion-datetime>
+          <div class="dtf-body" :class="`dtf-body--${mode}`">
+            <ion-datetime
+              v-if="mode !== 'time'"
+              class="dtf-picker"
+              presentation="date"
+              :value="draftDate"
+              :min="calendarLimit(min) || undefined"
+              :max="calendarLimit(max) || undefined"
+              size="cover"
+              locale="ru-RU"
+              :first-day-of-week="1"
+              @ion-change="onPickDate"
+            />
+            <div v-if="mode !== 'date'" class="dtf-time">
+              <span v-if="mode === 'datetime'" class="dtf-time-title">Время</span>
+              <TimeSpinner :model-value="draftTime" @update:model-value="onPickTime" />
+            </div>
+          </div>
         </div>
         <div class="dtf-sheet-actions">
           <button type="button" class="dtf-action dtf-action--ghost" @click="clear">Очистить</button>
@@ -77,9 +78,11 @@
 import { computed, ref, watch } from 'vue'
 import { IonDatetime, IonIcon, IonModal } from '@ionic/vue'
 import { calendarOutline, closeOutline, timeOutline } from 'ionicons/icons'
+import TimeSpinner from '@/components/common/TimeSpinner.vue'
 import {
   FIELD_HINTS,
   applyFieldInput,
+  clampFieldValue,
   currentFieldValue,
   dayFieldValue,
   formatFieldValue,
@@ -100,14 +103,13 @@ const props = withDefaults(
     modelValue?: string | null
     mode?: DateFieldMode
     title?: string
-    placeholder?: string
     ariaLabel?: string
     fallback?: string | null
     min?: string | null
     max?: string | null
     disabled?: boolean
   }>(),
-  { modelValue: '', mode: 'date', title: undefined, fallback: '', min: '', max: '' },
+  { modelValue: '', mode: 'date', title: undefined, ariaLabel: undefined, fallback: '', min: '', max: '' },
 )
 
 const emit = defineEmits<{
@@ -132,17 +134,34 @@ const invalid = computed(
     parseFieldText(text.value, props.mode) === null,
 )
 
-const dayChips = computed(() => {
-  const mode = props.mode === 'datetime' ? 'datetime' : 'date'
+const draftDate = computed(() => (props.mode === 'time' ? '' : draft.value.slice(0, 10)))
+const draftTime = computed(() => (props.mode === 'time' ? draft.value : draft.value.slice(11)))
+
+const chips = computed(() => {
+  const withDay = props.mode === 'datetime' ? 'datetime' : 'date'
+  const list =
+    props.mode === 'time'
+      ? [{ label: 'Сейчас', value: currentFieldValue('time') }]
+      : [
+          ...(props.mode === 'datetime' ? [{ label: 'Сейчас', value: currentFieldValue('datetime') }] : []),
+          { label: 'Сегодня', value: dayFieldValue(withDay, 0, draft.value) },
+          { label: 'Завтра', value: dayFieldValue(withDay, 1, draft.value) },
+        ]
   const floor = normalizeFieldValue(props.min, props.mode)
-  return [
-    { label: 'Сегодня', offset: 0 },
-    { label: 'Завтра', offset: 1 },
-  ].map(({ label, offset }) => {
-    const value = dayFieldValue(mode, offset, draft.value)
-    return { label, value, disabled: !!floor && value < floor }
-  })
+  const ceiling = normalizeFieldValue(props.max, props.mode)
+  return list.map((chip) => ({
+    ...chip,
+    disabled: (!!floor && chip.value < floor) || (!!ceiling && chip.value > ceiling),
+  }))
 })
+
+function calendarLimit(value: string | null | undefined) {
+  return normalizeFieldValue(value, props.mode).slice(0, 10)
+}
+
+function setDraft(value: string) {
+  draft.value = clampFieldValue(value, props.min, props.max, props.mode)
+}
 
 function initialDraft() {
   return (
@@ -153,7 +172,7 @@ function initialDraft() {
 }
 
 function openPicker() {
-  draft.value = initialDraft()
+  setDraft(initialDraft())
   open.value = true
 }
 
@@ -187,9 +206,14 @@ function onBlur() {
   text.value = formatFieldValue(props.modelValue, props.mode)
 }
 
-function onPick(event: CustomEvent<{ value?: string | string[] | null }>) {
+function onPickDate(event: CustomEvent<{ value?: string | string[] | null }>) {
   const picked = event.detail.value
-  draft.value = fromPickerValue(Array.isArray(picked) ? picked[0] : picked, props.mode) || draft.value
+  const day = fromPickerValue(Array.isArray(picked) ? picked[0] : picked, 'date')
+  if (day) setDraft(props.mode === 'date' ? day : `${day}T${draftTime.value}`)
+}
+
+function onPickTime(time: string) {
+  setDraft(props.mode === 'time' ? time : `${draftDate.value}T${time}`)
 }
 
 function confirm() {
@@ -211,16 +235,49 @@ function clear() {
   min-width: 0;
 }
 
-.dtf-input {
-  width: 100%;
+.dtf-box {
+  position: relative;
+  flex: 1;
   min-width: 0;
-  border: 1.5px solid var(--ion-border-color);
   border-radius: 10px;
-  background: var(--ion-card-background);
+  background: var(--dtf-bg, var(--ion-card-background));
+}
+
+.dtf-ghost,
+.dtf-input {
+  box-sizing: border-box;
+  width: 100%;
+  border: 1.5px solid transparent;
+  padding: 10px 48px 10px 12px;
   font-family: inherit;
   font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: normal;
+}
+
+.dtf-ghost {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  color: var(--ion-color-step-400, var(--ion-color-medium));
+  white-space: pre;
+  pointer-events: none;
+}
+
+.dtf-ghost-typed {
+  visibility: hidden;
+}
+
+.dtf-input {
+  position: relative;
+  display: block;
+  min-width: 0;
+  border-color: var(--ion-border-color);
+  border-radius: 10px;
+  background: transparent;
   color: var(--ion-text-color);
-  padding: 10px 44px 10px 12px;
   outline: none;
   transition: border-color 0.15s;
 }
@@ -229,12 +286,12 @@ function clear() {
   border-color: var(--ion-color-primary);
 }
 
-.dtf-input--invalid,
-.dtf-input--invalid:focus {
+.dtf-box--invalid .dtf-input,
+.dtf-box--invalid .dtf-input:focus {
   border-color: var(--ion-color-danger);
 }
 
-.dtf-input:disabled {
+.dtf-box--disabled {
   opacity: 0.6;
 }
 
@@ -285,6 +342,16 @@ ion-modal.dtf-modal {
   --border-radius: 20px;
   --background: var(--ion-card-background);
   --box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+}
+
+ion-modal.dtf-modal--time {
+  --width: min(92vw, 320px);
+}
+
+@media (min-width: 576px) {
+  ion-modal.dtf-modal--datetime {
+    --width: min(92vw, 640px);
+  }
 }
 
 @media (max-width: 575px) {
@@ -373,20 +440,53 @@ ion-modal.dtf-modal {
   cursor: default;
 }
 
+.dtf-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.dtf-time {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 12px;
+}
+
+.dtf-time-title {
+  align-self: flex-start;
+  color: var(--ion-color-medium);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@media (min-width: 576px) {
+  .dtf-body--datetime {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 190px;
+    align-items: start;
+    gap: 8px;
+  }
+
+  .dtf-body--datetime .dtf-time {
+    margin: 12px 0 0;
+    padding: 4px 4px 12px 16px;
+    border-left: 1.5px solid var(--ion-border-color);
+  }
+
+  .dtf-body--time .dtf-time {
+    padding-top: 0;
+  }
+}
+
 ion-datetime.dtf-picker {
   --background: transparent;
   --background-rgb: var(--dtf-surface-rgb);
-  --wheel-highlight-background: rgba(var(--ion-color-primary-rgb), 0.12);
-  --wheel-highlight-border-radius: 10px;
-  --ion-color-step-300: rgba(var(--ion-color-primary-rgb), 0.12);
   --ion-color-step-500: var(--ion-color-medium);
   --ion-color-step-650: var(--ion-text-color);
   width: 100%;
-}
-
-ion-datetime.dtf-picker::part(time-button) {
-  color: var(--ion-color-primary);
-  font-weight: 600;
 }
 
 .dtf-sheet-actions {
