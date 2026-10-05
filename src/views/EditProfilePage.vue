@@ -15,23 +15,17 @@
         <div class="edit-section">
           <h3 class="edit-section-title">Основные данные</h3>
           <div class="edit-card">
-            <div class="field-group">
-              <label class="field-label">Имя пользователя</label>
-              <div class="field-input">
-                <ion-icon :icon="personOutline" class="field-icon" />
-                <input v-model="username" type="text" placeholder="Имя пользователя" />
-              </div>
-            </div>
-            <div class="field-group">
-              <label class="field-label">Email</label>
-              <div class="field-input">
-                <ion-icon :icon="mailOutline" class="field-icon" />
-                <input v-model="email" type="email" placeholder="Email" />
-              </div>
-              <span v-if="emailChanged" class="field-hint">
-                После смены email потребуется повторное подтверждение адреса.
-              </span>
-            </div>
+            <UiInput v-model="username" label="Имя пользователя">
+              <template #prefix><ion-icon :icon="personOutline" /></template>
+            </UiInput>
+            <UiInput
+              v-model="email"
+              label="Email"
+              type="email"
+              :hint="emailChanged ? 'После смены email потребуется повторное подтверждение адреса.' : ''"
+            >
+              <template #prefix><ion-icon :icon="mailOutline" /></template>
+            </UiInput>
           </div>
         </div>
 
@@ -39,22 +33,22 @@
           <h3 class="edit-section-title">Смена пароля</h3>
           <div class="edit-card">
             <div class="field-group">
-              <label class="field-label">Новый пароль</label>
-              <PasswordField v-model="password" autocomplete="new-password" placeholder="Оставьте пустым, чтобы не менять" />
+              <PasswordField
+                v-model="password"
+                label="Новый пароль"
+                autocomplete="new-password"
+                placeholder="Оставьте пустым, чтобы не менять"
+              />
               <PasswordStrengthMeter :password="password" />
             </div>
             <template v-if="password">
-              <div class="field-group">
-                <label class="field-label">Повторите пароль</label>
-                <PasswordField v-model="confirm" autocomplete="new-password" placeholder="Повторите новый пароль" />
-              </div>
-              <div class="field-group">
-                <label class="field-label">Текущий пароль</label>
-                <PasswordField v-model="currentPassword" autocomplete="current-password" placeholder="Введите текущий пароль" />
-                <span class="field-hint">
-                  Для смены пароля подтвердите текущий. Остальные сеансы будут завершены.
-                </span>
-              </div>
+              <PasswordField v-model="confirm" label="Повторите пароль" autocomplete="new-password" />
+              <PasswordField
+                v-model="currentPassword"
+                label="Текущий пароль"
+                autocomplete="current-password"
+                hint="Для смены пароля подтвердите текущий. Остальные сеансы будут завершены."
+              />
             </template>
           </div>
         </div>
@@ -118,6 +112,7 @@ import {
 } from 'ionicons/icons'
 import { createTelegramLinkTokenUserV1UsersMeTelegramLinkTokenPost } from '@/api/generated/almaEventFlow'
 import type { UserUpdate } from '@/api/generated/almaEventFlow'
+import UiInput from '@/components/common/UiInput.vue'
 
 const router = useRouter()
 const auth = useAuthStore()
@@ -268,47 +263,6 @@ async function handleSave() {
   display: flex;
   flex-direction: column;
   gap: 6px;
-}
-
-.field-label {
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-semibold);
-  color: var(--ion-text-color);
-}
-
-.field-input {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 14px;
-  border: 1.5px solid var(--ion-border-color);
-  border-radius: 12px;
-  background: var(--ion-background-color);
-  transition: border-color 0.2s;
-}
-
-.field-input:focus-within {
-  border-color: var(--ion-color-primary);
-}
-
-.field-icon {
-  font-size: var(--fs-xl);
-  color: var(--ion-color-medium);
-  flex-shrink: 0;
-}
-
-.field-input input {
-  flex: 1;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-size: var(--fs-md);
-  padding: 13px 0;
-  color: var(--ion-text-color);
-}
-
-.field-input input::placeholder {
-  color: var(--ion-color-step-400);
 }
 
 .field-hint {

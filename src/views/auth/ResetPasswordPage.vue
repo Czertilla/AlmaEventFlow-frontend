@@ -41,27 +41,23 @@
 
               <div v-else key="form" class="auth-form">
                 <div class="field-group">
-                  <label class="field-label">Новый пароль</label>
                   <PasswordField
                     v-model="password"
+                    label="Новый пароль"
                     autocomplete="new-password"
-                    placeholder="Введите новый пароль"
                     :error="!!error && !password"
                     @enter="handleSubmit"
                   />
                   <PasswordStrengthMeter :password="password" />
                 </div>
 
-                <div class="field-group">
-                  <label class="field-label">Повторите пароль</label>
-                  <PasswordField
-                    v-model="confirm"
-                    autocomplete="new-password"
-                    placeholder="Повторите пароль"
-                    :error="!!error && password !== confirm"
-                    @enter="handleSubmit"
-                  />
-                </div>
+                <PasswordField
+                  v-model="confirm"
+                  label="Повторите пароль"
+                  autocomplete="new-password"
+                  :error="!!error && password !== confirm"
+                  @enter="handleSubmit"
+                />
 
                 <Transition name="fade">
                   <div v-if="error" class="auth-error">
@@ -236,51 +232,6 @@ async function handleSubmit() {
   display: flex;
   flex-direction: column;
   gap: 6px;
-}
-
-.field-label {
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-semibold);
-  color: var(--ion-text-color);
-}
-
-.field-input {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 14px;
-  border: 1.5px solid var(--ion-border-color);
-  border-radius: 12px;
-  background: var(--ion-background-color);
-  transition: border-color 0.2s;
-}
-
-.field-input:focus-within {
-  border-color: var(--ion-color-primary);
-}
-
-.field-input--error {
-  border-color: var(--ion-color-danger);
-}
-
-.field-icon {
-  font-size: var(--fs-xl);
-  color: var(--ion-color-medium);
-  flex-shrink: 0;
-}
-
-.field-input input {
-  flex: 1;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-size: var(--fs-md);
-  padding: 14px 0;
-  color: var(--ion-text-color);
-}
-
-.field-input input::placeholder {
-  color: var(--ion-color-step-400);
 }
 
 .auth-error {

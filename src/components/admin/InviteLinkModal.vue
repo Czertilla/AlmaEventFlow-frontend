@@ -7,10 +7,7 @@
   </div>
   <ion-content class="ion-padding">
     <div class="invite-form">
-      <div class="form-field">
-        <label>Время действия (часов)</label>
-        <input v-model.number="expiresIn" type="number" min="1" max="720" class="native-input" />
-      </div>
+      <UiInput v-model.number="expiresIn" label="Время действия (часов)" type="number" min="1" max="720" />
 
       <button class="ui-btn ui-btn--primary" :disabled="creating" @click="createInvite">
         {{ creating ? 'Создание...' : 'Создать ссылку' }}
@@ -31,6 +28,7 @@
 import { ref } from 'vue'
 import { IonContent, IonIcon } from '@ionic/vue'
 import { closeOutline, copyOutline, checkmarkOutline } from 'ionicons/icons'
+import UiInput from '@/components/common/UiInput.vue'
 import { createInviteTokenUserV1UsersInvitePost } from '@/api/generated/almaEventFlow'
 
 defineEmits<{ close: [] }>()
@@ -70,26 +68,14 @@ async function copy() {
   gap: 16px;
 }
 
-.form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.form-field label {
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-semibold);
-  color: var(--ion-text-color);
-}
-
 .invite-result {
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 12px 14px;
-  border-radius: 12px;
+  border-radius: var(--radius-md);
   background: var(--ion-background-color);
-  border: 1px solid var(--ion-border-color);
+  border: var(--border-w) solid var(--ion-border-color);
 }
 
 .invite-link {

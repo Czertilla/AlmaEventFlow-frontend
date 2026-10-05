@@ -5,22 +5,339 @@ textarea {
   font-family: inherit;
 }
 
-.ui-input,
-.native-input {
+.ui-field {
+  --ui-field-border: var(--field-border);
+  position: relative;
+  display: block;
   width: 100%;
-  border: var(--border-w) solid var(--ion-border-color);
+  min-width: 0;
+}
+
+.ui-field--labeled {
+  padding-top: 8px;
+}
+
+.ui-field-box {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  min-height: var(--field-h);
+  border-radius: var(--radius-md);
+  background: var(--ui-field-bg, var(--ion-card-background));
+  color: var(--ion-text-color);
+}
+
+.ui-field-main {
+  position: relative;
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.ui-field-prefix,
+.ui-field-suffix {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.ui-field-prefix {
+  padding-left: var(--field-pad-x);
+  color: var(--ion-color-medium);
+  font-size: var(--fs-xl);
+}
+
+.ui-field-suffix {
+  gap: 2px;
+  padding-right: 7px;
+}
+
+.ui-field-control {
+  display: block;
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--field-h);
+  margin: 0;
+  padding: 14px var(--field-pad-x);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font-size: var(--fs-md);
+  line-height: 1.4;
+  outline: none;
+  resize: none;
+  box-sizing: border-box;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input.ui-field-control {
+  height: var(--field-h);
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.ui-field--prefix .ui-field-control {
+  padding-left: 10px;
+}
+
+.ui-field-control::placeholder {
+  color: transparent;
+  opacity: 1;
+}
+
+.ui-field--float .ui-field-control::placeholder,
+.ui-field:not(.ui-field--labeled) .ui-field-control::placeholder {
+  color: var(--ion-color-step-400);
+}
+
+.ui-field-select {
+  padding-right: 4px;
+  cursor: pointer;
+}
+
+.ui-field-chevron {
+  margin-right: 7px;
+  color: var(--ion-color-medium);
+  font-size: var(--fs-md);
+  pointer-events: none;
+}
+
+.ui-field-control:disabled {
+  cursor: not-allowed;
+}
+
+ion-select.ui-field-control {
+  --padding-top: 0;
+  --padding-bottom: 0;
+  --padding-start: var(--field-pad-x);
+  --padding-end: var(--field-pad-x);
+  --background: transparent;
+  --border-width: 0;
+  --highlight-height: 0;
+  --placeholder-color: var(--ion-color-step-400);
+  --placeholder-opacity: 1;
+  z-index: auto;
+  padding: 0;
+}
+
+ion-select.ui-field-control::part(inner),
+ion-select.ui-field-control::part(container) {
+  flex: 1;
+  min-width: 0;
+}
+
+ion-select.ui-field-control::part(icon) {
+  color: var(--ion-color-medium);
+  opacity: 1;
+}
+
+.ui-field-value {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  min-width: 0;
+  min-height: var(--field-h);
+  padding: 0 var(--field-pad-x);
+  overflow: hidden;
+  font-size: var(--fs-md);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ui-field--prefix .ui-field-value {
+  padding-left: 10px;
+}
+
+.ui-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: 240px;
+  margin-top: 6px;
+  padding: 6px;
+  overflow-y: auto;
+  border: var(--border-w) solid var(--field-border);
   border-radius: var(--radius-md);
   background: var(--ion-card-background);
+}
+
+.ui-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
   color: var(--ion-text-color);
   font-size: var(--fs-md);
-  padding: 10px 12px;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.12s;
+}
+
+.ui-menu-item:hover,
+.ui-menu-item:focus-visible {
+  background: rgba(var(--ion-text-color-rgb), 0.07);
   outline: none;
+}
+
+.ui-field-label {
+  position: absolute;
+  top: calc(var(--field-h) / 2);
+  left: var(--field-pad-x);
+  z-index: 3;
+  max-width: calc(100% - 2 * var(--field-pad-x));
+  overflow: hidden;
+  color: var(--ion-color-medium);
+  font-size: var(--fs-md);
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  transform: translateY(-50%);
+  pointer-events: none;
+  transition: top 0.15s, left 0.15s, font-size 0.15s, color 0.15s;
+}
+
+.ui-field--prefix .ui-field-label {
+  left: calc(var(--field-pad-x) + 28px);
+  max-width: calc(100% - 2 * var(--field-pad-x) - 28px);
+}
+
+.ui-field--suffix .ui-field-label {
+  max-width: calc(100% - 2 * var(--field-pad-x) - 34px);
+}
+
+.ui-field--prefix.ui-field--suffix .ui-field-label {
+  max-width: calc(100% - 2 * var(--field-pad-x) - 62px);
+}
+
+.ui-field.ui-field--float .ui-field-label {
+  top: 0;
+  left: var(--field-pad-x);
+  max-width: calc(100% - 2 * var(--field-pad-x));
+  font-size: var(--fs-xs);
+}
+
+.ui-field-outline {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  border: var(--border-w) solid var(--ui-field-border);
+  border-radius: var(--radius-md);
+  pointer-events: none;
   transition: border-color 0.15s;
 }
 
-.ui-input:focus,
-.native-input:focus {
-  border-color: var(--ion-color-primary);
+.ui-field--labeled .ui-field-outline {
+  top: -6px;
+  padding: 0 calc(var(--field-pad-x) - 4px - var(--border-w));
+}
+
+.ui-field-outline legend {
+  float: none;
+  width: auto;
+  max-width: 0.01px;
+  height: 12px;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  font-size: var(--fs-xs);
+  line-height: 12px;
+  white-space: nowrap;
+  visibility: hidden;
+  transition: max-width 0.05s;
+}
+
+.ui-field-outline legend > span {
+  display: inline-block;
+  padding: 0 4px;
+  opacity: 0;
+  visibility: visible;
+}
+
+.ui-field--float .ui-field-outline legend {
+  max-width: 100%;
+  transition: max-width 0.1s 0.05s;
+}
+
+@media (hover: hover) {
+  .ui-field:hover {
+    --ui-field-border: var(--ion-color-step-300);
+  }
+}
+
+.ui-field.ui-field--focus {
+  --ui-field-border: var(--ion-color-primary);
+}
+
+.ui-field.ui-field--invalid {
+  --ui-field-border: var(--ion-color-danger);
+}
+
+.ui-field.ui-field--disabled {
+  --ui-field-border: var(--field-border);
+}
+
+.ui-field--focus .ui-field-label {
+  color: var(--ion-color-primary);
+}
+
+.ui-field--invalid .ui-field-label {
+  color: var(--ion-color-danger);
+}
+
+.ui-field--disabled {
+  opacity: 0.6;
+}
+
+.ui-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: var(--field-h);
+  padding: 0 var(--field-pad-x);
+  border: var(--border-w) solid var(--field-border);
+  border-radius: var(--radius-md);
+  background: var(--ui-field-bg, var(--ion-card-background));
+  font-size: var(--fs-md);
+}
+
+.ui-field-title {
+  margin: 0 0 6px;
+  color: var(--ion-text-color);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+}
+
+.ui-field-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 4px var(--field-pad-x) 0;
+  color: var(--ion-color-medium);
+  font-size: var(--fs-xs);
+}
+
+.ui-field-message--error {
+  color: var(--ion-color-danger);
+}
+
+.ui-field-message--success {
+  color: var(--ion-color-success);
+}
+
+.ui-field-counter {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
 }
 
 .ui-icon-btn {
@@ -69,6 +386,12 @@ textarea {
 .ui-icon-btn:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+.ui-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .ui-chip {

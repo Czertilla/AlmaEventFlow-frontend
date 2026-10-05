@@ -60,19 +60,19 @@
     <!-- Filter panel -->
     <div v-if="filters.length && filterOpen" class="rt-filter-panel">
       <div v-for="f in filters" :key="f.key" class="rt-filter-field">
-        <label class="rt-filter-label">{{ f.label }}</label>
-        <select
+        <UiNativeSelect
           v-if="f.type === 'select'"
-          v-model="filterValues[f.key]"
-          class="rt-filter-control"
-          @change="applyFilters"
+          :model-value="filterValues[f.key]"
+          :label="f.label"
+          @update:model-value="filterValues[f.key] = $event; applyFilters()"
         >
           <option value="">Любой</option>
           <option v-for="opt in f.options || []" :key="String(opt.value)" :value="opt.value">
             {{ opt.label }}
           </option>
-        </select>
-        <label v-else-if="f.type === 'toggle'" class="rt-filter-toggle">
+        </UiNativeSelect>
+        <label v-else-if="f.type === 'toggle'" class="ui-toggle-row">
+          <span>{{ f.label }}</span>
           <ion-toggle
             :checked="filterValues[f.key] === true"
             mode="md"
@@ -83,8 +83,7 @@
           v-else-if="f.type === 'date'"
           v-model="filterValues[f.key]"
           mode="date"
-          :title="f.label"
-          :aria-label="f.label"
+          :label="f.label"
           @change="applyFilters"
         />
       </div>
@@ -246,6 +245,7 @@
 </template>
 
 <script setup lang="ts">
+import UiNativeSelect from '@/components/common/UiNativeSelect.vue'
 import { ref, reactive, computed, onMounted } from 'vue'
 import {
   IonButton, IonIcon, IonAlert, IonToggle,
@@ -664,37 +664,6 @@ defineExpose({ loadData: reload })
   flex-direction: column;
   gap: 6px;
   min-width: 160px;
-}
-
-.rt-filter-label {
-  font-size: var(--fs-xs);
-  font-weight: var(--fw-semibold);
-  color: var(--ion-color-medium);
-}
-
-.rt-filter-control {
-  height: 40px;
-  padding: 0 10px;
-  border: 1.5px solid var(--ion-border-color);
-  border-radius: 10px;
-  background: var(--ion-background-color);
-  font-size: var(--fs-md);
-  color: var(--ion-text-color);
-  outline: none;
-}
-
-.rt-filter-control:focus {
-  border-color: var(--ion-color-primary);
-}
-
-.rt-filter-field :deep(.dtf) {
-  --dtf-bg: var(--ion-background-color);
-}
-
-.rt-filter-toggle {
-  display: flex;
-  align-items: center;
-  height: 40px;
 }
 
 .rt-filter-reset {

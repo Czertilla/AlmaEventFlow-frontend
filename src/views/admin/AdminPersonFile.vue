@@ -22,9 +22,9 @@
         <!-- Персона -->
         <section v-show="activeTab === 'person'" class="card">
           <TimestampsMeta :created-at="personMeta.created_at" :edited-at="personMeta.edited_at" />
-          <div class="field"><label>Фамилия</label><ion-input v-model="person.surname" mode="md" /></div>
-          <div class="field"><label>Имя</label><ion-input v-model="person.name" mode="md" /></div>
-          <div class="field"><label>Отчество</label><ion-input v-model="person.patronymic" mode="md" /></div>
+          <UiInput v-model="person.surname" label="Фамилия" />
+          <UiInput v-model="person.name" label="Имя" />
+          <UiInput v-model="person.patronymic" label="Отчество" />
           <ion-button expand="block" :disabled="savingPerson" @click="savePerson">Сохранить</ion-button>
         </section>
 
@@ -32,18 +32,12 @@
         <section v-show="activeTab === 'profile'" class="card">
           <TimestampsMeta :created-at="profileMeta.created_at" :edited-at="profileMeta.edited_at" />
           <p v-if="!profileExists" class="hint">Профиль ещё не создан — заполните и сохраните.</p>
-          <div class="field"><label>Дата рождения</label><DateTimeField v-model="profile.birthdate" mode="date" title="Дата рождения" aria-label="Дата рождения" /></div>
-          <div class="field">
-            <label>Место работы</label>
-            <SearchPicker v-model="profile.workplace_id" :fetch="searchOrgs" placeholder="Поиск организации..." />
-          </div>
-          <div class="field">
-            <label>Диета</label>
-            <ion-select v-model="profile.diet_id" interface="popover" placeholder="Не выбрано" mode="md">
-              <ion-select-option :value="null">Не выбрано</ion-select-option>
-              <ion-select-option v-for="d in diets" :key="d.id" :value="d.id">{{ d.name }}</ion-select-option>
-            </ion-select>
-          </div>
+          <DateTimeField v-model="profile.birthdate" mode="date" label="Дата рождения" />
+          <SearchPicker v-model="profile.workplace_id" label="Место работы" :fetch="searchOrgs" placeholder="Поиск организации…" />
+          <UiSelect v-model="profile.diet_id" label="Диета" placeholder="Не выбрано">
+            <ion-select-option :value="null">Не выбрано</ion-select-option>
+            <ion-select-option v-for="d in diets" :key="d.id" :value="d.id">{{ d.name }}</ion-select-option>
+          </UiSelect>
           <ion-button expand="block" :disabled="savingProfile" @click="saveProfile">Сохранить</ion-button>
         </section>
 
@@ -52,18 +46,12 @@
           <TimestampsMeta :created-at="studentMeta.created_at" :edited-at="studentMeta.edited_at" />
           <p v-if="!studentExists" class="hint">Студенческая карточка не создана — заполните и сохраните.</p>
           <p v-if="!profileExists" class="hint hint--warn">Сначала создайте профиль.</p>
-          <div class="field"><label>Студенческий билет</label><ion-input v-model="student.student_id" mode="md" /></div>
-          <div class="field">
-            <label>Группа</label>
-            <SearchPicker v-model="student.group_id" :fetch="searchGroups" :numeric="true" placeholder="Поиск группы..." />
-          </div>
-          <div class="field">
-            <label>Факультет</label>
-            <SearchPicker v-model="student.faculty_id" :fetch="searchOrgs" placeholder="Поиск факультета..." />
-          </div>
-          <div class="field field--row"><label>Бюджет</label><ion-toggle v-model="student.is_budget" /></div>
-          <div class="field field--row"><label>Очная форма</label><ion-toggle v-model="student.is_full" /></div>
-          <div class="field field--row"><label>Активен</label><ion-toggle v-model="student.is_active" /></div>
+          <UiInput v-model="student.student_id" label="Студенческий билет" />
+          <SearchPicker v-model="student.group_id" label="Группа" :fetch="searchGroups" :numeric="true" placeholder="Поиск группы…" />
+          <SearchPicker v-model="student.faculty_id" label="Факультет" :fetch="searchOrgs" placeholder="Поиск факультета…" />
+          <label class="ui-toggle-row"><span>Бюджет</span><ion-toggle v-model="student.is_budget" /></label>
+          <label class="ui-toggle-row"><span>Очная форма</span><ion-toggle v-model="student.is_full" /></label>
+          <label class="ui-toggle-row"><span>Активен</span><ion-toggle v-model="student.is_active" /></label>
           <ion-button expand="block" :disabled="savingStudent || !profileExists" @click="saveStudent">Сохранить</ion-button>
         </section>
 
@@ -71,24 +59,24 @@
         <section v-show="activeTab === 'contacts'" class="card">
           <div v-for="c in contacts" :key="c.id" class="contact">
             <div class="contact-row">
-              <ion-select v-model="c.type" interface="popover" mode="md" class="contact-type">
+              <UiSelect v-model="c.type" class="contact-type" label="Тип">
                 <ion-select-option v-for="[v, l] in contactTypeOptions" :key="v" :value="v">{{ l }}</ion-select-option>
-              </ion-select>
-              <ion-input v-model="c.value" mode="md" class="contact-value" placeholder="Значение" />
-              <button class="chip-toggle" :class="{ 'chip-toggle--on': c.is_main }" title="Основной" @click="c.is_main = !c.is_main">★</button>
-              <button class="icon-btn" title="Сохранить" @click="saveContact(c)"><ion-icon :icon="checkmarkOutline" /></button>
-              <button class="icon-btn icon-btn--danger" title="Удалить" @click="removeContact(c)"><ion-icon :icon="trashOutline" /></button>
+              </UiSelect>
+              <UiInput v-model="c.value" class="contact-value" label="Значение" />
+              <button type="button" class="ui-icon-btn contact-btn" :class="{ 'ui-icon-btn--active': c.is_main }" title="Основной" aria-label="Основной" @click="c.is_main = !c.is_main">★</button>
+              <button type="button" class="ui-icon-btn ui-icon-btn--primary contact-btn" title="Сохранить" aria-label="Сохранить" @click="saveContact(c)"><ion-icon :icon="checkmarkOutline" /></button>
+              <button type="button" class="ui-icon-btn ui-icon-btn--danger contact-btn" title="Удалить" aria-label="Удалить" @click="removeContact(c)"><ion-icon :icon="trashOutline" /></button>
             </div>
             <TimestampsMeta :created-at="c.created_at" :edited-at="c.edited_at" />
           </div>
           <div class="contact-row">
-            <ion-select v-model="newContact.type" interface="popover" mode="md" class="contact-type" placeholder="Тип">
+            <UiSelect v-model="newContact.type" class="contact-type" label="Тип" placeholder="Выберите">
               <ion-select-option v-for="[v, l] in contactTypeOptions" :key="v" :value="v">{{ l }}</ion-select-option>
-            </ion-select>
-            <ion-input v-model="newContact.value" mode="md" class="contact-value" placeholder="Новый контакт" />
-            <ion-button size="small" :disabled="!newContact.type || !newContact.value" @click="addContact">
-              <ion-icon slot="icon-only" :icon="addOutline" />
-            </ion-button>
+            </UiSelect>
+            <UiInput v-model="newContact.value" class="contact-value" label="Новый контакт" />
+            <button type="button" class="ui-icon-btn ui-icon-btn--primary contact-btn" title="Добавить" aria-label="Добавить контакт" :disabled="!newContact.type || !newContact.value" @click="addContact">
+              <ion-icon :icon="addOutline" />
+            </button>
           </div>
         </section>
       </template>
@@ -98,14 +86,13 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useAdminNavigate } from '@/composables/useAdminNavigate'
-import {
-  IonInput, IonButton, IonIcon, IonSpinner, IonSelect, IonSelectOption, IonToggle,
-  toastController,
-} from '@ionic/vue'
+import { IonButton, IonIcon, IonSpinner, IonSelectOption, IonToggle, toastController } from '@ionic/vue'
 import { arrowBackOutline, trashOutline, addOutline, checkmarkOutline } from 'ionicons/icons'
 import SearchPicker from '@/components/admin/SearchPicker.vue'
 import TimestampsMeta from '@/components/common/TimestampsMeta.vue'
 import DateTimeField from '@/components/common/DateTimeField.vue'
+import UiInput from '@/components/common/UiInput.vue'
+import UiSelect from '@/components/common/UiSelect.vue'
 import {
   getPersonProfileV1PersonsPersonIdGet,
   patchPersonProfileV1PersonsPersonIdPatch,
@@ -317,37 +304,20 @@ onMounted(async () => {
 .state-box { display: flex; justify-content: center; padding: 60px 0; }
 .tabs { display: flex; gap: 6px; margin-bottom: 16px; flex-wrap: wrap; }
 .tab {
-  padding: 8px 16px; border: 1.5px solid var(--ion-border-color); border-radius: 999px;
+  padding: 8px 16px; border: var(--border-w) solid var(--ion-border-color); border-radius: var(--radius-pill);
   background: transparent; font-weight: var(--fw-semibold); font-size: var(--fs-sm); color: var(--ion-color-medium);
   cursor: pointer; transition: all 0.15s;
 }
 .tab--active { border-color: var(--ion-color-primary); color: var(--ion-color-primary); background: rgba(var(--ion-color-primary-rgb), 0.08); }
 .card {
   display: flex; flex-direction: column; gap: 14px; padding: 18px;
-  background: var(--ion-card-background); border-radius: 16px; box-shadow: var(--ion-card-shadow);
-}
-.field { display: flex; flex-direction: column; gap: 4px; }
-.field--row { flex-direction: row; align-items: center; justify-content: space-between; }
-.field > label { font-size: var(--fs-sm); font-weight: var(--fw-semibold); color: var(--ion-text-color); }
-.native-input {
-  width: 100%; padding: 10px 12px; border: 1.5px solid var(--ion-border-color);
-  border-radius: 10px; background: var(--ion-background-color); color: var(--ion-text-color);font-size: var(--fs-md);
+  background: var(--ion-card-background); border-radius: var(--radius-lg); box-shadow: var(--ion-card-shadow);
 }
 .hint { margin: 0; font-size: var(--fs-sm); color: var(--ion-color-medium); }
 .hint--warn { color: var(--ion-color-warning, #d9822b); }
 .contact { display: flex; flex-direction: column; gap: 2px; }
-.contact-row { display: flex; align-items: center; gap: 8px; }
-.contact-type { min-width: 110px; }
-.contact-value { flex: 1; }
-.chip-toggle {
-  width: 34px; height: 34px; border-radius: 8px; border: 1.5px solid var(--ion-border-color);
-  background: transparent; color: var(--ion-color-medium); cursor: pointer; font-size: var(--fs-lg);
-}
-.chip-toggle--on { border-color: var(--ion-color-warning, #f0b429); color: var(--ion-color-warning, #f0b429); }
-.icon-btn {
-  display: flex; align-items: center; justify-content: center; width: 34px; height: 34px;
-  border: none; border-radius: 8px; background: transparent; color: var(--ion-color-medium);
-  font-size: var(--fs-xl); cursor: pointer;
-}
-.icon-btn--danger:hover { color: var(--ion-color-danger); }
+.contact-row { display: flex; align-items: flex-start; gap: 8px; }
+.contact-type { flex: 0 0 140px; }
+.contact-value { flex: 1; min-width: 0; }
+.contact-btn { margin-top: 15px; }
 </style>

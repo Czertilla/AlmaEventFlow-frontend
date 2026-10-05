@@ -1,6 +1,6 @@
 <template>
   <div class="dtf">
-    <div class="dtf-box" :class="{ 'dtf-box--invalid': invalid, 'dtf-box--disabled': disabled }">
+    <UiField :label="label" float :invalid="invalid" :error="error" :disabled="disabled">
       <span class="dtf-ghost" aria-hidden="true">
         <span class="dtf-ghost-line">
           <span
@@ -19,31 +19,33 @@
       </span>
       <input
         ref="inputEl"
-        class="dtf-input"
+        class="ui-field-control dtf-input"
         type="text"
         inputmode="numeric"
         autocomplete="off"
         :value="text"
         :disabled="disabled"
-        :aria-label="`${ariaLabel ?? title ?? TITLES[mode]}, ${FIELD_HINTS[mode]}`"
+        :aria-label="`${ariaLabel ?? label ?? title ?? TITLES[mode]}, ${FIELD_HINTS[mode]}`"
         @focus="onFocus"
         @input="onInput"
         @blur="onBlur"
       />
-    </div>
-    <button
-      type="button"
-      class="ui-icon-btn ui-icon-btn--primary dtf-button"
-      :disabled="disabled"
-      :aria-label="mode === 'time' ? 'Выбрать время' : 'Выбрать дату'"
-      @click="openPicker"
-    >
-      <ion-icon :icon="mode === 'time' ? timeOutline : calendarOutline" />
-    </button>
+      <template #suffix>
+        <button
+          type="button"
+          class="ui-icon-btn ui-icon-btn--primary"
+          :disabled="disabled"
+          :aria-label="mode === 'time' ? 'Выбрать время' : 'Выбрать дату'"
+          @click="openPicker"
+        >
+          <ion-icon :icon="mode === 'time' ? timeOutline : calendarOutline" />
+        </button>
+      </template>
+    </UiField>
     <ion-modal :is-open="open" :class="['dtf-modal', `dtf-modal--${mode}`]" @did-dismiss="open = false">
       <div class="ui-sheet">
         <div class="ui-sheet-head">
-          <h3 class="ui-sheet-title">{{ title ?? TITLES[mode] }}</h3>
+          <h3 class="ui-sheet-title">{{ title ?? label ?? TITLES[mode] }}</h3>
           <button type="button" class="ui-icon-btn" aria-label="Закрыть" @click="open = false">
             <ion-icon :icon="closeOutline" />
           </button>
@@ -94,6 +96,7 @@ import { computed, nextTick, ref, watch } from 'vue'
 import { IonDatetime, IonIcon, IonModal } from '@ionic/vue'
 import { calendarOutline, closeOutline, timeOutline } from 'ionicons/icons'
 import TimeSpinner from '@/components/common/TimeSpinner.vue'
+import UiField from '@/components/common/UiField.vue'
 import {
   FIELD_HINTS,
   applyFieldInput,
@@ -117,6 +120,8 @@ const props = withDefaults(
   defineProps<{
     modelValue?: string | null
     mode?: DateFieldMode
+    label?: string
+    error?: string
     title?: string
     ariaLabel?: string
     suggest?: string | null
@@ -124,7 +129,7 @@ const props = withDefaults(
     max?: string | null
     disabled?: boolean
   }>(),
-  { modelValue: '', mode: 'date', title: undefined, ariaLabel: undefined, suggest: '', min: '', max: '' },
+  { modelValue: '', mode: 'date', label: undefined, error: undefined, title: undefined, ariaLabel: undefined, suggest: '', min: '', max: '' },
 )
 
 const emit = defineEmits<{
@@ -267,28 +272,8 @@ function clear() {
 <style scoped>
 .dtf {
   position: relative;
-  display: flex;
   width: 100%;
   min-width: 0;
-}
-
-.dtf-box {
-  position: relative;
-  flex: 1;
-  min-width: 0;
-  border-radius: var(--radius-md);
-  background: var(--dtf-bg, var(--ion-card-background));
-}
-
-.dtf-ghost,
-.dtf-input {
-  box-sizing: border-box;
-  width: 100%;
-  border: var(--border-w) solid transparent;
-  padding: 10px 48px 10px 12px;
-  font-size: var(--fs-md);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: normal;
 }
 
 .dtf-ghost {
@@ -296,8 +281,12 @@ function clear() {
   inset: 0;
   display: flex;
   align-items: center;
+  box-sizing: border-box;
+  padding: 0 var(--field-pad-x);
   overflow: hidden;
   color: var(--ion-color-step-400, var(--ion-color-medium));
+  font-size: var(--fs-md);
+  font-variant-numeric: tabular-nums;
   white-space: pre;
   pointer-events: none;
 }
@@ -329,34 +318,8 @@ function clear() {
 
 .dtf-input {
   position: relative;
-  display: block;
-  min-width: 0;
-  border-color: var(--ion-border-color);
-  border-radius: var(--radius-md);
-  background: transparent;
-  color: var(--ion-text-color);
-  outline: none;
-  transition: border-color 0.15s;
-}
-
-.dtf-input:focus {
-  border-color: var(--ion-color-primary);
-}
-
-.dtf-box--invalid .dtf-input,
-.dtf-box--invalid .dtf-input:focus {
-  border-color: var(--ion-color-danger);
-}
-
-.dtf-box--disabled {
-  opacity: 0.6;
-}
-
-.dtf-button {
-  position: absolute;
-  top: 50%;
-  right: 5px;
-  transform: translateY(-50%);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: normal;
 }
 </style>
 

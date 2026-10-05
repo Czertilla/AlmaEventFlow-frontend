@@ -1,65 +1,70 @@
 <template>
   <div class="lf">
-    <div class="lf-control" :class="{ 'lf-control--selected': !!modelValue }">
-      <template v-if="modelValue">
-        <span class="lf-tile"><ion-icon :icon="locationOutline" /></span>
-        <span class="lf-value">
-          <span class="lf-title">{{ locationLabel(modelValue) }}</span>
-          <span v-if="subtitle" class="lf-sub">{{ subtitle }}</span>
-        </span>
-        <button
-          v-if="modelValue.address"
-          type="button"
-          class="ui-icon-btn"
-          aria-label="Создать локацию по этому адресу"
-          @click="openModal({ address: modelValue.address })"
-        >
-          <ion-icon :icon="addOutline" />
-        </button>
-        <MapLinkMenu v-if="selectedPoint" :point="selectedPoint" :label="mapLinkLabel(modelValue)" v-slot="{ toggle }">
-          <button type="button" class="ui-icon-btn" aria-label="Открыть на карте" @click="toggle">
-            <ion-icon :icon="openOutline" />
-          </button>
-        </MapLinkMenu>
-        <button type="button" class="ui-icon-btn ui-icon-btn--danger" aria-label="Убрать локацию" @click="clearValue">
-          <ion-icon :icon="closeOutline" />
-        </button>
+    <UiField :label="label" :float="!!modelValue" :filled="!!query">
+      <template #prefix>
+        <span v-if="modelValue" class="lf-tile"><ion-icon :icon="locationOutline" /></span>
+        <ion-icon v-else :icon="searchOutline" />
       </template>
 
-      <template v-else>
-        <ion-icon class="lf-search-icon" :icon="searchOutline" />
-        <input
-          v-model="query"
-          type="text"
-          class="lf-input"
-          role="combobox"
-          autocomplete="off"
-          :placeholder="placeholder"
-          :disabled="resolving"
-          :aria-expanded="showDropdown"
-          :aria-controls="listId"
-          :aria-activedescendant="active >= 0 ? geoOptionId(listId, active) : undefined"
-          @focus="onFocus"
-          @blur="closeSoon"
-          @keydown="onKeydown"
-        />
-        <ion-spinner v-if="searching || resolving" class="lf-spinner" name="crescent" />
-        <button v-if="query" type="button" class="ui-icon-btn" aria-label="Очистить" @click="clearQuery">
-          <ion-icon :icon="closeOutline" />
-        </button>
-      </template>
-
-      <button
-        type="button"
-        class="ui-icon-btn ui-icon-btn--primary"
-        :class="{ 'ui-icon-btn--active': modalOpen }"
-        aria-label="Выбрать на карте"
+      <span v-if="modelValue" class="lf-value">
+        <span class="lf-title">{{ locationLabel(modelValue) }}</span>
+        <span v-if="subtitle" class="lf-sub">{{ subtitle }}</span>
+      </span>
+      <input
+        v-else
+        v-model="query"
+        type="text"
+        class="ui-field-control"
+        role="combobox"
+        autocomplete="off"
+        :placeholder="placeholder"
         :disabled="resolving"
-        @click="openModal()"
-      >
-        <ion-icon :icon="mapOutline" />
-      </button>
-    </div>
+        :aria-expanded="showDropdown"
+        :aria-controls="listId"
+        :aria-activedescendant="active >= 0 ? geoOptionId(listId, active) : undefined"
+        @focus="onFocus"
+        @blur="closeSoon"
+        @keydown="onKeydown"
+      />
+
+      <template #suffix>
+        <template v-if="modelValue">
+          <button
+            v-if="modelValue.address"
+            type="button"
+            class="ui-icon-btn"
+            aria-label="Создать локацию по этому адресу"
+            @click="openModal({ address: modelValue.address })"
+          >
+            <ion-icon :icon="addOutline" />
+          </button>
+          <MapLinkMenu v-if="selectedPoint" :point="selectedPoint" :label="mapLinkLabel(modelValue)" v-slot="{ toggle }">
+            <button type="button" class="ui-icon-btn" aria-label="Открыть на карте" @click="toggle">
+              <ion-icon :icon="openOutline" />
+            </button>
+          </MapLinkMenu>
+          <button type="button" class="ui-icon-btn ui-icon-btn--danger" aria-label="Убрать локацию" @click="clearValue">
+            <ion-icon :icon="closeOutline" />
+          </button>
+        </template>
+        <template v-else>
+          <ion-spinner v-if="searching || resolving" class="lf-spinner" name="crescent" />
+          <button v-if="query" type="button" class="ui-icon-btn" aria-label="Очистить" @click="clearQuery">
+            <ion-icon :icon="closeOutline" />
+          </button>
+        </template>
+        <button
+          type="button"
+          class="ui-icon-btn ui-icon-btn--primary"
+          :class="{ 'ui-icon-btn--active': modalOpen }"
+          aria-label="Выбрать на карте"
+          :disabled="resolving"
+          @click="openModal()"
+        >
+          <ion-icon :icon="mapOutline" />
+        </button>
+      </template>
+    </UiField>
 
     <div v-if="showDropdown" class="lf-popover">
       <GeoResultList
@@ -89,6 +94,7 @@
 import { computed, ref } from 'vue'
 import { IonIcon, IonSpinner } from '@ionic/vue'
 import { addOutline, closeOutline, locationOutline, mapOutline, openOutline, searchOutline } from 'ionicons/icons'
+import UiField from '@/components/common/UiField.vue'
 import GeoResultList from './GeoResultList.vue'
 import LocationPickerModal from './LocationPickerModal.vue'
 import MapLinkMenu from './MapLinkMenu.vue'
@@ -100,8 +106,8 @@ import { canOfferCreate, geoOptionId, locationLabel, mapLinkLabel, useGeoSearch 
 import type { GeoResult, LocationDraft } from '@/composables/useGeoSearch'
 
 const props = withDefaults(
-  defineProps<{ modelValue: LocationRead | null; placeholder?: string }>(),
-  { placeholder: 'Локация или адрес' },
+  defineProps<{ modelValue: LocationRead | null; label?: string; placeholder?: string }>(),
+  { label: 'Локация', placeholder: 'Локация или адрес' },
 )
 const emit = defineEmits<{ 'update:modelValue': [value: LocationRead | null] }>()
 
@@ -209,49 +215,6 @@ defineExpose({ reset: clearValue })
   width: 100%;
 }
 
-.lf-control {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 48px;
-  padding: 0 6px 0 12px;
-  border: 1.5px solid var(--ion-border-color);
-  border-radius: 12px;
-  background: var(--ion-card-background);
-  transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
-}
-
-.lf-control:focus-within {
-  border-color: var(--ion-color-primary);
-  box-shadow: 0 0 0 3px rgba(var(--ion-color-primary-rgb), 0.16);
-}
-
-.lf-control--selected {
-  border-color: rgba(var(--ion-color-primary-rgb), 0.5);
-  background: rgba(var(--ion-color-primary-rgb), 0.06);
-}
-
-.lf-search-icon {
-  flex-shrink: 0;
-  font-size: var(--fs-xl);
-  color: var(--ion-color-medium);
-}
-
-.lf-input {
-  flex: 1;
-  min-width: 0;
-  padding: 12px 0;
-  border: none;
-  outline: none;
-  background: transparent;
-  color: var(--ion-text-color);
-  font-size: var(--fs-md);
-}
-
-.lf-input::placeholder {
-  color: var(--ion-color-step-400);
-}
-
 .lf-spinner {
   width: 18px;
   height: 18px;
@@ -265,7 +228,7 @@ defineExpose({ reset: clearValue })
   flex-shrink: 0;
   width: 32px;
   height: 32px;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   background: rgba(var(--ion-color-primary-rgb), 0.14);
   color: var(--ion-color-primary);
   font-size: var(--fs-xl);
@@ -275,8 +238,10 @@ defineExpose({ reset: clearValue })
   display: flex;
   flex: 1;
   flex-direction: column;
+  justify-content: center;
   min-width: 0;
-  padding: 8px 0;
+  min-height: var(--field-h);
+  padding: 6px 10px;
 }
 
 .lf-title {
@@ -306,8 +271,8 @@ defineExpose({ reset: clearValue })
   z-index: 40;
   max-height: 340px;
   overflow-y: auto;
-  border: 1px solid var(--ion-border-color);
-  border-radius: 16px;
+  border: var(--border-w) solid var(--ion-border-color);
+  border-radius: var(--radius-lg);
   background: var(--ion-card-background);
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
 }

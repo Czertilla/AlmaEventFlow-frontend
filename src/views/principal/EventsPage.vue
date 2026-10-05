@@ -82,75 +82,78 @@
       </ion-header>
       <ion-content class="ion-padding">
         <div class="form">
-          <div class="form-field">
-            <label>Шаблон или существующее мероприятие</label>
-
-            <!-- Выбранный источник -->
-            <div v-if="form.sourceId" class="source-selected">
-              <ion-icon :icon="isJoinMode ? calendarOutline : copyOutline" />
-              <span class="source-selected-name">{{ selectedSourceLabel }}</span>
-              <span class="source-selected-kind">{{ isJoinMode ? 'мероприятие' : 'шаблон' }}</span>
-              <button class="source-clear" aria-label="Сбросить" @click="clearSource">
-                <ion-icon :icon="closeOutline" />
-              </button>
-            </div>
-
-            <!-- Поисковая строка с фильтром -->
-            <div v-else class="source-combo">
-              <div class="source-input-wrap">
-                <ion-icon class="source-input-icon" :icon="searchOutline" />
-                <input
-                  v-model="sourceSearch"
-                  type="text"
-                  class="native-input source-input"
-                  placeholder="Поиск шаблона или мероприятия..."
-                  @focus="onSourceFocus"
-                  @blur="onSourceBlur"
-                />
-                <button
-                  class="source-filter-btn"
-                  :class="{ 'source-filter-btn--active': sourceFilterOpen }"
-                  aria-label="Фильтры"
-                  @click="sourceFilterOpen = !sourceFilterOpen"
-                >
-                  <ion-icon :icon="optionsOutline" />
+          <div class="source-combo">
+            <UiField v-if="form.sourceId" label="Шаблон или существующее мероприятие" float>
+              <template #prefix><ion-icon :icon="isJoinMode ? calendarOutline : copyOutline" /></template>
+              <span class="ui-field-value">
+                <span class="source-selected-name">{{ selectedSourceLabel }}</span>
+                <span class="source-selected-kind">{{ isJoinMode ? 'мероприятие' : 'шаблон' }}</span>
+              </span>
+              <template #suffix>
+                <button type="button" class="ui-icon-btn ui-icon-btn--danger" aria-label="Сбросить" @click="clearSource">
+                  <ion-icon :icon="closeOutline" />
                 </button>
-              </div>
+              </template>
+            </UiField>
 
-              <!-- Панель фильтров -->
+            <template v-else>
+              <UiInput
+                v-model="sourceSearch"
+                label="Шаблон или существующее мероприятие"
+                placeholder="Поиск шаблона или мероприятия…"
+                autocomplete="off"
+                @focus="onSourceFocus"
+                @blur="onSourceBlur"
+              >
+                <template #prefix><ion-icon :icon="searchOutline" /></template>
+                <template #suffix>
+                  <button
+                    type="button"
+                    class="ui-icon-btn"
+                    :class="{ 'ui-icon-btn--active': sourceFilterOpen }"
+                    aria-label="Фильтры"
+                    @click="sourceFilterOpen = !sourceFilterOpen"
+                  >
+                    <ion-icon :icon="optionsOutline" />
+                  </button>
+                </template>
+              </UiInput>
+
               <div v-if="sourceFilterOpen" class="source-filters">
                 <button
-                  class="source-filter-chip"
-                  :class="{ 'source-filter-chip--active': sourceFilters.templates }"
+                  type="button"
+                  class="ui-chip source-filter-chip"
+                  :class="{ 'ui-chip--active': sourceFilters.templates }"
                   @click="sourceFilters.templates = !sourceFilters.templates"
                 >
                   <ion-icon :icon="copyOutline" />
                   Шаблоны
                 </button>
                 <button
-                  class="source-filter-chip"
-                  :class="{ 'source-filter-chip--active': sourceFilters.events }"
+                  type="button"
+                  class="ui-chip source-filter-chip"
+                  :class="{ 'ui-chip--active': sourceFilters.events }"
                   @click="sourceFilters.events = !sourceFilters.events"
                 >
                   <ion-icon :icon="calendarOutline" />
                   Мероприятия
                 </button>
-                <select v-model="sourceFilters.type" class="source-filter-select">
+                <select v-model="sourceFilters.type" class="source-filter-select" aria-label="Тип">
                   <option value="">Любой тип</option>
                   <option v-for="[v, l] in typeOptions" :key="v" :value="v">{{ l }}</option>
                 </select>
-                <select v-model="sourceFilters.level" class="source-filter-select">
+                <select v-model="sourceFilters.level" class="source-filter-select" aria-label="Уровень">
                   <option value="">Любой уровень</option>
                   <option v-for="[v, l] in levelOptions" :key="v" :value="v">{{ l }}</option>
                 </select>
               </div>
 
-              <!-- Подсказки -->
-              <div v-if="sourceDropdownOpen" class="source-suggestions">
+              <div v-if="sourceDropdownOpen" class="ui-menu">
                 <button
                   v-for="item in sourceSuggestions"
                   :key="item.id"
-                  class="source-suggestion"
+                  type="button"
+                  class="ui-menu-item"
                   @mousedown.prevent="pickSource(item)"
                 >
                   <ion-icon
@@ -165,7 +168,7 @@
                   Ничего не найдено
                 </p>
               </div>
-            </div>
+            </template>
 
             <p v-if="isJoinMode" class="form-hint">
               Будет создано участие коллектива в существующем мероприятии — заполните только список участников.
@@ -173,117 +176,71 @@
           </div>
 
           <template v-if="!isJoinMode">
-            <div class="form-field">
-              <label>Название</label>
-              <ion-input v-model="form.name" :maxlength="EVENT_NAME_MAX" placeholder="Название мероприятия" />
-              <span class="char-counter">{{ form.name.length }} / {{ EVENT_NAME_MAX }}</span>
-            </div>
+            <UiInput v-model="form.name" label="Название" :maxlength="EVENT_NAME_MAX" counter />
 
-            <div class="form-field">
-              <label>Дата</label>
-              <DateTimeField
-                v-model="form.date"
-                mode="date"
-                title="Дата мероприятия"
-                aria-label="Дата мероприятия"
-                @change="onDateChanged"
-              />
-            </div>
+            <DateTimeField
+              v-model="form.date"
+              mode="date"
+              label="Дата"
+              title="Дата мероприятия"
+              aria-label="Дата мероприятия"
+              @change="onDateChanged"
+            />
 
-            <div class="form-field">
-              <label>Описание</label>
-              <ion-textarea v-model="form.description" :rows="3" :maxlength="EVENT_DESCRIPTION_MAX" placeholder="Описание мероприятия" />
-              <span class="char-counter">{{ (form.description || '').length }} / {{ EVENT_DESCRIPTION_MAX }}</span>
-            </div>
+            <UiTextarea v-model="form.description" label="Описание" :rows="3" :maxlength="EVENT_DESCRIPTION_MAX" counter />
 
-            <div class="form-field">
-              <label>Организатор</label>
-              <div v-if="selectedOrganizer" class="organizer-selected">
-                <span>{{ selectedOrganizer.name }}</span>
-                <button class="organizer-clear" aria-label="Убрать организатора" @click="clearOrganizer">
-                  <ion-icon :icon="closeOutline" />
-                </button>
-              </div>
-              <template v-else>
-                <ion-searchbar
-                  v-model="organizerSearch"
-                  placeholder="Поиск организации..."
-                  class="member-search"
-                  :debounce="400"
-                  @ion-input="searchOrganizers"
-                />
-                <div v-if="organizerOptions.length" class="organizer-options">
-                  <button
-                    v-for="o in organizerOptions"
-                    :key="o.id"
-                    class="organizer-option"
-                    @click="selectOrganizer(o)"
-                  >
-                    {{ o.name }}
-                  </button>
-                </div>
-              </template>
-            </div>
+            <EntityPickerField
+              v-model:search="organizerSearch"
+              label="Организатор"
+              placeholder="Поиск организации…"
+              clear-label="Убрать организатора"
+              :options="organizerOptions"
+              :selected="selectedOrganizer"
+              @search="searchOrganizers"
+              @select="selectOrganizer"
+              @clear="clearOrganizer"
+            />
 
-            <div class="form-field">
-              <label>Локация</label>
-              <LocationField ref="locationFieldRef" v-model="selectedLocation" />
-            </div>
+            <LocationField ref="locationFieldRef" v-model="selectedLocation" label="Локация" />
 
-            <div class="form-field">
-              <label>
-                Статус
-                <span v-if="!statusTouched" class="auto-badge">авто</span>
-              </label>
-              <ion-select
-                :value="form.status"
-                interface="popover"
-                :class="{ 'status-auto': !statusTouched }"
-                @ion-change="onStatusChanged($event.detail.value)"
-              >
-                <ion-select-option value="draft">Черновик</ion-select-option>
-                <ion-select-option value="active">Активно</ion-select-option>
-                <ion-select-option value="template">Шаблон</ion-select-option>
-              </ion-select>
-            </div>
+            <UiSelect
+              :model-value="form.status"
+              :label="statusTouched ? 'Статус' : 'Статус · авто'"
+              @update:model-value="onStatusChanged($event)"
+            >
+              <ion-select-option value="draft">Черновик</ion-select-option>
+              <ion-select-option value="active">Активно</ion-select-option>
+              <ion-select-option value="template">Шаблон</ion-select-option>
+            </UiSelect>
 
-            <div class="form-field">
-              <label>Тип</label>
-              <ion-select v-model="form.type" placeholder="Не выбран" interface="popover">
-                <ion-select-option v-for="[v, l] in typeOptions" :key="v" :value="v">{{ l }}</ion-select-option>
-              </ion-select>
-            </div>
+            <UiSelect v-model="form.type" label="Тип" placeholder="Не выбран">
+              <ion-select-option v-for="[v, l] in typeOptions" :key="v" :value="v">{{ l }}</ion-select-option>
+            </UiSelect>
 
-            <div class="form-field">
-              <label>Уровень</label>
-              <ion-select v-model="form.level" placeholder="Не выбран" interface="popover">
-                <ion-select-option v-for="[v, l] in levelOptions" :key="v" :value="v">{{ l }}</ion-select-option>
-              </ion-select>
-            </div>
+            <UiSelect v-model="form.level" label="Уровень" placeholder="Не выбран">
+              <ion-select-option v-for="[v, l] in levelOptions" :key="v" :value="v">{{ l }}</ion-select-option>
+            </UiSelect>
 
-            <div class="form-field">
-              <label>Формат</label>
-              <ion-select v-model="form.format" placeholder="Не выбран" interface="popover">
-                <ion-select-option v-for="[v, l] in formatOptions" :key="v" :value="v">{{ l }}</ion-select-option>
-              </ion-select>
-            </div>
+            <UiSelect v-model="form.format" label="Формат" placeholder="Не выбран">
+              <ion-select-option v-for="[v, l] in formatOptions" :key="v" :value="v">{{ l }}</ion-select-option>
+            </UiSelect>
 
             <!-- План: либо одно время начала, либо подробные этапы -->
             <div class="form-field">
-              <label>План мероприятия</label>
-              <div class="role-chips">
+              <p class="ui-field-title">План мероприятия</p>
+              <div class="ui-chips">
                 <button
                   type="button"
-                  class="role-chip"
-                  :class="{ 'role-chip--active': planMode === 'time' }"
+                  class="ui-chip"
+                  :class="{ 'ui-chip--active': planMode === 'time' }"
                   @click="setPlanMode('time')"
                 >
                   Указать время
                 </button>
                 <button
                   type="button"
-                  class="role-chip"
-                  :class="{ 'role-chip--active': planMode === 'stages' }"
+                  class="ui-chip"
+                  :class="{ 'ui-chip--active': planMode === 'stages' }"
                   @click="setPlanMode('stages')"
                 >
                   Расписать этапы
@@ -291,7 +248,7 @@
               </div>
 
               <template v-if="planMode === 'time'">
-                <DateTimeField v-model="startTime" mode="time" title="Время начала" aria-label="Время начала" />
+                <DateTimeField v-model="startTime" mode="time" label="Время начала" />
                 <p class="form-hint">
                   Будет создан один этап «Начало» с указанным временем.
                   <span v-if="startTime && !form.date" class="form-hint-warn">Сначала укажите дату мероприятия.</span>
@@ -302,53 +259,15 @@
             <!-- Этапы: из шаблона (даты пересчитываются со смещением) + свои -->
             <div v-if="planMode === 'stages'" class="form-field">
               <div v-if="form.stages.length" class="stage-list">
-                <div v-for="(s, i) in form.stages" :key="i" class="stage-edit">
-                  <div class="stage-edit-row">
-                    <input
-                      v-model="s.name"
-                      type="text"
-                      class="native-input stage-name-input"
-                      :maxlength="STAGE_NAME_MAX"
-                      :placeholder="stageNamePlaceholder(s)"
-                    />
-                    <button class="row-icon-btn row-icon-btn--danger" title="Удалить этап" @click="removeStage(i)">
-                      <ion-icon :icon="trashOutline" />
-                    </button>
-                  </div>
-                  <span class="char-counter">{{ s.name.length }} / {{ STAGE_NAME_MAX }}</span>
-                  <div class="stage-edit-row stage-range-row">
-                    <div class="stage-date">
-                      <span class="stage-date-label">Начало</span>
-                      <DateTimeField
-                        v-model="s.start_at"
-                        mode="datetime"
-                        title="Начало этапа"
-                        :suggest="stageStartSuggestion(i)"
-                      />
-                    </div>
-                    <div class="stage-date">
-                      <span class="stage-date-label">Окончание</span>
-                      <DateTimeField
-                        v-model="s.end_at"
-                        mode="datetime"
-                        title="Окончание этапа"
-                        :suggest="s.start_at"
-                        :min="s.start_at"
-                      />
-                    </div>
-                  </div>
-                  <p v-if="stageEndBeforeStart(s)" class="form-hint form-hint-warn">
-                    Окончание не может быть раньше начала
-                  </p>
-                  <textarea
-                    v-model="s.description"
-                    class="native-input stage-desc-input"
-                    rows="2"
-                    :maxlength="STAGE_DESCRIPTION_MAX"
-                    placeholder="Описание этапа (необязательно)"
-                  />
+                <StageFields
+                  v-for="(s, i) in form.stages"
+                  :key="i"
+                  v-model="form.stages[i]"
+                  :start-suggestion="stageStartSuggestion(i)"
+                  @remove="removeStage(i)"
+                >
                   <span v-if="s.fromTemplate" class="stage-template-badge">из шаблона</span>
-                </div>
+                </StageFields>
               </div>
               <button class="add-stage-btn" @click="addStage">
                 <ion-icon :icon="addOutline" />
@@ -359,7 +278,7 @@
 
           <!-- Declared participants -->
           <div class="form-field">
-            <label>Заявленные участники</label>
+            <p class="ui-field-title">Заявленные участники</p>
             <div v-if="!participantsExpanded" class="participants-summary">
               <span>Заявлены все {{ activeMembers.length }} активных участников коллектива</span>
               <button class="link-btn" @click="participantsExpanded = true">Настроить</button>
@@ -370,10 +289,10 @@
                 <button class="link-btn" @click="cancelParticipantsEdit">Отменить</button>
               </div>
               <ion-searchbar v-model="memberSearch" placeholder="Поиск участника..." class="member-search" />
-              <div class="role-chips">
+              <div class="ui-chips">
                 <button
-                  class="role-chip"
-                  :class="{ 'role-chip--active': allSelected }"
+                  class="ui-chip"
+                  :class="{ 'ui-chip--active': allSelected }"
                   @click="toggleAll"
                 >
                   Все
@@ -381,8 +300,8 @@
                 <button
                   v-for="r in roles"
                   :key="r.id"
-                  class="role-chip"
-                  :class="{ 'role-chip--active': isRoleFullySelected(r.id) }"
+                  class="ui-chip"
+                  :class="{ 'ui-chip--active': isRoleFullySelected(r.id) }"
                   @click="toggleRole(r.id)"
                 >
                   {{ r.name }}
@@ -415,11 +334,10 @@
 import { ref, computed, reactive, watch } from 'vue'
 import {
   IonHeader, IonToolbar, IonButtons, IonTitle, IonContent,
-  IonButton, IonIcon, IonModal, IonInput, IonTextarea,
-  IonSelect, IonSelectOption, IonSearchbar,
+  IonButton, IonIcon, IonModal, IonSelectOption, IonSearchbar,
 } from '@ionic/vue'
 import {
-  addOutline, calendarOutline, closeOutline, trashOutline,
+  addOutline, calendarOutline, closeOutline,
   optionsOutline, copyOutline, searchOutline,
   swapVerticalOutline, arrowUpOutline, arrowDownOutline, funnelOutline,
 } from 'ionicons/icons'
@@ -433,6 +351,12 @@ import { useToast } from '@/composables/useToast'
 import { useEntityPicker } from '@/composables/useEntityPicker'
 import LocationField from '@/components/geo/LocationField.vue'
 import DateTimeField from '@/components/common/DateTimeField.vue'
+import EntityPickerField from '@/components/common/EntityPickerField.vue'
+import StageFields from '@/components/event/StageFields.vue'
+import UiField from '@/components/common/UiField.vue'
+import UiInput from '@/components/common/UiInput.vue'
+import UiSelect from '@/components/common/UiSelect.vue'
+import UiTextarea from '@/components/common/UiTextarea.vue'
 import { formatDate } from '@/utils/date'
 import {
   statusColor, statusLabel, levelOptions, typeOptions, formatOptions,
@@ -447,12 +371,11 @@ import {
   createMyCollectiveParticipationEventV1MeCollectivesCollectiveIdParticipationsPost,
 } from '@/api/generated/almaEventFlow'
 import { resolvePersonName, rememberMemberPerson, shortId } from '@/utils/names'
+import { stageEffectiveName, stageEndBeforeStart } from '@/utils/stages'
 import type { EventRead, EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1, MemberRead, RoleRead, LocationRead } from '@/api/generated/almaEventFlow'
 
 const EVENT_NAME_MAX = 128
 const EVENT_DESCRIPTION_MAX = 1024
-const STAGE_NAME_MAX = 32
-const STAGE_DESCRIPTION_MAX = 1024
 
 // Редактируемый этап формы: даты в формате datetime-local, fromTemplate помечает
 // стадии, перенесённые из шаблона (их даты пересчитываются при смене даты мероприятия)
@@ -615,22 +538,6 @@ function setPlanMode(mode: 'time' | 'stages') {
     })
   }
   planMode.value = mode
-}
-
-function firstWord(text: string | null | undefined): string {
-  return (text ?? '').trim().split(/\s+/)[0]?.slice(0, STAGE_NAME_MAX) ?? ''
-}
-
-function stageEffectiveName(s: StageForm): string {
-  return s.name.trim() || firstWord(s.description)
-}
-
-function stageNamePlaceholder(s: StageForm): string {
-  return firstWord(s.description) || 'Название этапа'
-}
-
-function stageEndBeforeStart(s: StageForm): boolean {
-  return !!s.start_at && !!s.end_at && new Date(s.end_at) < new Date(s.start_at)
 }
 
 const hasStageTimeError = computed(() =>
@@ -1189,7 +1096,7 @@ useLayoutAddButton('Новое мероприятие', openCreate)
 .form {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
   max-width: 560px;
   margin: 0 auto;
 }
@@ -1200,43 +1107,10 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   gap: 6px;
 }
 
-.form-field > label {
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-semibold);
-  color: var(--ion-text-color);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.auto-badge {
-  font-size: var(--fs-2xs);
-  font-weight: var(--fw-bold);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  padding: 2px 8px;
-  border-radius: 999px;
-  background: rgba(var(--ion-color-primary-rgb), 0.12);
-  color: var(--ion-color-primary);
-}
-
-.status-auto {
-  --highlight-color: var(--ion-color-primary);
-  border: 1.5px dashed rgba(var(--ion-color-primary-rgb), 0.4);
-  border-radius: 10px;
-  padding-left: 8px;
-}
-
 .form-hint {
   margin: 4px 0 0;
   font-size: var(--fs-xs);
   color: var(--ion-color-medium);
-}
-
-.char-counter {
-  align-self: flex-end;
-  font-size: var(--fs-2xs);
-  color: var(--ion-color-step-400);
 }
 
 .form-hint-warn {
@@ -1251,55 +1125,6 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   margin-bottom: 8px;
 }
 
-.stage-edit {
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: var(--ion-background-color);
-}
-
-.stage-edit-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.stage-name-input {
-  flex: 1;
-}
-
-.stage-range-row {
-  align-items: flex-start;
-}
-
-.stage-date {
-  display: flex;
-  flex: 1 1 0;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.stage-date-label {
-  font-size: var(--fs-xs);
-  font-weight: var(--fw-semibold);
-  color: var(--ion-color-medium);
-}
-
-@media (max-width: 520px) {
-  .stage-range-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .stage-date {
-    flex: none;
-  }
-}
-
 .stage-template-badge {
   position: absolute;
   top: -7px;
@@ -1309,31 +1134,9 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   text-transform: uppercase;
   letter-spacing: 0.4px;
   padding: 1px 8px;
-  border-radius: 999px;
+  border-radius: var(--radius-pill);
   background: rgba(var(--ion-color-primary-rgb), 0.12);
   color: var(--ion-color-primary);
-}
-
-.row-icon-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: 1.5px solid var(--ion-border-color);
-  border-radius: 50%;
-  background: transparent;
-  color: var(--ion-color-medium);
-  font-size: var(--fs-md);
-  cursor: pointer;
-  transition: all 0.15s;
-  flex-shrink: 0;
-}
-
-.row-icon-btn--danger:hover {
-  border-color: var(--ion-color-danger);
-  color: var(--ion-color-danger);
-  background: rgba(255, 71, 87, 0.06);
 }
 
 .add-stage-btn {
@@ -1341,8 +1144,8 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
-  border: 1.5px dashed var(--ion-border-color);
-  border-radius: 10px;
+  border: var(--border-w) dashed var(--ion-border-color);
+  border-radius: var(--radius-sm);
   background: transparent;
   font-size: var(--fs-sm);
   font-weight: var(--fw-semibold);
@@ -1355,65 +1158,6 @@ useLayoutAddButton('Новое мероприятие', openCreate)
 .add-stage-btn:hover {
   border-color: var(--ion-color-primary);
   color: var(--ion-color-primary);
-}
-
-.organizer-selected {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 10px 14px;
-  border: 1.5px solid var(--ion-border-color);
-  border-radius: 10px;
-  background: var(--ion-background-color);
-  font-size: var(--fs-md);
-  font-weight: var(--fw-medium);
-  color: var(--ion-text-color);
-}
-
-.organizer-clear {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--ion-color-medium);
-  font-size: var(--fs-lg);
-  cursor: pointer;
-}
-
-.organizer-clear:hover {
-  color: var(--ion-color-danger);
-}
-
-.organizer-options {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  border: 1px solid var(--ion-border-color);
-  border-radius: 12px;
-  padding: 6px;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.organizer-option {
-  padding: 10px 12px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  font-size: var(--fs-md);
-  color: var(--ion-text-color);
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.organizer-option:hover {
-  background: var(--ion-background-color);
 }
 
 .participants-summary {
@@ -1447,30 +1191,6 @@ useLayoutAddButton('Новое мероприятие', openCreate)
 .member-search {
   padding: 0;
   --border-radius: 10px;
-}
-
-.role-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.role-chip {
-  padding: 6px 14px;
-  border: 1.5px solid var(--ion-border-color);
-  border-radius: 999px;
-  background: transparent;
-  font-size: var(--fs-xs);
-  font-weight: var(--fw-semibold);
-  color: var(--ion-color-medium);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.role-chip--active {
-  border-color: var(--ion-color-primary);
-  background: rgba(var(--ion-color-primary-rgb), 0.1);
-  color: var(--ion-color-primary);
 }
 
 .member-list {
@@ -1514,88 +1234,30 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-}
-
-.source-input-wrap {
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-.source-input-icon {
-  position: absolute;
-  left: 12px;
-  font-size: var(--fs-lg);
-  color: var(--ion-color-medium);
-  pointer-events: none;
-}
-
-.source-input {
-  padding-left: 36px;
-  padding-right: 44px;
-  width: 100%;
-}
-
-.source-filter-btn {
-  position: absolute;
-  right: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--ion-color-medium);
-  font-size: var(--fs-lg);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.source-filter-btn:hover,
-.source-filter-btn--active {
-  background: rgba(var(--ion-color-primary-rgb), 0.1);
-  color: var(--ion-color-primary);
 }
 
 .source-filters {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+  margin-top: 8px;
 }
 
 .source-filter-chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 12px;
-  border: 1.5px solid var(--ion-border-color);
-  border-radius: 999px;
-  background: transparent;
-  font-size: var(--fs-xs);
-  font-weight: var(--fw-semibold);
-  color: var(--ion-color-medium);
-  cursor: pointer;
-  transition: all 0.15s;
 }
 
 .source-filter-chip ion-icon {
   font-size: var(--fs-md);
 }
 
-.source-filter-chip--active {
-  border-color: var(--ion-color-primary);
-  background: rgba(var(--ion-color-primary-rgb), 0.1);
-  color: var(--ion-color-primary);
-}
-
 .source-filter-select {
   height: 32px;
   padding: 0 8px;
-  border: 1.5px solid var(--ion-border-color);
-  border-radius: 999px;
+  border: var(--border-w) solid var(--ion-border-color);
+  border-radius: var(--radius-pill);
   background: transparent;
   font-size: var(--fs-xs);
   font-weight: var(--fw-semibold);
@@ -1607,37 +1269,6 @@ useLayoutAddButton('Новое мероприятие', openCreate)
 .source-filter-select:focus {
   border-color: var(--ion-color-primary);
   color: var(--ion-color-primary);
-}
-
-.source-suggestions {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  border: 1px solid var(--ion-border-color);
-  border-radius: 12px;
-  padding: 6px;
-  max-height: 240px;
-  overflow-y: auto;
-  background: var(--ion-card-background);
-}
-
-.source-suggestion {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  font-size: var(--fs-md);
-  color: var(--ion-text-color);
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.source-suggestion:hover {
-  background: var(--ion-background-color);
 }
 
 .source-suggestion-icon {
@@ -1678,24 +1309,6 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   color: var(--ion-color-medium);
 }
 
-.source-selected {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 14px;
-  border: 1.5px solid var(--ion-color-primary);
-  border-radius: 10px;
-  background: rgba(var(--ion-color-primary-rgb), 0.06);
-  font-size: var(--fs-md);
-  color: var(--ion-text-color);
-}
-
-.source-selected > ion-icon {
-  font-size: var(--fs-xl);
-  color: var(--ion-color-primary);
-  flex-shrink: 0;
-}
-
 .source-selected-name {
   flex: 1;
   min-width: 0;
@@ -1712,30 +1325,6 @@ useLayoutAddButton('Новое мероприятие', openCreate)
   letter-spacing: 0.4px;
   color: var(--ion-color-primary);
   flex-shrink: 0;
-}
-
-.source-clear {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--ion-color-medium);
-  font-size: var(--fs-lg);
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.source-clear:hover {
-  color: var(--ion-color-danger);
-}
-
-.stage-desc-input {
-  resize: vertical;
-  min-height: 48px;
 }
 
 .participants-editor-head {

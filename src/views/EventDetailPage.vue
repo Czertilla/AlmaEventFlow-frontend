@@ -230,77 +230,41 @@
         </ion-header>
         <ion-content class="ion-padding">
           <div class="form">
-            <div class="form-field">
-              <label>Название</label>
-              <ion-input v-model="editForm.name" placeholder="Название мероприятия" />
-            </div>
+            <UiInput v-model="editForm.name" label="Название" :maxlength="EVENT_NAME_MAX" counter />
 
-            <div class="form-field">
-              <label>Дата</label>
-              <DateTimeField v-model="editForm.date" mode="date" title="Дата мероприятия" aria-label="Дата мероприятия" />
-            </div>
+            <DateTimeField v-model="editForm.date" mode="date" label="Дата" title="Дата мероприятия" />
 
-            <div class="form-field">
-              <label>Описание</label>
-              <ion-textarea v-model="editForm.description" :rows="3" placeholder="Описание мероприятия" />
-            </div>
+            <UiTextarea v-model="editForm.description" label="Описание" :rows="3" :maxlength="EVENT_DESCRIPTION_MAX" counter />
 
-            <div class="form-field">
-              <label>Организатор</label>
-              <div v-if="selectedOrganizer" class="chip-selected">
-                <span>{{ selectedOrganizer.name }}</span>
-                <button class="chip-clear" aria-label="Убрать организатора" @click="selectedOrganizer = null">
-                  <ion-icon :icon="closeOutline" />
-                </button>
-              </div>
-              <template v-else>
-                <ion-searchbar
-                  v-model="organizerSearch"
-                  placeholder="Поиск организации..."
-                  class="member-search"
-                  :debounce="400"
-                  @ion-input="searchOrganizers"
-                />
-                <div v-if="organizerOptions.length" class="combo-options">
-                  <button v-for="o in organizerOptions" :key="o.id" class="combo-option" @click="selectOrganizer(o)">
-                    {{ o.name }}
-                  </button>
-                </div>
-              </template>
-            </div>
+            <EntityPickerField
+              v-model:search="organizerSearch"
+              label="Организатор"
+              placeholder="Поиск организации…"
+              clear-label="Убрать организатора"
+              :options="organizerOptions"
+              :selected="selectedOrganizer"
+              @search="searchOrganizers"
+              @select="selectOrganizer"
+              @clear="clearOrganizer"
+            />
 
-            <div class="form-field">
-              <label>Локация</label>
-              <LocationField ref="locationFieldRef" v-model="selectedLocation" />
-            </div>
+            <LocationField ref="locationFieldRef" v-model="selectedLocation" label="Локация" />
 
-            <div class="form-field">
-              <label>Статус</label>
-              <ion-select v-model="editForm.status" interface="popover">
-                <ion-select-option v-for="[v, l] in statusOptions" :key="v" :value="v">{{ l }}</ion-select-option>
-              </ion-select>
-            </div>
+            <UiSelect v-model="editForm.status" label="Статус">
+              <ion-select-option v-for="[v, l] in statusOptions" :key="v" :value="v">{{ l }}</ion-select-option>
+            </UiSelect>
 
-            <div class="form-field">
-              <label>Тип</label>
-              <ion-select v-model="editForm.type" placeholder="Не выбран" interface="popover">
-                <ion-select-option v-for="[v, l] in typeOptions" :key="v" :value="v">{{ l }}</ion-select-option>
-              </ion-select>
-            </div>
+            <UiSelect v-model="editForm.type" label="Тип" placeholder="Не выбран">
+              <ion-select-option v-for="[v, l] in typeOptions" :key="v" :value="v">{{ l }}</ion-select-option>
+            </UiSelect>
 
-            <div class="form-field">
-              <label>Уровень</label>
-              <ion-select v-model="editForm.level" placeholder="Не выбран" interface="popover">
-                <ion-select-option v-for="[v, l] in levelOptions" :key="v" :value="v">{{ l }}</ion-select-option>
-              </ion-select>
-            </div>
+            <UiSelect v-model="editForm.level" label="Уровень" placeholder="Не выбран">
+              <ion-select-option v-for="[v, l] in levelOptions" :key="v" :value="v">{{ l }}</ion-select-option>
+            </UiSelect>
 
-            <div class="form-field">
-              <label>Формат</label>
-              <ion-select v-model="editForm.format" placeholder="Не выбран" interface="popover">
-                <ion-select-option v-for="[v, l] in formatOptions" :key="v" :value="v">{{ l }}</ion-select-option>
-              </ion-select>
-            </div>
+            <UiSelect v-model="editForm.format" label="Формат" placeholder="Не выбран">
+              <ion-select-option v-for="[v, l] in formatOptions" :key="v" :value="v">{{ l }}</ion-select-option>
+            </UiSelect>
 
             <ion-button expand="block" :disabled="saving || !editForm.name" @click="submitEdit">
               {{ saving ? 'Сохранение...' : 'Сохранить' }}
@@ -324,51 +288,13 @@
         <ion-content class="ion-padding">
           <div class="form">
             <p v-if="stageForms.length === 0" class="card-empty">Этапов пока нет — добавьте первый.</p>
-            <div v-for="(s, i) in stageForms" :key="s.id ?? `new-${i}`" class="stage-edit">
-              <div class="stage-edit-row">
-                <input
-                  v-model="s.name"
-                  type="text"
-                  class="native-input stage-name-input"
-                  :maxlength="STAGE_NAME_MAX"
-                  :placeholder="stageNamePlaceholder(s)"
-                />
-                <button class="row-icon-btn row-icon-btn--danger" title="Удалить этап" @click="deleteStage(i)">
-                  <ion-icon :icon="trashOutline" />
-                </button>
-              </div>
-              <span class="char-counter">{{ s.name.length }} / {{ STAGE_NAME_MAX }}</span>
-              <div class="stage-edit-row stage-range-row">
-                <div class="stage-date">
-                  <span class="stage-date-label">Начало</span>
-                  <DateTimeField
-                    v-model="s.start_at"
-                    mode="datetime"
-                    title="Начало этапа"
-                    :suggest="stageStartSuggestion(i)"
-                  />
-                </div>
-                <div class="stage-date">
-                  <span class="stage-date-label">Окончание</span>
-                  <DateTimeField
-                    v-model="s.end_at"
-                    mode="datetime"
-                    title="Окончание этапа"
-                    :suggest="s.start_at"
-                    :min="s.start_at"
-                  />
-                </div>
-              </div>
-              <p v-if="stageEndBeforeStart(s)" class="form-hint form-hint-warn">
-                Окончание не может быть раньше начала
-              </p>
-              <textarea
-                v-model="s.description"
-                class="native-input stage-desc-input"
-                rows="2"
-                :maxlength="STAGE_DESCRIPTION_MAX"
-                placeholder="Описание этапа (необязательно)"
-              />
+            <StageFields
+              v-for="(s, i) in stageForms"
+              :key="s.id ?? `new-${i}`"
+              v-model="stageForms[i]"
+              :start-suggestion="stageStartSuggestion(i)"
+              @remove="deleteStage(i)"
+            >
               <ion-button
                 size="small"
                 expand="block"
@@ -377,7 +303,7 @@
               >
                 {{ s.id ? 'Сохранить этап' : 'Добавить этап' }}
               </ion-button>
-            </div>
+            </StageFields>
             <button class="add-stage-btn" @click="addStageRow">
               <ion-icon :icon="addOutline" />
               Добавить этап
@@ -401,34 +327,31 @@
         <ion-content class="ion-padding">
           <div class="form">
             <div class="form-field">
-              <label>Мероприятие</label>
+              <p class="ui-field-title">Мероприятие</p>
               <p class="form-static">{{ event?.name }}</p>
               <p v-if="event?.date" class="form-hint">
                 {{ formatDate(event.date, settings.dateFormat) }}
               </p>
             </div>
 
-            <div class="form-field">
-              <label>Коллектив</label>
-              <ion-select
-                v-if="joinableCollectives.length > 1"
-                v-model="joinForm.collectiveId"
-                interface="popover"
-                placeholder="Выберите коллектив"
-              >
-                <ion-select-option v-for="c in joinableCollectives" :key="c.id" :value="c.id">
-                  {{ c.name }}
-                </ion-select-option>
-              </ion-select>
-              <p v-else class="form-static">{{ joinableCollectives[0]?.name }}</p>
+            <UiSelect
+              v-if="joinableCollectives.length > 1"
+              v-model="joinForm.collectiveId"
+              label="Коллектив"
+              placeholder="Выберите коллектив"
+            >
+              <ion-select-option v-for="c in joinableCollectives" :key="c.id" :value="c.id">
+                {{ c.name }}
+              </ion-select-option>
+            </UiSelect>
+            <div v-else class="form-field">
+              <p class="ui-field-title">Коллектив</p>
+              <p class="form-static">{{ joinableCollectives[0]?.name }}</p>
             </div>
 
-            <div class="form-field">
-              <label>Приоритет</label>
-              <ion-select v-model="joinForm.priority" placeholder="Не выбран" interface="popover">
-                <ion-select-option v-for="[v, l] in priorityOptions" :key="v" :value="v">{{ l }}</ion-select-option>
-              </ion-select>
-            </div>
+            <UiSelect v-model="joinForm.priority" label="Приоритет" placeholder="Не выбран">
+              <ion-select-option v-for="[v, l] in priorityOptions" :key="v" :value="v">{{ l }}</ion-select-option>
+            </UiSelect>
 
             <ion-button expand="block" :disabled="joining || !joinForm.collectiveId" @click="submitJoin">
               {{ joining ? 'Создание...' : 'Создать участие' }}
@@ -445,8 +368,7 @@ import { ref, computed, reactive, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import {
   IonPage, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonContent,
-  IonButton, IonIcon, IonModal, IonInput, IonTextarea, IonSelect, IonSelectOption,
-  IonSearchbar, onIonViewWillEnter,
+  IonButton, IonIcon, IonModal, IonSelectOption, onIonViewWillEnter,
 } from '@ionic/vue'
 import {
   calendarOutline, timeOutline, chevronDownOutline, chevronUpOutline,
@@ -484,6 +406,13 @@ import EventCommentChip from '@/components/event/EventCommentChip.vue'
 import LocationField from '@/components/geo/LocationField.vue'
 import LocationDisplay from '@/components/geo/LocationDisplay.vue'
 import DateTimeField from '@/components/common/DateTimeField.vue'
+import EntityPickerField from '@/components/common/EntityPickerField.vue'
+import UiInput from '@/components/common/UiInput.vue'
+import UiSelect from '@/components/common/UiSelect.vue'
+import UiTextarea from '@/components/common/UiTextarea.vue'
+import StageFields from '@/components/event/StageFields.vue'
+import { useEntityPicker } from '@/composables/useEntityPicker'
+import { stageEffectiveName, stageEndBeforeStart } from '@/utils/stages'
 import type {
   EventRead, EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1,
   EventPriorityEnumV1, StageRead, LocationRead,
@@ -546,25 +475,16 @@ const editForm = reactive({
   format: null as EventFormatEnumV1 | null,
 })
 
-interface PickOption { id: string; name: string }
-const organizerSearch = ref('')
-const organizerOptions = ref<PickOption[]>([])
-const selectedOrganizer = ref<PickOption | null>(null)
+const EVENT_NAME_MAX = 128
+const EVENT_DESCRIPTION_MAX = 1024
+
+const {
+  search: organizerSearch, options: organizerOptions, selected: selectedOrganizer,
+  runSearch: searchOrganizers, select: selectOrganizer, clear: clearOrganizer,
+  reset: resetOrganizer,
+} = useEntityPicker((params) => listOrganizationsOrgV1OrganizationsGet(params))
 const locationFieldRef = ref<InstanceType<typeof LocationField>>()
 const selectedLocation = ref<LocationRead | null>(null)
-
-async function searchOrganizers() {
-  if (!organizerSearch.value) { organizerOptions.value = []; return }
-  try {
-    const res = await listOrganizationsOrgV1OrganizationsGet({ search: organizerSearch.value, limit: 10 })
-    organizerOptions.value = (res.data.items as PickOption[]) || []
-  } catch { organizerOptions.value = [] }
-}
-function selectOrganizer(o: PickOption) {
-  selectedOrganizer.value = o
-  organizerSearch.value = ''
-  organizerOptions.value = []
-}
 
 async function openEdit() {
   const e = event.value
@@ -576,16 +496,15 @@ async function openEdit() {
   editForm.level = e.level ?? null
   editForm.type = e.type ?? null
   editForm.format = e.format ?? null
-  selectedOrganizer.value = e.organizer_id ? { id: e.organizer_id, name: 'Организатор' } : null
+  resetOrganizer()
+  if (e.organizer_id) selectedOrganizer.value = { id: e.organizer_id, name: 'Организатор' }
   locationFieldRef.value?.reset()
-  organizerSearch.value = ''
-  organizerOptions.value = []
   showEditModal.value = true
   // Подтянуть человекочитаемые названия выбранных организатора/локации
   if (e.organizer_id) {
     try {
       const res = await listOrganizationsOrgV1OrganizationsGet({ limit: 100 })
-      const found = (res.data.items as PickOption[]).find((o) => o.id === e.organizer_id)
+      const found = res.data.items.find((o) => o.id === e.organizer_id)
       if (found) selectedOrganizer.value = found
     } catch { /* имя не критично */ }
   }
@@ -643,25 +562,6 @@ interface StageForm { id?: string; name: string; start_at: string; end_at: strin
 const showStagesModal = ref(false)
 const stagePending = ref(false)
 const stageForms = ref<StageForm[]>([])
-
-const STAGE_NAME_MAX = 32
-const STAGE_DESCRIPTION_MAX = 1024
-
-function firstWord(text: string): string {
-  return text.trim().split(/\s+/)[0]?.slice(0, STAGE_NAME_MAX) ?? ''
-}
-
-function stageEffectiveName(s: StageForm): string {
-  return s.name.trim() || firstWord(s.description)
-}
-
-function stageNamePlaceholder(s: StageForm): string {
-  return firstWord(s.description) || 'Название этапа'
-}
-
-function stageEndBeforeStart(s: StageForm): boolean {
-  return !!s.start_at && !!s.end_at && new Date(s.end_at) < new Date(s.start_at)
-}
 
 const stageOriginals = new Map<string, string>()
 
@@ -974,7 +874,7 @@ onIonViewWillEnter(async () => {
 .form {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
   max-width: 560px;
   margin: 0 auto;
 }
@@ -983,76 +883,6 @@ onIonViewWillEnter(async () => {
   display: flex;
   flex-direction: column;
   gap: 6px;
-}
-
-.form-field > label {
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-semibold);
-  color: var(--ion-text-color);
-}
-
-.member-search {
-  padding: 0;
-  --border-radius: 10px;
-}
-
-.chip-selected {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 10px 14px;
-  border: 1.5px solid var(--ion-border-color);
-  border-radius: 10px;
-  background: var(--ion-background-color);
-  font-size: var(--fs-md);
-  font-weight: var(--fw-medium);
-  color: var(--ion-text-color);
-}
-
-.chip-clear {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 24px;
-  height: 24px;
-  border: none;
-  border-radius: 50%;
-  background: transparent;
-  color: var(--ion-color-medium);
-  font-size: var(--fs-lg);
-  cursor: pointer;
-}
-
-.chip-clear:hover {
-  color: var(--ion-color-danger);
-}
-
-.combo-options {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  border: 1px solid var(--ion-border-color);
-  border-radius: 12px;
-  padding: 6px;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.combo-option {
-  padding: 10px 12px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  font-size: var(--fs-md);
-  color: var(--ion-text-color);
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.combo-option:hover {
-  background: var(--ion-background-color);
 }
 
 .inline-icon {
@@ -1083,59 +913,6 @@ onIonViewWillEnter(async () => {
   font-size: var(--fs-sm);
   font-weight: var(--fw-semibold);
   cursor: pointer;
-}
-
-.stage-edit {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  padding: 12px;
-  border-radius: 12px;
-  background: var(--ion-background-color);
-}
-
-.stage-edit-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.stage-name-input {
-  flex: 1;
-}
-
-.stage-range-row {
-  align-items: flex-start;
-}
-
-.stage-date {
-  display: flex;
-  flex: 1 1 0;
-  flex-direction: column;
-  gap: 4px;
-  min-width: 0;
-}
-
-.stage-date-label {
-  font-size: var(--fs-xs);
-  font-weight: var(--fw-semibold);
-  color: var(--ion-color-medium);
-}
-
-@media (max-width: 520px) {
-  .stage-range-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .stage-date {
-    flex: none;
-  }
-}
-
-.stage-desc-input {
-  resize: vertical;
-  min-height: 48px;
 }
 
 .add-stage-btn {
@@ -1335,12 +1112,6 @@ onIonViewWillEnter(async () => {
 .form-hint-warn {
   color: var(--ion-color-danger);
   font-weight: var(--fw-semibold);
-}
-
-.char-counter {
-  align-self: flex-end;
-  font-size: var(--fs-2xs);
-  color: var(--ion-color-step-400);
 }
 
 .my-attendance {

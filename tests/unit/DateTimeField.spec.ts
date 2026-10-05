@@ -64,7 +64,7 @@ describe('DateTimeField typing', () => {
     await type(wrapper, '31022026')
 
     expect(wrapper.emitted('update:modelValue')).toBeUndefined()
-    expect(wrapper.get('.dtf-box').classes()).toContain('dtf-box--invalid')
+    expect(wrapper.get('.ui-field').classes()).toContain('ui-field--invalid')
   })
 
   test('leaving an incomplete value restores the model', async () => {
@@ -205,7 +205,7 @@ describe('DateTimeField suggestion', () => {
 
   test('the picker opens on the suggested day with the current time when the suggestion has no time', async () => {
     const wrapper = field({ modelValue: '', mode: 'datetime', suggest: '2026-03-12' })
-    await wrapper.get('.dtf-button').trigger('click')
+    await wrapper.get('.ui-field-suffix button').trigger('click')
 
     expect(wrapper.get('.picker').attributes('data-value')).toBe('2026-03-12')
     const time = wrapper.findAll('.ts-value').map((box) => (box.element as HTMLInputElement).value).join(':')
@@ -216,7 +216,7 @@ describe('DateTimeField suggestion', () => {
 describe('DateTimeField picker', () => {
   async function opened(props: Record<string, unknown>) {
     const wrapper = field(props)
-    await wrapper.get('.dtf-button').trigger('click')
+    await wrapper.get('.ui-field-suffix button').trigger('click')
     return wrapper
   }
 

@@ -1,10 +1,10 @@
-.field-input input:-webkit-autofill,
-.field-input input:-webkit-autofill:hover,
-.field-input input:-webkit-autofill:focus,
-.field-input input:-webkit-autofill:active {
+.ui-field-control:-webkit-autofill,
+.ui-field-control:-webkit-autofill:hover,
+.ui-field-control:-webkit-autofill:focus,
+.ui-field-control:-webkit-autofill:active {
   -webkit-text-fill-color: var(--ion-text-color);
   caret-color: var(--ion-text-color);
-  -webkit-box-shadow: 0 0 0 1000px var(--ion-background-color) inset;
-  box-shadow: 0 0 0 1000px var(--ion-background-color) inset;
+  -webkit-box-shadow: 0 0 0 1000px var(--ui-field-bg, var(--ion-card-background)) inset;
+  box-shadow: 0 0 0 1000px var(--ui-field-bg, var(--ion-card-background)) inset;
   transition: background-color 9999s ease-out 0s;
 }

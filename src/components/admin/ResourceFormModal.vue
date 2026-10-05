@@ -12,57 +12,46 @@
     <TimestampsMeta :created-at="item.created_at" :edited-at="item.edited_at" />
   </div>
   <ion-content class="ion-padding">
-    <ion-list lines="none" class="form-list">
-      <ion-item v-for="field in fields" :key="field.key" class="form-item">
-        <ion-label position="stacked">
-          {{ field.label }}
-          <span v-if="field.required" class="required">*</span>
-        </ion-label>
-
-        <ion-input
+    <div class="form-list">
+      <template v-for="field in fields" :key="field.key">
+        <UiInput
           v-if="field.type === 'text' || field.type === 'email' || field.type === 'number'"
           v-model="form[field.key]"
           :type="field.type"
+          :label="fieldLabel(field)"
           :maxlength="field.maxLength"
           :placeholder="field.placeholder"
-          mode="md"
+          :counter="field.type !== 'number'"
         />
-        <span v-if="(field.type === 'text' || field.type === 'email') && field.maxLength" class="char-counter">{{ (form[field.key] || '').length }} / {{ field.maxLength }}</span>
 
-        <ion-textarea
+        <UiTextarea
           v-else-if="field.type === 'textarea'"
           v-model="form[field.key]"
+          :label="fieldLabel(field)"
           :placeholder="field.placeholder"
           :maxlength="field.maxLength"
           :rows="3"
-          mode="md"
-        />
-        <span v-if="field.type === 'textarea' && field.maxLength" class="char-counter">{{ (form[field.key] || '').length }} / {{ field.maxLength }}</span>
-
-        <ion-toggle
-          v-else-if="field.type === 'checkbox'"
-          v-model="form[field.key]"
-          :checked="!!form[field.key]"
-          mode="md"
+          counter
         />
 
-        <ion-select
+        <label v-else-if="field.type === 'checkbox'" class="ui-toggle-row">
+          <span>{{ fieldLabel(field) }}</span>
+          <ion-toggle v-model="form[field.key]" :checked="!!form[field.key]" mode="md" />
+        </label>
+
+        <UiSelect
           v-else-if="field.type === 'select'"
           v-model="form[field.key]"
+          :label="fieldLabel(field)"
           :placeholder="field.placeholder"
-          interface="popover"
-          mode="md"
         >
-          <ion-select-option
-            v-for="opt in field.options || []"
-            :key="opt.value"
-            :value="opt.value"
-          >
+          <ion-select-option v-for="opt in field.options || []" :key="opt.value" :value="opt.value">
             {{ opt.label }}
           </ion-select-option>
-        </ion-select>
+        </UiSelect>
 
         <div v-else-if="field.type === 'map'" class="map-field">
+          <p class="ui-field-title">{{ fieldLabel(field) }}</p>
           <GeoMap
             pickable
             :picked-point="form[field.key]"
@@ -78,34 +67,20 @@
           </div>
         </div>
 
-        <div v-else-if="field.type === 'search'" class="search-field">
-          <div v-if="selectedItem[field.key]" class="search-selected" @click="clearSearch(field)">
-            <span class="search-selected-label">{{ getSelectedLabel(field) }}</span>
-            <ion-button fill="clear" size="small" color="medium">✕</ion-button>
-          </div>
-          <template v-else>
-            <ion-searchbar
-              v-model="searchQuery[field.key]"
-              :placeholder="field.placeholder || 'Поиск...'"
-              :debounce="300"
-              @ion-input="onSearch(field)"
-              class="search-input-compact"
-              mode="md"
-            />
-            <div v-if="searchResults[field.key]?.length" class="search-results">
-              <div
-                v-for="opt in searchResults[field.key]"
-                :key="opt[field.valueField || 'id']"
-                class="search-result-item"
-                @click="selectItem(field, opt)"
-              >
-                {{ getOptionLabel(field, opt) }}
-              </div>
-            </div>
-          </template>
-        </div>
-      </ion-item>
-    </ion-list>
+        <EntityPickerField
+          v-else-if="field.type === 'search'"
+          v-model:search="searchQuery[field.key]"
+          :label="fieldLabel(field)"
+          :placeholder="field.placeholder || 'Поиск…'"
+          :debounce="300"
+          :options="pickerOptions(field)"
+          :selected="selectedItem[field.key] ? { id: String(form[field.key]), name: getSelectedLabel(field) } : null"
+          @search="onSearch(field)"
+          @select="selectItem(field, $event.raw)"
+          @clear="clearSearch(field)"
+        />
+      </template>
+    </div>
 
     <div v-if="error" class="form-error">{{ error }}</div>
 
@@ -120,14 +95,13 @@
 
 <script setup lang="ts">
 import { ref, reactive, onMounted } from 'vue'
-import {
-  IonButton, IonIcon,
-  IonContent, IonList, IonItem, IonLabel, IonInput,
-  IonTextarea, IonToggle, IonSelect, IonSelectOption,
-  IonSearchbar, IonSpinner,
-} from '@ionic/vue'
+import { IonButton, IonIcon, IonContent, IonToggle, IonSelectOption, IonSpinner } from '@ionic/vue'
 import { closeOutline } from 'ionicons/icons'
 import GeoMap from '@/components/geo/GeoMap.vue'
+import EntityPickerField from '@/components/common/EntityPickerField.vue'
+import UiInput from '@/components/common/UiInput.vue'
+import UiSelect from '@/components/common/UiSelect.vue'
+import UiTextarea from '@/components/common/UiTextarea.vue'
 import UuidBadge from '@/components/common/UuidBadge.vue'
 import TimestampsMeta from '@/components/common/TimestampsMeta.vue'
 
@@ -168,6 +142,18 @@ function getOptionLabel(field: FormField, opt: any): string {
   if (field.displayFn) return field.displayFn(opt)
   const df = field.displayField || 'name'
   return opt[df] || opt.id || String(opt)
+}
+
+function fieldLabel(field: FormField): string {
+  return field.required ? `${field.label} *` : field.label
+}
+
+function pickerOptions(field: FormField) {
+  return (searchResults[field.key] ?? []).map((raw) => ({
+    id: String(raw[field.valueField || 'id']),
+    name: getOptionLabel(field, raw),
+    raw,
+  }))
 }
 
 function getSelectedLabel(field: FormField): string {
@@ -262,126 +248,31 @@ async function submit() {
 }
 
 .form-list {
-  background: transparent;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-}
-
-.form-item {
-  --background: transparent;
-  --padding-start: 0;
-  --inner-padding-end: 0;
-}
-
-.form-item ion-label {
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-semibold);
+  gap: 12px;
 }
 
 .form-error {
+  margin-top: 12px;
   color: var(--ion-color-danger);
-  padding: 4px 16px 0;
   font-size: var(--fs-md);
-}
-
-.required {
-  color: var(--ion-color-danger);
-  margin-left: 2px;
-}
-
-.char-counter {
-  display: block;
-  text-align: right;
-  font-size: var(--fs-2xs);
-  color: var(--ion-color-step-400);
-}
-
-/* ── Search field ── */
-.search-field {
-  width: 100%;
-}
-
-.search-input-compact {
-  --padding-start: 8px;
-  --padding-end: 8px;
-  --min-height: 36px;
-  font-size: var(--fs-md);
-  --border-radius: 8px;
-  --box-shadow: none;
-}
-
-.search-selected {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  background: var(--ion-color-step-50, #f8f9fa);
-  border-radius: 8px;
-  padding: 6px 8px 6px 12px;
-  gap: 4px;
-  cursor: pointer;
-  border: 1px solid var(--ion-color-step-150, #e9ecef);
-  transition: border-color 0.15s;
-}
-
-.search-selected:hover {
-  border-color: var(--ion-color-medium);
-}
-
-.search-selected-label {
-  font-size: var(--fs-md);
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: var(--ion-text-color, #000);
-}
-
-.search-results {
-  max-height: 200px;
-  overflow-y: auto;
-  border: 1px solid var(--ion-color-step-150, #e9ecef);
-  border-radius: 8px;
-  margin-top: 4px;
-  background: var(--ion-card-background, #fff);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-}
-
-.search-result-item {
-  padding: 10px 12px;
-  cursor: pointer;
-  font-size: var(--fs-md);
-  border-bottom: 1px solid var(--ion-color-step-100, #f0f0f0);
-  transition: background 0.12s;
-}
-
-.search-result-item:last-child {
-  border-bottom: none;
-}
-
-.search-result-item:hover {
-  background: var(--ion-color-light-tint, #f1f3f5);
-}
-
-/* ── Map field ── */
-.map-field {
-  width: 100%;
 }
 
 .map-field-map {
   height: 220px;
-  border-radius: 8px;
   overflow: hidden;
-  border: 1px solid var(--ion-color-step-150, #e9ecef);
+  border: var(--border-w) solid var(--ion-border-color);
+  border-radius: var(--radius-md);
 }
 
 .map-field-coords {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: var(--fs-md);
-  color: var(--ion-color-medium);
   margin-top: 4px;
+  color: var(--ion-color-medium);
+  font-size: var(--fs-md);
 }
 
 .map-field-hint {

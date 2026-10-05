@@ -28,44 +28,36 @@
             </div>
 
             <form class="auth-form" @submit.prevent="handleRegister">
-              <div class="field-group">
-                <label class="field-label">Email</label>
-                <div class="field-input" :class="{ 'field-input--error': !!errors.email }">
-                  <ion-icon :icon="mailOutline" class="field-icon" />
-                  <input
-                    v-model="email"
-                    type="email"
-                    name="email"
-                    autocomplete="username"
-                    placeholder="Введите email"
-                    @blur="normalizeEmail"
-                  />
-                </div>
-                <span v-if="errors.email" class="field-error">{{ errors.email }}</span>
-              </div>
+              <UiInput
+                v-model="email"
+                label="Email"
+                type="email"
+                name="email"
+                autocomplete="username"
+                :error="errors.email"
+                @blur="normalizeEmail"
+              >
+                <template #prefix><ion-icon :icon="mailOutline" /></template>
+              </UiInput>
+
+              <UiInput
+                v-model="username"
+                label="Username"
+                name="nickname"
+                autocomplete="nickname"
+                :error="usernameColor === 'danger' && usernameStatus ? usernameStatus : errors.username"
+                :success="usernameColor !== 'danger' ? usernameStatus : ''"
+                @input="onUsernameInput"
+              >
+                <template #prefix><ion-icon :icon="personOutline" /></template>
+              </UiInput>
 
               <div class="field-group">
-                <label class="field-label">Username</label>
-                <div class="field-input" :class="{ 'field-input--error': !!errors.username }">
-                  <ion-icon :icon="personOutline" class="field-icon" />
-                  <input v-model="username" type="text" name="nickname" autocomplete="nickname" placeholder="Введите username" @input="onUsernameInput" />
-                </div>
-                <span v-if="usernameStatus" :class="usernameColor === 'danger' ? 'field-error' : 'field-success'">{{ usernameStatus }}</span>
-                <span v-else-if="errors.username" class="field-error">{{ errors.username }}</span>
-              </div>
-
-              <div class="field-group">
-                <label class="field-label">Пароль</label>
-                <PasswordField v-model="password" autocomplete="new-password" placeholder="Придумайте пароль" :error="!!errors.password" />
+                <PasswordField v-model="password" label="Пароль" autocomplete="new-password" :error="errors.password" />
                 <PasswordStrengthMeter :password="password" />
-                <span v-if="errors.password" class="field-error">{{ errors.password }}</span>
               </div>
 
-              <div class="field-group">
-                <label class="field-label">Подтвердите пароль</label>
-                <PasswordField v-model="confirmPassword" autocomplete="new-password" placeholder="Повторите пароль" :error="!!errors.confirmPassword" />
-                <span v-if="errors.confirmPassword" class="field-error">{{ errors.confirmPassword }}</span>
-              </div>
+              <PasswordField v-model="confirmPassword" label="Подтвердите пароль" autocomplete="new-password" :error="errors.confirmPassword" />
 
               <label class="field-checkbox">
                 <input v-model="agreed" type="checkbox" class="checkbox-input" />
@@ -106,6 +98,7 @@ import PasswordStrengthMeter from '@/components/common/PasswordStrengthMeter.vue
 import PasswordField from '@/components/common/PasswordField.vue'
 import { IonPage, IonContent, IonIcon, onIonViewDidLeave } from '@ionic/vue'
 import { mailOutline, personOutline, checkmarkOutline, alertCircleOutline, linkOutline } from 'ionicons/icons'
+import UiInput from '@/components/common/UiInput.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -414,65 +407,6 @@ async function handleRegister() {
   display: flex;
   flex-direction: column;
   gap: 6px;
-}
-
-.field-label {
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-semibold);
-  color: var(--ion-text-color);
-}
-
-.field-input {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 14px;
-  border: 1.5px solid var(--ion-border-color);
-  border-radius: 12px;
-  background: var(--ion-background-color);
-  transition: border-color 0.2s;
-}
-
-.field-input:focus-within {
-  border-color: var(--ion-color-primary);
-}
-
-.field-input--error {
-  border-color: var(--ion-color-danger);
-}
-
-.field-icon {
-  font-size: var(--fs-xl);
-  color: var(--ion-color-medium);
-  flex-shrink: 0;
-}
-
-.field-input input {
-  flex: 1;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-size: var(--fs-md);
-  padding: 14px 0;
-  color: var(--ion-text-color);
-}
-
-.field-input input::placeholder {
-  color: var(--ion-color-step-400);
-}
-
-.field-error {
-  font-size: var(--fs-xs);
-  color: var(--ion-color-danger);
-  font-weight: var(--fw-medium);
-  padding-left: 4px;
-}
-
-.field-success {
-  font-size: var(--fs-xs);
-  color: var(--ion-color-success);
-  font-weight: var(--fw-medium);
-  padding-left: 4px;
 }
 
 .field-checkbox {

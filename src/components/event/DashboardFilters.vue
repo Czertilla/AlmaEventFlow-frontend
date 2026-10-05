@@ -2,13 +2,13 @@
   <div class="dash-filters">
     <div class="filter-row">
       <span class="filter-row-label">Тип:</span>
-      <div class="role-chips">
-        <button class="role-chip" :class="{ 'role-chip--active': allTypesSelected }" @click="selectAllTypes">Все</button>
+      <div class="ui-chips">
+        <button class="ui-chip" :class="{ 'ui-chip--active': allTypesSelected }" @click="selectAllTypes">Все</button>
         <button
           v-for="[value, label] in typeOptions"
           :key="value"
-          class="role-chip"
-          :class="{ 'role-chip--active': selectedTypes.has(value) }"
+          class="ui-chip"
+          :class="{ 'ui-chip--active': selectedTypes.has(value) }"
           :style="selectedTypes.has(value) ? { borderColor: typeColor(value), color: typeColor(value), background: typeColor(value) + '1A' } : {}"
           @click="toggleType(value)"
         >
@@ -19,13 +19,13 @@
 
     <div v-if="roles.length" class="filter-row">
       <span class="filter-row-label">Роль:</span>
-      <div class="role-chips">
-        <button class="role-chip" :class="{ 'role-chip--active': allRolesSelected }" @click="selectAllRoles">Все</button>
+      <div class="ui-chips">
+        <button class="ui-chip" :class="{ 'ui-chip--active': allRolesSelected }" @click="selectAllRoles">Все</button>
         <button
           v-for="r in roles"
           :key="r.id"
-          class="role-chip"
-          :class="{ 'role-chip--active': selectedRoleIds.has(r.id) }"
+          class="ui-chip"
+          :class="{ 'ui-chip--active': selectedRoleIds.has(r.id) }"
           @click="toggleRoleFilter(r.id)"
         >
           {{ r.name }}
@@ -35,10 +35,10 @@
 
     <div class="filter-row">
       <span class="filter-row-label">Участники:</span>
-      <div class="role-chips">
-        <button class="role-chip" :class="{ 'role-chip--active': activeFilter === 'all' }" @click="activeFilter = 'all'">Все</button>
-        <button class="role-chip" :class="{ 'role-chip--active': activeFilter === 'active' }" @click="activeFilter = 'active'">Активные</button>
-        <button class="role-chip" :class="{ 'role-chip--active': activeFilter === 'inactive' }" @click="activeFilter = 'inactive'">Неактивные</button>
+      <div class="ui-chips">
+        <button class="ui-chip" :class="{ 'ui-chip--active': activeFilter === 'all' }" @click="activeFilter = 'all'">Все</button>
+        <button class="ui-chip" :class="{ 'ui-chip--active': activeFilter === 'active' }" @click="activeFilter = 'active'">Активные</button>
+        <button class="ui-chip" :class="{ 'ui-chip--active': activeFilter === 'inactive' }" @click="activeFilter = 'inactive'">Неактивные</button>
       </div>
     </div>
 
@@ -118,30 +118,6 @@ function selectAllRoles() {
   font-weight: var(--fw-semibold);
   color: var(--ion-color-medium);
   flex-shrink: 0;
-}
-
-.role-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.role-chip {
-  padding: 6px 14px;
-  border: 1.5px solid var(--ion-border-color);
-  border-radius: 999px;
-  background: transparent;
-  font-size: var(--fs-xs);
-  font-weight: var(--fw-semibold);
-  color: var(--ion-color-medium);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.role-chip--active {
-  border-color: var(--ion-color-primary);
-  background: rgba(var(--ion-color-primary-rgb), 0.1);
-  color: var(--ion-color-primary);
 }
 
 .range-dash {

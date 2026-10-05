@@ -71,6 +71,10 @@
   --radius-xl: 20px;
   --radius-pill: 999px;
   --border-w: 1.5px;
+
+  --field-h: 48px;
+  --field-pad-x: 14px;
+  --field-border: var(--ion-border-color);
 }
 
 /* Dark mode */
@@ -93,6 +97,7 @@
   --ion-tab-bar-background: #13132b;
 
   --ion-border-color: #2a2a45;
+  --field-border: #383850;
   --ion-card-shadow: 0 2px 16px rgba(0, 0, 0, 0.3);
 
   --ion-color-step-50: #232340;
@@ -149,25 +154,9 @@ ion-button {
   letter-spacing: 0.3px;
 }
 
-ion-input.hydrated,
-ion-textarea.hydrated,
 ion-searchbar.hydrated,
 ion-searchbar.hydrated .searchbar-input {
   font-size: var(--fs-md);
-}
-
-ion-input, ion-textarea {
-  --border-radius: 12px;
-  --padding-start: 16px;
-  --padding-end: 16px;
-  --background: var(--ion-item-background);
-  border: 1px solid var(--ion-border-color);
-  border-radius: 12px;
-  margin-top: 4px;
-}
-
-ion-item.item-has-focus ion-input {
-  border-color: var(--ion-color-primary);
 }
 
 ion-chip {

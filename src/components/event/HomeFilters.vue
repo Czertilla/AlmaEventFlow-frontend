@@ -56,32 +56,24 @@
 
     <div class="filters-divider" />
     <div class="facet-filters">
-      <label class="facet-field">
-        <span class="filters-sublabel">Тип</span>
-        <select v-model="type" class="facet-select">
-          <option value="all">Любой</option>
-          <option v-for="[v, l] in typeOptions" :key="v" :value="v">{{ l }}</option>
-        </select>
-      </label>
-      <label class="facet-field">
-        <span class="filters-sublabel">Уровень</span>
-        <select v-model="level" class="facet-select">
-          <option value="all">Любой</option>
-          <option v-for="[v, l] in levelOptions" :key="v" :value="v">{{ l }}</option>
-        </select>
-      </label>
-      <label class="facet-field">
-        <span class="filters-sublabel">Формат</span>
-        <select v-model="format" class="facet-select">
-          <option value="all">Любой</option>
-          <option v-for="[v, l] in formatOptions" :key="v" :value="v">{{ l }}</option>
-        </select>
-      </label>
+      <UiNativeSelect v-model="type" class="facet-field" label="Тип">
+        <option value="all">Любой</option>
+        <option v-for="[v, l] in typeOptions" :key="v" :value="v">{{ l }}</option>
+      </UiNativeSelect>
+      <UiNativeSelect v-model="level" class="facet-field" label="Уровень">
+        <option value="all">Любой</option>
+        <option v-for="[v, l] in levelOptions" :key="v" :value="v">{{ l }}</option>
+      </UiNativeSelect>
+      <UiNativeSelect v-model="format" class="facet-field" label="Формат">
+        <option value="all">Любой</option>
+        <option v-for="[v, l] in formatOptions" :key="v" :value="v">{{ l }}</option>
+      </UiNativeSelect>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import UiNativeSelect from '@/components/common/UiNativeSelect.vue'
 import { usePrincipalStore } from '@/stores/principal'
 import { getCollectiveColor } from '@/utils/colors'
 import { typeOptions, levelOptions, formatOptions } from '@/utils/eventLabels'
@@ -213,33 +205,8 @@ function roleLabel(collectiveId: string): string {
 }
 
 .facet-field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
   flex: 1;
   min-width: 120px;
-}
-
-.facet-field .filters-sublabel {
-  margin-bottom: 0;
-}
-
-.facet-select {
-  height: 38px;
-  padding: 0 10px;
-  border: 1.5px solid var(--ion-border-color);
-  border-radius: 10px;
-  background: var(--ion-background-color);
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-medium);
-  color: var(--ion-text-color);
-  outline: none;
-  cursor: pointer;
-  transition: border-color 0.15s;
-}
-
-.facet-select:focus {
-  border-color: var(--ion-color-primary);
 }
 
 .filter-chip--skeleton {

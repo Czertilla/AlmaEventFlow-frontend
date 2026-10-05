@@ -75,36 +75,31 @@
       </ion-header>
       <ion-content class="ion-padding">
         <div class="form">
-          <!-- Person picker (only when adding) -->
-          <div v-if="!editingMember" class="form-field">
-            <label>Персона</label>
-            <ion-searchbar v-model="personSearch" placeholder="Поиск персоны..." class="person-search" :debounce="400" @ion-input="searchPersons" />
-            <div v-if="personOptions.length" class="person-options">
-              <button
-                v-for="p in personOptions"
-                :key="p.id"
-                class="person-option"
-                :class="{ 'person-option--selected': selectedPerson?.id === p.id }"
-                @click="selectedPerson = p"
-              >
-                {{ p.surname }} {{ p.name }} {{ p.patronymic || '' }}
-              </button>
-            </div>
-            <p v-if="selectedPerson" class="form-hint">Выбрано: {{ selectedPerson.surname }} {{ selectedPerson.name }}</p>
-          </div>
-          <div v-else class="form-field">
-            <label>Персона</label>
-            <p class="form-static">{{ displayName(editingMember) }}</p>
-          </div>
+          <EntityPickerField
+            v-if="!editingMember"
+            v-model:search="personSearch"
+            label="Персона"
+            placeholder="Поиск персоны…"
+            clear-label="Сбросить персону"
+            :options="personPickerOptions"
+            :selected="selectedPersonOption"
+            @search="searchPersons"
+            @select="selectedPerson = $event.raw"
+            @clear="selectedPerson = null"
+          />
+          <UiField v-else label="Персона" float>
+            <span class="ui-field-value">{{ displayName(editingMember) }}</span>
+          </UiField>
 
           <div class="form-field">
-            <label>Роли</label>
-            <div class="role-chips">
+            <p class="ui-field-title">Роли</p>
+            <div class="ui-chips">
               <button
                 v-for="r in roles"
                 :key="r.id"
-                class="role-chip"
-                :class="{ 'role-chip--active': selectedRoleIds.has(r.id) }"
+                type="button"
+                class="ui-chip"
+                :class="{ 'ui-chip--active': selectedRoleIds.has(r.id) }"
                 @click="toggleRoleSelection(r.id)"
               >
                 {{ r.name }}
@@ -113,10 +108,10 @@
             </div>
           </div>
 
-          <div class="form-field form-field--row">
-            <label>Активен</label>
+          <label class="ui-toggle-row">
+            <span>Активен</span>
             <ion-toggle v-model="editIsActive" />
-          </div>
+          </label>
 
           <ion-button expand="block" :disabled="saving || (!editingMember && !selectedPerson)" @click="saveMember">
             Сохранить
@@ -154,6 +149,8 @@ import {
   deleteMyCollectiveMemberEventV1MeCollectivesCollectiveIdMembersMemberIdDelete,
 } from '@/api/generated/almaEventFlow'
 import { searchPersonProfileV1PersonsGet } from '@/api/generated/almaEventFlow'
+import EntityPickerField from '@/components/common/EntityPickerField.vue'
+import UiField from '@/components/common/UiField.vue'
 import { resolvePersonName, shortId } from '@/utils/names'
 import type { MemberRead, RoleRead } from '@/api/generated/almaEventFlow'
 
@@ -225,6 +222,14 @@ const saving = ref(false)
 const personSearch = ref('')
 const personOptions = ref<PersonOption[]>([])
 const selectedPerson = ref<PersonOption | null>(null)
+
+const personFullName = (p: PersonOption) => [p.surname, p.name, p.patronymic].filter(Boolean).join(' ')
+const personPickerOptions = computed(() =>
+  personOptions.value.map((raw) => ({ id: raw.id, name: personFullName(raw), raw })),
+)
+const selectedPersonOption = computed(() =>
+  selectedPerson.value ? { id: selectedPerson.value.id, name: personFullName(selectedPerson.value) } : null,
+)
 
 const deleteOpen = ref(false)
 const deletingMember = ref<MemberRead | null>(null)
@@ -519,7 +524,7 @@ useLayoutAddButton('Добавить участника', openAdd)
 .form {
   display: flex;
   flex-direction: column;
-  gap: 18px;
+  gap: 12px;
   max-width: 560px;
   margin: 0 auto;
 }
@@ -528,18 +533,6 @@ useLayoutAddButton('Добавить участника', openAdd)
   display: flex;
   flex-direction: column;
   gap: 6px;
-}
-
-.form-field--row {
-  flex-direction: row;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.form-field > label {
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-semibold);
-  color: var(--ion-text-color);
 }
 
 .form-hint {
@@ -554,65 +547,4 @@ useLayoutAddButton('Добавить участника', openAdd)
   color: var(--ion-text-color);
 }
 
-.person-search {
-  padding: 0;
-  --border-radius: 10px;
-}
-
-.person-options {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  border: 1px solid var(--ion-border-color);
-  border-radius: 12px;
-  padding: 6px;
-  max-height: 200px;
-  overflow-y: auto;
-}
-
-.person-option {
-  padding: 10px 12px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  font-size: var(--fs-md);
-  color: var(--ion-text-color);
-  text-align: left;
-  cursor: pointer;
-  transition: background 0.15s;
-}
-
-.person-option:hover {
-  background: var(--ion-background-color);
-}
-
-.person-option--selected {
-  background: rgba(var(--ion-color-primary-rgb), 0.1);
-  color: var(--ion-color-primary);
-  font-weight: var(--fw-semibold);
-}
-
-.role-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.role-chip {
-  padding: 6px 14px;
-  border: 1.5px solid var(--ion-border-color);
-  border-radius: 999px;
-  background: transparent;
-  font-size: var(--fs-xs);
-  font-weight: var(--fw-semibold);
-  color: var(--ion-color-medium);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.role-chip--active {
-  border-color: var(--ion-color-primary);
-  background: rgba(var(--ion-color-primary-rgb), 0.1);
-  color: var(--ion-color-primary);
-}
 </style>

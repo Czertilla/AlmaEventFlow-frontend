@@ -1,39 +1,25 @@
 <template>
-  <div class="search-picker">
-    <div v-if="modelValue" class="picker-selected" @click="clear">
-      <span v-if="resolving" class="picker-label-skeleton" aria-hidden="true" />
-      <span v-else class="picker-label">{{ selectedLabel || String(modelValue) }}</span>
-      <ion-icon :icon="closeOutline" />
-    </div>
-    <template v-else>
-      <ion-searchbar
-        v-model="query"
-        :placeholder="placeholder || 'Поиск...'"
-        :debounce="300"
-        mode="md"
-        class="picker-search"
-        @ion-input="onSearch"
-      />
-      <div v-if="results.length" class="picker-results">
-        <button
-          v-for="opt in results"
-          :key="opt.id"
-          class="picker-result"
-          @click="select(opt)"
-        >{{ label(opt) }}</button>
-      </div>
-    </template>
-  </div>
+  <EntityPickerField
+    v-model:search="query"
+    :label="label"
+    :placeholder="placeholder || 'Поиск…'"
+    :debounce="300"
+    :options="options"
+    :selected="selected"
+    @search="onSearch"
+    @select="select"
+    @clear="clear"
+  />
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
-import { IonSearchbar, IonIcon } from '@ionic/vue'
-import { closeOutline } from 'ionicons/icons'
+import { computed, ref, watch, onMounted } from 'vue'
+import EntityPickerField from '@/components/common/EntityPickerField.vue'
 
 const props = defineProps<{
   modelValue: string | number | null
   fetch: (search: string) => Promise<any[]>
+  label: string
   numeric?: boolean
   placeholder?: string
   displayField?: string
@@ -46,18 +32,25 @@ const results = ref<any[]>([])
 const selectedLabel = ref('')
 const resolving = ref(false)
 
-function label(opt: any): string {
+function optionLabel(opt: any): string {
   const df = props.displayField || 'name'
   return opt[df] || opt.id || String(opt)
 }
+
+const options = computed(() => results.value.map((raw) => ({ id: String(raw.id), name: optionLabel(raw), raw })))
+const selected = computed(() =>
+  props.modelValue
+    ? { id: String(props.modelValue), name: selectedLabel.value || (resolving.value ? '…' : String(props.modelValue)) }
+    : null,
+)
 
 async function onSearch() {
   try { results.value = await props.fetch(query.value || '') } catch { results.value = [] }
 }
 
-function select(opt: any) {
-  emit('update:modelValue', props.numeric ? Number(opt.id) : opt.id)
-  selectedLabel.value = label(opt)
+function select(option: { raw: any }) {
+  emit('update:modelValue', props.numeric ? Number(option.raw.id) : option.raw.id)
+  selectedLabel.value = optionLabel(option.raw)
   query.value = ''
   results.value = []
 }
@@ -67,14 +60,13 @@ function clear() {
   selectedLabel.value = ''
 }
 
-// Подтянуть человекочитаемое имя для уже выбранного значения (при загрузке)
 async function resolveLabel() {
   if (!props.modelValue) { selectedLabel.value = ''; return }
   resolving.value = true
   try {
     const items = await props.fetch('')
     const found = items.find((i) => String(i.id) === String(props.modelValue))
-    if (found) selectedLabel.value = label(found)
+    if (found) selectedLabel.value = optionLabel(found)
   } catch { /* имя не критично */ } finally {
     resolving.value = false
   }
@@ -86,31 +78,3 @@ watch(() => props.modelValue, (val, old) => {
   if (!val) selectedLabel.value = ''
 })
 </script>
-
-<style scoped>
-.search-picker { width: 100%; }
-.picker-selected {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  padding: 8px 12px; border: 1.5px solid var(--ion-border-color); border-radius: 10px;
-  background: var(--ion-background-color); cursor: pointer; color: var(--ion-text-color);
-}
-.picker-selected:hover { border-color: var(--ion-color-medium); }
-.picker-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: var(--fs-md); }
-.picker-label-skeleton {
-  display: inline-block; width: 100px; height: 12px; border-radius: 4px;
-  background: var(--ion-color-step-200); animation: picker-label-pulse 1.4s ease-in-out infinite;
-}
-@keyframes picker-label-pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 0.8; } }
-.picker-search { padding: 0; --border-radius: 10px; --box-shadow: none; }
-.picker-results {
-  margin-top: 4px; max-height: 200px; overflow-y: auto;
-  border: 1px solid var(--ion-border-color); border-radius: 10px; background: var(--ion-card-background);
-}
-.picker-result {
-  display: block; width: 100%; text-align: left; padding: 10px 12px; border: none;
-  background: transparent; font-size: var(--fs-md); color: var(--ion-text-color);
-  cursor: pointer; border-bottom: 1px solid var(--ion-color-step-100, #f0f0f0);
-}
-.picker-result:last-child { border-bottom: none; }
-.picker-result:hover { background: var(--ion-color-light-tint, #f1f3f5); }
-</style>

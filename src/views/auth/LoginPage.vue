@@ -19,32 +19,26 @@
             </div>
 
             <div class="auth-form">
-              <div class="field-group">
-                <label class="field-label">Email</label>
-                <div class="field-input" :class="{ 'field-input--error': error && !username }">
-                  <ion-icon :icon="personOutline" class="field-icon" />
-                  <input
-                    v-model="username"
-                    type="email"
-                    name="email"
-                    autocomplete="username"
-                    placeholder="Введите email"
-                    @blur="normalizeUsername"
-                    @keyup.enter="handleLogin"
-                  />
-                </div>
-              </div>
+              <UiInput
+                v-model="username"
+                label="Email"
+                type="email"
+                name="email"
+                autocomplete="username"
+                :invalid="!!error && !username"
+                @blur="normalizeUsername"
+                @keyup.enter="handleLogin"
+              >
+                <template #prefix><ion-icon :icon="personOutline" /></template>
+              </UiInput>
 
-              <div class="field-group">
-                <label class="field-label">Пароль</label>
-                <PasswordField
-                  v-model="password"
-                  autocomplete="current-password"
-                  placeholder="Введите пароль"
-                  :error="!!error && !password"
-                  @enter="handleLogin"
-                />
-              </div>
+              <PasswordField
+                v-model="password"
+                label="Пароль"
+                autocomplete="current-password"
+                :error="!!error && !password"
+                @enter="handleLogin"
+              />
 
               <Transition name="fade">
                 <div v-if="error" class="auth-error">
@@ -89,6 +83,7 @@ import { personOutline, alertCircleOutline } from 'ionicons/icons'
 import { useTelegramWidget, type TelegramWidgetUser } from '@/composables/useTelegramWidget'
 import { getTelegramLoginConfigUserV1AuthTelegramConfigGet } from '@/api/generated/almaEventFlow'
 import PasswordField from '@/components/common/PasswordField.vue'
+import UiInput from '@/components/common/UiInput.vue'
 
 const route = useRoute()
 const router = useIonRouter()
@@ -293,57 +288,6 @@ async function handleTelegramAuth(user: TelegramWidgetUser) {
   display: flex;
   flex-direction: column;
   gap: 20px;
-}
-
-.field-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.field-label {
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-semibold);
-  color: var(--ion-text-color);
-}
-
-.field-input {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0 14px;
-  border: 1.5px solid var(--ion-border-color);
-  border-radius: 12px;
-  background: var(--ion-background-color);
-  transition: border-color 0.2s;
-}
-
-.field-input:focus-within {
-  border-color: var(--ion-color-primary);
-}
-
-.field-input--error {
-  border-color: var(--ion-color-danger);
-}
-
-.field-icon {
-  font-size: var(--fs-xl);
-  color: var(--ion-color-medium);
-  flex-shrink: 0;
-}
-
-.field-input input {
-  flex: 1;
-  border: none;
-  outline: none;
-  background: transparent;
-  font-size: var(--fs-md);
-  padding: 14px 0;
-  color: var(--ion-text-color);
-}
-
-.field-input input::placeholder {
-  color: var(--ion-color-step-400);
 }
 
 .auth-error {

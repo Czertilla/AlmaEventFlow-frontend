@@ -1,48 +1,50 @@
 <template>
   <div class="ass">
-    <div v-if="modelValue" class="ass-control ass-control--selected">
-      <span class="ass-tile"><ion-icon :icon="locationOutline" /></span>
-      <span class="ass-text">
+    <UiField :label="label" :float="!!modelValue" :filled="!!query">
+      <template #prefix>
+        <span v-if="modelValue" class="ass-tile"><ion-icon :icon="locationOutline" /></span>
+        <ion-icon v-else :icon="searchOutline" />
+      </template>
+
+      <span v-if="modelValue" class="ass-text">
         <span class="ass-title">{{ modelValue.name }}</span>
         <span class="ass-sub">Адрес</span>
       </span>
-      <button type="button" class="ass-clear" aria-label="Выбрать другой адрес" @click="clear">
-        <ion-icon :icon="closeOutline" />
-      </button>
+      <input
+        v-else
+        v-model="query"
+        type="text"
+        class="ui-field-control"
+        role="combobox"
+        autocomplete="off"
+        :placeholder="placeholder"
+        :aria-expanded="open"
+        :aria-controls="listId"
+        :aria-activedescendant="active >= 0 ? geoOptionId(listId, active) : undefined"
+        @focus="open = true"
+        @blur="closeSoon"
+        @keydown="onKeydown"
+      />
+
+      <template v-if="modelValue || searching" #suffix>
+        <button v-if="modelValue" type="button" class="ui-icon-btn ui-icon-btn--danger" aria-label="Выбрать другой адрес" @click="clear">
+          <ion-icon :icon="closeOutline" />
+        </button>
+        <ion-spinner v-else class="ass-spinner" name="crescent" />
+      </template>
+    </UiField>
+
+    <div v-if="!modelValue && open && query.trim()" class="ass-popover">
+      <GeoResultList
+        :id="listId"
+        :results="results"
+        :query="query"
+        :searching="searching"
+        :active-index="active"
+        :address-actions="false"
+        @pick="pick"
+      />
     </div>
-
-    <template v-else>
-      <div class="ass-control">
-        <ion-icon class="ass-search-icon" :icon="searchOutline" />
-        <input
-          v-model="query"
-          type="text"
-          class="ass-input"
-          role="combobox"
-          autocomplete="off"
-          :placeholder="placeholder"
-          :aria-expanded="open"
-          :aria-controls="listId"
-          :aria-activedescendant="active >= 0 ? geoOptionId(listId, active) : undefined"
-          @focus="open = true"
-          @blur="closeSoon"
-          @keydown="onKeydown"
-        />
-        <ion-spinner v-if="searching" class="ass-spinner" name="crescent" />
-      </div>
-
-      <div v-if="open && query.trim()" class="ass-popover">
-        <GeoResultList
-          :id="listId"
-          :results="results"
-          :query="query"
-          :searching="searching"
-          :active-index="active"
-          :address-actions="false"
-          @pick="pick"
-        />
-      </div>
-    </template>
   </div>
 </template>
 
@@ -52,14 +54,15 @@ import { IonIcon, IonSpinner } from '@ionic/vue'
 import { closeOutline, locationOutline, searchOutline } from 'ionicons/icons'
 import { getAddressesGeoV1AddressesGet } from '@/api/generated/almaEventFlow'
 import type { AddressRead } from '@/api/generated/almaEventFlow'
+import UiField from '@/components/common/UiField.vue'
 import GeoResultList from './GeoResultList.vue'
 import { useComboNav } from '@/composables/useComboNav'
 import { geoOptionId } from '@/composables/useGeoSearch'
 import type { GeoResult } from '@/composables/useGeoSearch'
 
 withDefaults(
-  defineProps<{ modelValue: AddressRead | null; placeholder?: string }>(),
-  { placeholder: 'Начните вводить адрес…' },
+  defineProps<{ modelValue: AddressRead | null; label?: string; placeholder?: string }>(),
+  { label: 'Адрес', placeholder: 'Начните вводить адрес…' },
 )
 const emit = defineEmits<{ 'update:modelValue': [value: AddressRead | null] }>()
 
@@ -147,54 +150,10 @@ onBeforeUnmount(() => {
   position: relative;
 }
 
-.ass-control {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 48px;
-  padding: 0 8px 0 12px;
-  border: 1.5px solid var(--ion-border-color);
-  border-radius: 12px;
-  background: var(--ion-card-background);
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.ass-control:focus-within {
-  border-color: var(--ion-color-primary);
-  box-shadow: 0 0 0 3px rgba(var(--ion-color-primary-rgb), 0.16);
-}
-
-.ass-control--selected {
-  border-color: rgba(var(--ion-color-primary-rgb), 0.5);
-  background: rgba(var(--ion-color-primary-rgb), 0.06);
-}
-
-.ass-search-icon {
-  flex-shrink: 0;
-  font-size: var(--fs-xl);
-  color: var(--ion-color-medium);
-}
-
-.ass-input {
-  flex: 1;
-  min-width: 0;
-  padding: 12px 0;
-  border: none;
-  outline: none;
-  background: transparent;
-  color: var(--ion-text-color);
-  font-size: var(--fs-md);
-}
-
-.ass-input::placeholder {
-  color: var(--ion-color-step-400);
-}
-
 .ass-spinner {
   width: 18px;
   height: 18px;
   flex-shrink: 0;
-  margin-right: 4px;
 }
 
 .ass-tile {
@@ -204,7 +163,7 @@ onBeforeUnmount(() => {
   flex-shrink: 0;
   width: 32px;
   height: 32px;
-  border-radius: 9px;
+  border-radius: var(--radius-sm);
   background: rgba(var(--ion-color-primary-rgb), 0.12);
   color: var(--ion-color-primary);
   font-size: var(--fs-xl);
@@ -214,8 +173,10 @@ onBeforeUnmount(() => {
   display: flex;
   flex: 1;
   flex-direction: column;
+  justify-content: center;
   min-width: 0;
-  padding: 8px 0;
+  min-height: var(--field-h);
+  padding: 6px 10px;
 }
 
 .ass-title {
@@ -231,28 +192,6 @@ onBeforeUnmount(() => {
   color: var(--ion-color-medium);
 }
 
-.ass-clear {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  width: 32px;
-  height: 32px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--ion-color-medium);
-  font-size: var(--fs-xl);
-  cursor: pointer;
-}
-
-.ass-clear:hover,
-.ass-clear:focus-visible {
-  background: rgba(var(--ion-color-danger-rgb, 255, 71, 87), 0.1);
-  color: var(--ion-color-danger);
-  outline: none;
-}
-
 .ass-popover {
   position: absolute;
   top: calc(100% + 6px);
@@ -261,8 +200,8 @@ onBeforeUnmount(() => {
   z-index: 30;
   max-height: 300px;
   overflow-y: auto;
-  border: 1px solid var(--ion-border-color);
-  border-radius: 14px;
+  border: var(--border-w) solid var(--ion-border-color);
+  border-radius: var(--radius-lg);
   background: var(--ion-card-background);
   box-shadow: 0 14px 34px rgba(0, 0, 0, 0.16);
 }

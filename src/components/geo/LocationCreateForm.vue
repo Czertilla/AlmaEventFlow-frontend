@@ -1,27 +1,19 @@
 <template>
   <form class="lcf" @submit.prevent="submit">
-    <div class="lcf-field">
-      <label class="lcf-label" for="lcf-name">Название</label>
-      <input
-        id="lcf-name"
-        ref="nameInput"
-        v-model="name"
-        type="text"
-        class="lcf-input"
-        maxlength="512"
-        autocomplete="off"
-        placeholder="Например, Актовый зал"
-      />
-      <p class="lcf-hint">{{ nameHint }}</p>
-    </div>
+    <UiInput
+      ref="nameInput"
+      v-model="name"
+      label="Название"
+      :maxlength="512"
+      autocomplete="off"
+      placeholder="Например, Актовый зал"
+      :hint="nameHint"
+    />
+
+    <AddressSearchSelect v-model="address" label="Адрес" />
 
     <div class="lcf-field">
-      <span class="lcf-label">Адрес</span>
-      <AddressSearchSelect v-model="address" />
-    </div>
-
-    <div class="lcf-field">
-      <span class="lcf-label">{{ address ? 'Уточнить место на карте' : 'Точка на карте' }}</span>
+      <p class="ui-field-title">{{ address ? 'Уточнить место на карте' : 'Точка на карте' }}</p>
       <GeoMap
         pickable
         :markers="addressMarker ? [addressMarker] : []"
@@ -52,6 +44,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { IonSpinner } from '@ionic/vue'
 import GeoMap from './GeoMap.vue'
 import type { GeoPoint, MapMarker } from './GeoMap.vue'
+import UiInput from '@/components/common/UiInput.vue'
 import AddressSearchSelect from './AddressSearchSelect.vue'
 import { createLocationGeoV1LocationsPost } from '@/api/generated/almaEventFlow'
 import type { AddressRead, LocationRead } from '@/api/generated/almaEventFlow'
@@ -67,7 +60,7 @@ const name = ref(props.draft.name ?? '')
 const address = ref<AddressRead | null>(props.draft.address ?? null)
 const spot = ref<GeoPoint | null>(props.draft.spot ?? null)
 const submitting = ref(false)
-const nameInput = ref<HTMLInputElement>()
+const nameInput = ref<InstanceType<typeof UiInput>>()
 
 const addressMarker = computed<MapMarker | null>(() => {
   const point = address.value?.spot
@@ -124,7 +117,7 @@ async function submit() {
 .lcf {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 12px;
   min-height: 100%;
   padding: 20px 20px 0;
 }
@@ -133,34 +126,6 @@ async function submit() {
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-
-.lcf-label {
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-semibold);
-  color: var(--ion-text-color);
-}
-
-.lcf-input {
-  width: 100%;
-  min-height: 48px;
-  padding: 0 14px;
-  border: 1.5px solid var(--ion-border-color);
-  border-radius: 12px;
-  outline: none;
-  background: var(--ion-card-background);
-  color: var(--ion-text-color);
-  font-size: var(--fs-md);
-  transition: border-color 0.15s, box-shadow 0.15s;
-}
-
-.lcf-input::placeholder {
-  color: var(--ion-color-step-400);
-}
-
-.lcf-input:focus {
-  border-color: var(--ion-color-primary);
-  box-shadow: 0 0 0 3px rgba(var(--ion-color-primary-rgb), 0.16);
 }
 
 .lcf-hint {
