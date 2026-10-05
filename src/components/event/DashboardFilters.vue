@@ -44,9 +44,9 @@
 
     <div class="filter-row">
       <span class="filter-row-label">Период:</span>
-      <DateTimeField v-model="dateFrom" mode="date" class="range-date" aria-label="С даты" />
+      <DateTimeField v-model="dateFrom" mode="date" class="range-date" title="Период с" aria-label="С даты" />
       <span class="range-dash">—</span>
-      <DateTimeField v-model="dateTo" mode="date" class="range-date" aria-label="По дату" />
+      <DateTimeField v-model="dateTo" mode="date" class="range-date" title="Период по" aria-label="По дату" />
       <button class="sort-btn" :disabled="!dateFrom || !dateTo" @click="emit('apply-date-range')">Применить</button>
       <button v-if="useCustomRange" class="sort-btn" @click="emit('reset-date-range')">Сбросить</button>
     </div>

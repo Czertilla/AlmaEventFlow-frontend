@@ -32,7 +32,7 @@
         <section v-show="activeTab === 'profile'" class="card">
           <TimestampsMeta :created-at="profileMeta.created_at" :edited-at="profileMeta.edited_at" />
           <p v-if="!profileExists" class="hint">Профиль ещё не создан — заполните и сохраните.</p>
-          <div class="field"><label>Дата рождения</label><DateTimeField v-model="profile.birthdate" mode="date" aria-label="Дата рождения" /></div>
+          <div class="field"><label>Дата рождения</label><DateTimeField v-model="profile.birthdate" mode="date" title="Дата рождения" aria-label="Дата рождения" /></div>
           <div class="field">
             <label>Место работы</label>
             <SearchPicker v-model="profile.workplace_id" :fetch="searchOrgs" placeholder="Поиск организации..." />

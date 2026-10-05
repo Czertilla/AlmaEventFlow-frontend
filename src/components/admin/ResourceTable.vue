@@ -83,6 +83,7 @@
           v-else-if="f.type === 'date'"
           v-model="filterValues[f.key]"
           mode="date"
+          :title="f.label"
           :aria-label="f.label"
           @change="applyFilters"
         />

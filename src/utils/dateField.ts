@@ -140,3 +140,16 @@ export function currentFieldValue(mode: DateFieldMode, now: Date = new Date()): 
   if (mode === 'date') return date
   return mode === 'time' ? time : `${date}T${time}`
 }
+
+export function dayFieldValue(
+  mode: 'date' | 'datetime',
+  offsetDays: number,
+  keepTimeOf: string,
+  now: Date = new Date(),
+): string {
+  const day = new Date(now.getFullYear(), now.getMonth(), now.getDate() + offsetDays, now.getHours(), now.getMinutes())
+  const target = currentFieldValue('datetime', day)
+  if (mode === 'date') return target.slice(0, 10)
+  const kept = normalizeFieldValue(keepTimeOf, 'datetime')
+  return kept ? `${target.slice(0, 10)}${kept.slice(10)}` : target
+}

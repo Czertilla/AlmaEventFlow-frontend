@@ -237,7 +237,7 @@
 
             <div class="form-field">
               <label>Дата</label>
-              <DateTimeField v-model="editForm.date" mode="date" aria-label="Дата мероприятия" />
+              <DateTimeField v-model="editForm.date" mode="date" title="Дата мероприятия" aria-label="Дата мероприятия" />
             </div>
 
             <div class="form-field">
@@ -345,6 +345,7 @@
                   class="stage-date"
                   placeholder="Начало, ДД.ММ.ГГГГ ЧЧ:ММ"
                   aria-label="Начало этапа"
+                  title="Начало этапа"
                 />
                 <span class="stage-dash">—</span>
                 <DateTimeField
@@ -353,6 +354,7 @@
                   class="stage-date"
                   placeholder="Окончание, ДД.ММ.ГГГГ ЧЧ:ММ"
                   aria-label="Окончание этапа"
+                  title="Окончание этапа"
                   :fallback="s.start_at"
                   :min="s.start_at"
                 />

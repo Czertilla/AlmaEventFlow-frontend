@@ -94,18 +94,27 @@ describe('DateTimeField typing', () => {
 })
 
 describe('DateTimeField picker', () => {
-  test('opens on the fallback without writing it into the model', async () => {
-    const wrapper = field({ modelValue: '', mode: 'datetime', fallback: '2026-03-12T15:30' })
+  async function opened(props: Record<string, unknown>) {
+    const wrapper = field(props)
+    await wrapper.get('.dtf-button').trigger('click')
+    return wrapper
+  }
 
-    await wrapper.get('button').trigger('click')
+  const pick = async (wrapper: ReturnType<typeof field>, value: string | null) => {
+    wrapper.getComponent(IonDatetime).vm.$emit('ion-change', { detail: { value } })
+    await wrapper.vm.$nextTick()
+  }
+
+  test('opens on the fallback without writing it into the model', async () => {
+    const wrapper = await opened({ modelValue: '', mode: 'datetime', fallback: '2026-03-12T15:30' })
 
     expect(wrapper.get('.picker').attributes('data-value')).toBe('2026-03-12T15:30')
     expect(wrapper.emitted('update:modelValue')).toBeUndefined()
     expect((wrapper.get('input').element as HTMLInputElement).value).toBe('')
   })
 
-  test('the model wins over the fallback', () => {
-    const wrapper = field({
+  test('the model wins over the fallback', async () => {
+    const wrapper = await opened({
       modelValue: '2026-03-13T18:45',
       mode: 'datetime',
       fallback: '2026-03-12T15:30',
@@ -114,14 +123,14 @@ describe('DateTimeField picker', () => {
     expect(wrapper.get('.picker').attributes('data-value')).toBe('2026-03-13T18:45')
   })
 
-  test('an empty field opens the picker on the current moment', () => {
-    const wrapper = field({ modelValue: '', mode: 'date' })
+  test('an empty field opens the picker on the current moment', async () => {
+    const wrapper = await opened({ modelValue: '', mode: 'date' })
 
     expect(wrapper.get('.picker').attributes('data-value')).toMatch(/^\d{4}-\d{2}-\d{2}$/)
   })
 
-  test('forwards min to the picker', () => {
-    const wrapper = field({ modelValue: '', mode: 'datetime', min: '2026-03-12T15:30' })
+  test('forwards min to the picker', async () => {
+    const wrapper = await opened({ modelValue: '', mode: 'datetime', min: '2026-03-12T15:30' })
 
     expect(wrapper.get('.picker').attributes('data-min')).toBe('2026-03-12T15:30')
   })
@@ -130,22 +139,69 @@ describe('DateTimeField picker', () => {
     ['date', '2026-03-12T00:00:00', '2026-03-12'],
     ['datetime', '2026-03-12T18:45:00', '2026-03-12T18:45'],
     ['time', '2026-03-12T18:45:00', '18:45'],
-  ] as const)('a %s picked in the picker is emitted in the model format', async (mode, picked, expected) => {
-    const wrapper = field({ modelValue: '', mode })
+  ] as const)('a %s picked in the picker is emitted in the model format on done', async (mode, picked, expected) => {
+    const wrapper = await opened({ modelValue: '', mode })
 
-    wrapper.getComponent(IonDatetime).vm.$emit('ion-change', { detail: { value: picked } })
-    await wrapper.vm.$nextTick()
+    await pick(wrapper, picked)
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+
+    await wrapper.get('.dtf-action--primary').trigger('click')
 
     expect(wrapper.emitted('update:modelValue')).toEqual([[expected]])
     expect(wrapper.emitted('change')).toEqual([[expected]])
   })
 
-  test('clearing in the picker empties the model', async () => {
-    const wrapper = field({ modelValue: '2026-03-12', mode: 'date' })
+  test('done on an untouched picker commits what it showed', async () => {
+    const wrapper = await opened({ modelValue: '', mode: 'datetime', fallback: '2026-03-12T15:30' })
 
-    wrapper.getComponent(IonDatetime).vm.$emit('ion-change', { detail: { value: null } })
-    await wrapper.vm.$nextTick()
+    await wrapper.get('.dtf-action--primary').trigger('click')
+
+    expect(wrapper.emitted('update:modelValue')).toEqual([['2026-03-12T15:30']])
+  })
+
+  test('closing the sheet keeps the model', async () => {
+    const wrapper = await opened({ modelValue: '2026-03-12', mode: 'date' })
+
+    await pick(wrapper, '2026-04-01T00:00:00')
+    await wrapper.get('.dtf-sheet-close').trigger('click')
+
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+
+  test('clear empties the model', async () => {
+    const wrapper = await opened({ modelValue: '2026-03-12', mode: 'date' })
+
+    await wrapper.get('.dtf-action--ghost').trigger('click')
 
     expect(wrapper.emitted('update:modelValue')).toEqual([['']])
+  })
+
+  test('the tomorrow chip keeps the picked time and is committed with done', async () => {
+    const wrapper = await opened({ modelValue: '2026-03-12T18:45', mode: 'datetime' })
+    const tomorrow = wrapper.findAll('.dtf-chip').find((chip) => chip.text() === 'Завтра')!
+
+    await tomorrow.trigger('click')
+    const shown = wrapper.get('.picker').attributes('data-value')!
+
+    expect(shown.slice(10)).toBe('T18:45')
+    expect(shown.slice(0, 10) > new Date().toISOString().slice(0, 10)).toBe(true)
+  })
+
+  test('chips before the minimum are disabled', async () => {
+    const wrapper = await opened({ modelValue: '', mode: 'date', min: '2999-01-01' })
+
+    expect(wrapper.findAll('.dtf-chip').every((chip) => chip.attributes('disabled') !== undefined)).toBe(true)
+  })
+
+  test('the time picker offers "now"', async () => {
+    const wrapper = await opened({ modelValue: '', mode: 'time' })
+
+    expect(wrapper.findAll('.dtf-chip').map((chip) => chip.text())).toEqual(['Сейчас'])
+  })
+
+  test('an explicit title replaces the default one', async () => {
+    const wrapper = await opened({ modelValue: '', mode: 'datetime', title: 'Окончание этапа' })
+
+    expect(wrapper.get('.dtf-sheet-title').text()).toBe('Окончание этапа')
   })
 })

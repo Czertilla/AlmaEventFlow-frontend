@@ -184,6 +184,7 @@
               <DateTimeField
                 v-model="form.date"
                 mode="date"
+                title="Дата мероприятия"
                 aria-label="Дата мероприятия"
                 @change="onDateChanged"
               />
@@ -290,7 +291,7 @@
               </div>
 
               <template v-if="planMode === 'time'">
-                <DateTimeField v-model="startTime" mode="time" aria-label="Время начала" />
+                <DateTimeField v-model="startTime" mode="time" title="Время начала" aria-label="Время начала" />
                 <p class="form-hint">
                   Будет создан один этап «Начало» с указанным временем.
                   <span v-if="startTime && !form.date" class="form-hint-warn">Сначала укажите дату мероприятия.</span>
@@ -322,6 +323,7 @@
                       class="stage-date"
                       placeholder="Начало, ДД.ММ.ГГГГ ЧЧ:ММ"
                       aria-label="Начало этапа"
+                      title="Начало этапа"
                     />
                     <span class="stage-dash">—</span>
                     <DateTimeField
@@ -330,6 +332,7 @@
                       class="stage-date"
                       placeholder="Окончание, ДД.ММ.ГГГГ ЧЧ:ММ"
                       aria-label="Окончание этапа"
+                      title="Окончание этапа"
                       :fallback="s.start_at"
                       :min="s.start_at"
                     />

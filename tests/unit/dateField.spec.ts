@@ -3,6 +3,7 @@ import {
   applyFieldInput,
   caretAfterDigits,
   currentFieldValue,
+  dayFieldValue,
   formatFieldValue,
   fromPickerValue,
   maskDigits,
@@ -154,5 +155,22 @@ describe('currentFieldValue', () => {
     expect(currentFieldValue('date', now)).toBe('2026-03-05')
     expect(currentFieldValue('time', now)).toBe('07:04')
     expect(currentFieldValue('datetime', now)).toBe('2026-03-05T07:04')
+  })
+})
+
+describe('dayFieldValue', () => {
+  const now = new Date(2026, 2, 31, 7, 4)
+
+  test('a date offset rolls over the month', () => {
+    expect(dayFieldValue('date', 0, '', now)).toBe('2026-03-31')
+    expect(dayFieldValue('date', 1, '', now)).toBe('2026-04-01')
+  })
+
+  test('a datetime keeps the time of the value it replaces', () => {
+    expect(dayFieldValue('datetime', 1, '2026-01-01T18:45', now)).toBe('2026-04-01T18:45')
+  })
+
+  test('a datetime without a time to keep takes the current one', () => {
+    expect(dayFieldValue('datetime', 1, '', now)).toBe('2026-04-01T07:04')
   })
 })
