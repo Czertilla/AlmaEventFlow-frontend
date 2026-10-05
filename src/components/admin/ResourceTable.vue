@@ -79,11 +79,11 @@
             @ion-change="onToggleFilter(f.key, $event)"
           />
         </label>
-        <input
+        <DateTimeField
           v-else-if="f.type === 'date'"
           v-model="filterValues[f.key]"
-          type="date"
-          class="rt-filter-control"
+          mode="date"
+          :aria-label="f.label"
           @change="applyFilters"
         />
       </div>
@@ -258,6 +258,7 @@ import {
 import type { AxiosResponse } from 'axios'
 import AppFab from '@/components/common/AppFab.vue'
 import ResourcePreview from '@/components/common/ResourcePreview.vue'
+import DateTimeField from '@/components/common/DateTimeField.vue'
 import type { ResourceKind } from '@/utils/resourceLabels'
 
 export interface ColumnDef {

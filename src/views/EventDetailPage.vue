@@ -237,7 +237,7 @@
 
             <div class="form-field">
               <label>Дата</label>
-              <input v-model="editForm.date" type="date" class="native-input" />
+              <DateTimeField v-model="editForm.date" mode="date" aria-label="Дата мероприятия" />
             </div>
 
             <div class="form-field">
@@ -338,15 +338,23 @@
                 </button>
               </div>
               <span class="char-counter">{{ s.name.length }} / {{ STAGE_NAME_MAX }}</span>
-              <div class="stage-edit-row">
-                <input v-model="s.start_at" type="datetime-local" class="native-input" />
+              <div class="stage-edit-row stage-range-row">
+                <DateTimeField
+                  v-model="s.start_at"
+                  mode="datetime"
+                  class="stage-date"
+                  placeholder="Начало, ДД.ММ.ГГГГ ЧЧ:ММ"
+                  aria-label="Начало этапа"
+                />
                 <span class="stage-dash">—</span>
-                <input
+                <DateTimeField
                   v-model="s.end_at"
-                  type="datetime-local"
-                  class="native-input"
-                  placeholder="Окончание"
-                  @focus="onEndFocus(s)"
+                  mode="datetime"
+                  class="stage-date"
+                  placeholder="Окончание, ДД.ММ.ГГГГ ЧЧ:ММ"
+                  aria-label="Окончание этапа"
+                  :fallback="s.start_at"
+                  :min="s.start_at"
                 />
               </div>
               <p v-if="stageEndBeforeStart(s)" class="form-hint form-hint-warn">
@@ -473,6 +481,7 @@ import EventAttendanceChip from '@/components/event/EventAttendanceChip.vue'
 import EventCommentChip from '@/components/event/EventCommentChip.vue'
 import LocationField from '@/components/geo/LocationField.vue'
 import LocationDisplay from '@/components/geo/LocationDisplay.vue'
+import DateTimeField from '@/components/common/DateTimeField.vue'
 import type {
   EventRead, EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1,
   EventPriorityEnumV1, StageRead, LocationRead,
@@ -650,10 +659,6 @@ function stageNamePlaceholder(s: StageForm): string {
 
 function stageEndBeforeStart(s: StageForm): boolean {
   return !!s.start_at && !!s.end_at && new Date(s.end_at) < new Date(s.start_at)
-}
-
-function onEndFocus(s: StageForm) {
-  if (!s.end_at && s.start_at) s.end_at = s.start_at
 }
 
 const stageOriginals = new Map<string, string>()
@@ -1119,6 +1124,25 @@ onIonViewWillEnter(async () => {
 .stage-dash {
   color: var(--ion-color-step-400);
   flex-shrink: 0;
+}
+
+.stage-range-row .stage-date {
+  flex: 1 1 0;
+}
+
+@media (max-width: 520px) {
+  .stage-range-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .stage-range-row .stage-date {
+    flex: none;
+  }
+
+  .stage-range-row .stage-dash {
+    display: none;
+  }
 }
 
 .stage-desc-input {

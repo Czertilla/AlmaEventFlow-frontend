@@ -44,9 +44,9 @@
 
     <div class="filter-row">
       <span class="filter-row-label">Период:</span>
-      <input v-model="dateFrom" type="date" class="native-input" aria-label="С даты" />
+      <DateTimeField v-model="dateFrom" mode="date" class="range-date" aria-label="С даты" />
       <span class="range-dash">—</span>
-      <input v-model="dateTo" type="date" class="native-input" aria-label="По дату" />
+      <DateTimeField v-model="dateTo" mode="date" class="range-date" aria-label="По дату" />
       <button class="sort-btn" :disabled="!dateFrom || !dateTo" @click="emit('apply-date-range')">Применить</button>
       <button v-if="useCustomRange" class="sort-btn" @click="emit('reset-date-range')">Сбросить</button>
     </div>
@@ -54,6 +54,7 @@
 </template>
 
 <script setup lang="ts">
+import DateTimeField from '@/components/common/DateTimeField.vue'
 import { computed } from 'vue'
 import { typeOptions, typeColor } from '@/utils/eventLabels'
 import type { EventTypeEnumV1, RoleRead } from '@/api/generated/almaEventFlow'
@@ -163,6 +164,11 @@ function selectAllRoles() {
 .range-dash {
   color: var(--ion-color-step-400);
   font-size: 13px;
+}
+
+.range-date {
+  width: 160px;
+  flex: 0 1 160px;
 }
 
 .sort-btn {
