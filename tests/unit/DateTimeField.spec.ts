@@ -147,6 +147,72 @@ describe('DateTimeField template', () => {
   })
 })
 
+describe('DateTimeField suggestion', () => {
+  test('focusing an empty datetime prefills the date of the suggestion and never a time', async () => {
+    const wrapper = field({ modelValue: '', mode: 'datetime', suggest: '2026-03-12T18:45' })
+
+    await wrapper.get('input').trigger('focus')
+
+    expect(inputValue(wrapper)).toBe('12.03.2026 ')
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+
+  test('typing the time completes the value', async () => {
+    const wrapper = field({ modelValue: '', mode: 'datetime', suggest: '2026-03-12' })
+    await wrapper.get('input').trigger('focus')
+
+    await type(wrapper, '12.03.2026 1530')
+
+    expect(wrapper.emitted('update:modelValue')).toEqual([['2026-03-12T15:30']])
+  })
+
+  test('leaving the field without a time drops the prefilled date', async () => {
+    const wrapper = field({ modelValue: '', mode: 'datetime', suggest: '2026-03-12' })
+    await wrapper.get('input').trigger('focus')
+
+    await wrapper.get('input').trigger('blur')
+
+    expect(inputValue(wrapper)).toBe('')
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+
+  test('the template after the prefilled date stays visible', async () => {
+    const wrapper = field({ modelValue: '', mode: 'datetime', suggest: '2026-03-12' })
+    await wrapper.get('input').trigger('focus')
+
+    const rest = wrapper
+      .findAll('.dtf-cell')
+      .filter((cell) => cell.attributes('data-hidden') !== 'true')
+      .map((cell) => cell.attributes('data-char'))
+      .join('')
+
+    expect(rest).toBe('ЧЧ:ММ')
+  })
+
+  test.each([
+    ['a field that already has a value', { modelValue: '2026-03-13T10:00', mode: 'datetime', suggest: '2026-03-12' }],
+    ['a field without a suggestion', { modelValue: '', mode: 'datetime' }],
+    ['a date field', { modelValue: '', mode: 'date', suggest: '2026-03-12' }],
+    ['a time field', { modelValue: '', mode: 'time', suggest: '2026-03-12T10:00' }],
+  ] as const)('%s is not prefilled', async (_label, props) => {
+    const wrapper = field({ ...props })
+    const before = inputValue(wrapper)
+
+    await wrapper.get('input').trigger('focus')
+
+    expect(inputValue(wrapper)).toBe(before)
+  })
+
+  test('the picker opens on the suggested day with the current time when the suggestion has no time', async () => {
+    const wrapper = field({ modelValue: '', mode: 'datetime', suggest: '2026-03-12' })
+    await wrapper.get('.dtf-button').trigger('click')
+
+    expect(wrapper.get('.picker').attributes('data-value')).toBe('2026-03-12')
+    const time = wrapper.findAll('.ts-value').map((box) => (box.element as HTMLInputElement).value).join(':')
+    expect(time).toMatch(/^\d{2}:\d{2}$/)
+  })
+})
+
 describe('DateTimeField picker', () => {
   async function opened(props: Record<string, unknown>) {
     const wrapper = field(props)
@@ -169,8 +235,8 @@ describe('DateTimeField picker', () => {
     for (const char of chars) await box.trigger('input', { data: char, inputType: 'insertText' })
   }
 
-  test('a datetime opens on the fallback without writing it into the model', async () => {
-    const wrapper = await opened({ modelValue: '', mode: 'datetime', fallback: '2026-03-12T15:30' })
+  test('a datetime opens on the suggestion without writing it into the model', async () => {
+    const wrapper = await opened({ modelValue: '', mode: 'datetime', suggest: '2026-03-12T15:30' })
 
     expect(wrapper.get('.picker').attributes('data-value')).toBe('2026-03-12')
     expect(spinnerValues(wrapper)).toBe('15:30')
@@ -178,11 +244,11 @@ describe('DateTimeField picker', () => {
     expect(inputValue(wrapper)).toBe('')
   })
 
-  test('the model wins over the fallback', async () => {
+  test('the model wins over the suggestion', async () => {
     const wrapper = await opened({
       modelValue: '2026-03-13T18:45',
       mode: 'datetime',
-      fallback: '2026-03-12T15:30',
+      suggest: '2026-03-12T15:30',
     })
 
     expect(wrapper.get('.picker').attributes('data-value')).toBe('2026-03-13')
@@ -244,7 +310,7 @@ describe('DateTimeField picker', () => {
   })
 
   test('done on an untouched picker commits what it showed', async () => {
-    const wrapper = await opened({ modelValue: '', mode: 'datetime', fallback: '2026-03-12T15:30' })
+    const wrapper = await opened({ modelValue: '', mode: 'datetime', suggest: '2026-03-12T15:30' })
 
     await done(wrapper)
 
@@ -252,7 +318,7 @@ describe('DateTimeField picker', () => {
   })
 
   test('a time typed below min is raised to it', async () => {
-    const wrapper = await opened({ modelValue: '', mode: 'datetime', fallback: '2026-03-12T15:30', min: '2026-03-12T15:30' })
+    const wrapper = await opened({ modelValue: '', mode: 'datetime', suggest: '2026-03-12T15:30', min: '2026-03-12T15:30' })
 
     await typeInto(wrapper.findAll('.ts-value')[0]!, '10')
 

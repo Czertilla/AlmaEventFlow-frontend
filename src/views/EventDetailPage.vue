@@ -341,7 +341,12 @@
               <div class="stage-edit-row stage-range-row">
                 <div class="stage-date">
                   <span class="stage-date-label">Начало</span>
-                  <DateTimeField v-model="s.start_at" mode="datetime" title="Начало этапа" />
+                  <DateTimeField
+                    v-model="s.start_at"
+                    mode="datetime"
+                    title="Начало этапа"
+                    :suggest="stageStartSuggestion(i)"
+                  />
                 </div>
                 <div class="stage-date">
                   <span class="stage-date-label">Окончание</span>
@@ -349,7 +354,7 @@
                     v-model="s.end_at"
                     mode="datetime"
                     title="Окончание этапа"
-                    :fallback="s.start_at"
+                    :suggest="s.start_at"
                     :min="s.start_at"
                   />
                 </div>
@@ -689,14 +694,14 @@ function openStages() {
   showStagesModal.value = true
 }
 
-// Новый этап стартует там, где закончился предыдущий (или в дату мероприятия)
+function stageStartSuggestion(index: number): string {
+  const prev = stageForms.value[index - 1]
+  return prev?.end_at || prev?.start_at || event.value?.date || ''
+}
+
 function addStageRow() {
   const prev = stageForms.value[stageForms.value.length - 1]
-  let start = ''
-  if (prev?.end_at) start = prev.end_at
-  else if (prev?.start_at) start = `${prev.start_at.slice(0, 10)}T12:00`
-  else if (event.value?.date) start = `${event.value.date.slice(0, 10)}T12:00`
-  stageForms.value.push({ name: '', start_at: start, end_at: '', description: '' })
+  stageForms.value.push({ name: '', start_at: prev?.end_at ?? '', end_at: '', description: '' })
 }
 
 async function reloadStages() {

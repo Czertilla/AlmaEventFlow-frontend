@@ -18,6 +18,7 @@
         </span>
       </span>
       <input
+        ref="inputEl"
         class="dtf-input"
         type="text"
         inputmode="numeric"
@@ -25,6 +26,7 @@
         :value="text"
         :disabled="disabled"
         :aria-label="`${ariaLabel ?? title ?? TITLES[mode]}, ${FIELD_HINTS[mode]}`"
+        @focus="onFocus"
         @input="onInput"
         @blur="onBlur"
       />
@@ -88,7 +90,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 import { IonDatetime, IonIcon, IonModal } from '@ionic/vue'
 import { calendarOutline, closeOutline, timeOutline } from 'ionicons/icons'
 import TimeSpinner from '@/components/common/TimeSpinner.vue'
@@ -117,12 +119,12 @@ const props = withDefaults(
     mode?: DateFieldMode
     title?: string
     ariaLabel?: string
-    fallback?: string | null
+    suggest?: string | null
     min?: string | null
     max?: string | null
     disabled?: boolean
   }>(),
-  { modelValue: '', mode: 'date', title: undefined, ariaLabel: undefined, fallback: '', min: '', max: '' },
+  { modelValue: '', mode: 'date', title: undefined, ariaLabel: undefined, suggest: '', min: '', max: '' },
 )
 
 const emit = defineEmits<{
@@ -131,6 +133,7 @@ const emit = defineEmits<{
 }>()
 
 const text = ref(formatFieldValue(props.modelValue, props.mode))
+const inputEl = ref<HTMLInputElement | null>(null)
 const open = ref(false)
 const draft = ref('')
 
@@ -185,11 +188,12 @@ function setDraft(value: string) {
 }
 
 function initialDraft() {
-  return (
-    normalizeFieldValue(props.modelValue, props.mode) ||
-    normalizeFieldValue(props.fallback, props.mode) ||
-    currentFieldValue(props.mode)
-  )
+  const known =
+    normalizeFieldValue(props.modelValue, props.mode) || normalizeFieldValue(props.suggest, props.mode)
+  if (known) return known
+  const day = normalizeFieldValue(props.suggest, 'date')
+  if (day && props.mode === 'datetime') return `${day}T${currentFieldValue('time')}`
+  return currentFieldValue(props.mode)
 }
 
 function openPicker() {
@@ -221,6 +225,18 @@ function onInput(event: Event) {
   }
   const parsed = parseFieldText(edit.text, props.mode)
   if (parsed !== null) publish(parsed)
+}
+
+function onFocus() {
+  const day = props.mode === 'datetime' ? formatFieldValue(props.suggest, 'date') : ''
+  if (text.value || !day) return
+  text.value = `${day} `
+  nextTick(() => {
+    const el = inputEl.value
+    if (!el) return
+    el.value = text.value
+    el.setSelectionRange(text.value.length, text.value.length)
+  })
 }
 
 function onBlur() {

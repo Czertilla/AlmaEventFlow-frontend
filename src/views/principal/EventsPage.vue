@@ -319,7 +319,12 @@
                   <div class="stage-edit-row stage-range-row">
                     <div class="stage-date">
                       <span class="stage-date-label">Начало</span>
-                      <DateTimeField v-model="s.start_at" mode="datetime" title="Начало этапа" />
+                      <DateTimeField
+                        v-model="s.start_at"
+                        mode="datetime"
+                        title="Начало этапа"
+                        :suggest="stageStartSuggestion(i)"
+                      />
                     </div>
                     <div class="stage-date">
                       <span class="stage-date-label">Окончание</span>
@@ -327,7 +332,7 @@
                         v-model="s.end_at"
                         mode="datetime"
                         title="Окончание этапа"
-                        :fallback="s.start_at"
+                        :suggest="s.start_at"
                         :min="s.start_at"
                       />
                     </div>
@@ -578,21 +583,16 @@ function clearSource() {
   onSourceSelected(null)
 }
 
+function stageStartSuggestion(index: number): string {
+  const prev = form.value.stages[index - 1]
+  return prev?.end_at || prev?.start_at || form.value.date || ''
+}
+
 function addStage() {
   const prev = form.value.stages[form.value.stages.length - 1]
-  let start = ''
-  if (prev?.end_at) {
-    // Максимум информации — старт новой стадии = конец предыдущей
-    start = prev.end_at
-  } else if (prev?.start_at) {
-    // Минимум — берём дату предыдущей стадии (время по умолчанию)
-    start = `${prev.start_at.slice(0, 10)}T12:00`
-  } else if (form.value.date) {
-    start = `${form.value.date}T12:00`
-  }
   form.value.stages.push({
     name: '',
-    start_at: start,
+    start_at: prev?.end_at ?? '',
     end_at: '',
     description: '',
   })
