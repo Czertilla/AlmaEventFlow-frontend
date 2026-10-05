@@ -17,3 +17,10 @@ export function formatTime(date: string | Date): string {
   if (!date || isNaN(d.getTime())) return ''
   return fnsFormat(d, 'HH:mm')
 }
+
+export function formatDateTime(date: string | Date | null | undefined): string {
+  if (!date) return ''
+  const d = typeof date === 'string' ? new Date(date) : date
+  if (isNaN(d.getTime())) return ''
+  return fnsFormat(d, 'dd.MM.yyyy HH:mm')
+}

@@ -14,6 +14,7 @@
           :get-subtitle="(a) => [a.parsed?.street, a.parsed?.house].filter(Boolean).join(', ')"
           :fetch-items="fetchAddresses"
           :sort-options="sortOptions"
+          :filters="addressFilters"
           default-sort="name"
           add-label="Добавить"
           @add="openAddressCreate()"
@@ -31,6 +32,7 @@
           :get-subtitle="(l) => l.address?.name || 'Своя точка'"
           :fetch-items="fetchLocations"
           :sort-options="sortOptions"
+          :filters="locationFilters"
           default-sort="name"
           add-label="Добавить"
           @add="openLocationCreate()"
@@ -102,7 +104,8 @@ import {
   getCitiesGeoV1CitiesGet, getMapGeoV1MapGet,
 } from '@/api/generated/almaEventFlow'
 import type { AddressRead, LocationRead } from '@/api/generated/almaEventFlow'
-import type { ColumnDef, SortOption } from '@/components/admin/ResourceTable.vue'
+import type { ColumnDef, FilterDef, SortOption } from '@/components/admin/ResourceTable.vue'
+import { TIMESTAMP_FILTERS, TIMESTAMP_SORT_OPTIONS } from '@/utils/timestamps'
 import type { FormField } from '@/components/admin/ResourceFormModal.vue'
 
 const activeTab = ref('addresses')
@@ -111,7 +114,17 @@ const locationTableRef = ref()
 
 const sortOptions: SortOption[] = [
   { value: 'name', label: 'Названию' },
+  ...TIMESTAMP_SORT_OPTIONS,
 ]
+
+const spotFilter: FilterDef = {
+  key: 'spot__isnull',
+  label: 'Координаты',
+  type: 'select',
+  options: [{ value: 'false', label: 'Указаны' }, { value: 'true', label: 'Не указаны' }],
+}
+const addressFilters: FilterDef[] = [spotFilter, ...TIMESTAMP_FILTERS]
+const locationFilters: FilterDef[] = [spotFilter, ...TIMESTAMP_FILTERS]
 
 // Addresses
 const addressColumns: ColumnDef[] = [

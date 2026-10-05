@@ -6,6 +6,7 @@
         :get-subtitle="(p) => p.birthdate || 'Нет даты'"
         :fetch-items="fetchProfiles"
         :sort-options="sortOptions"
+        :filters="filters"
         default-sort="created_at"
         add-label="Добавить"
         @add="openCreate"
@@ -33,10 +34,17 @@ import ResourceFormModal from '@/components/admin/ResourceFormModal.vue'
 import { getManyProfileV1ProfilesGet, createProfileProfileV1ProfilesPost, patchProfileProfileV1ProfilesProfileIdPatch, deleteProfileProfileV1ProfilesProfileIdDelete, searchPersonProfileV1PersonsGet } from '@/api/generated/almaEventFlow'
 import { listOrganizationsOrgV1OrganizationsGet, getManyProfileV1DietsGet } from '@/api/generated/almaEventFlow'
 import type { DietRead } from '@/api/generated/almaEventFlow'
-import type { ColumnDef, SortOption } from '@/components/admin/ResourceTable.vue'
+import type { ColumnDef, SortOption, FilterDef } from '@/components/admin/ResourceTable.vue'
+import { TIMESTAMP_FILTERS, TIMESTAMP_SORT_OPTIONS } from '@/utils/timestamps'
 import type { FormField } from '@/components/admin/ResourceFormModal.vue'
 
 const tableRef = ref()
+
+const filters: FilterDef[] = [
+  { key: 'birthdate__gte', label: 'Родился с', type: 'date' },
+  { key: 'birthdate__lte', label: 'Родился по', type: 'date' },
+  ...TIMESTAMP_FILTERS,
+]
 const diets = ref<DietRead[]>([])
 
 onMounted(async () => {
@@ -51,9 +59,11 @@ const columns: ColumnDef[] = [
   { key: 'created_at', label: 'Создан', sortable: true, render: (p) => new Date(p.created_at).toLocaleDateString() },
 ]
 
-const sortOptions: SortOption[] = [
-  { value: 'created_at', label: 'Дате создания' },
+const baseSortOptions: SortOption[] = [
+  { value: 'birthdate', label: 'Дате рождения' },
 ]
+
+const sortOptions: SortOption[] = [...baseSortOptions, ...TIMESTAMP_SORT_OPTIONS]
 
 // Схема ProfileCreate: id = id персоны (обязателен), birthdate, workplace_id, diet_id
 const baseFields = computed<FormField[]>(() => [

@@ -6,6 +6,7 @@
         :get-subtitle="() => 'Персона'"
         :fetch-items="fetchPersons"
         :sort-options="sortOptions"
+        :filters="filters"
         default-sort="surname"
         add-label="Добавить"
         :extra-action="inviteAction"
@@ -36,16 +37,21 @@ import { ref, onMounted } from 'vue'
 import { IonModal } from '@ionic/vue'
 import { useAdminNavigate } from '@/composables/useAdminNavigate'
 import { getManyUserV1UsersGet } from '@/api/generated/almaEventFlow'
-import type { ExtraAction } from '@/components/admin/ResourceTable.vue'
+import type { ExtraAction, SortOption, FilterDef } from '@/components/admin/ResourceTable.vue'
+import { TIMESTAMP_FILTERS, TIMESTAMP_SORT_OPTIONS } from '@/utils/timestamps'
 import { linkOutline } from 'ionicons/icons'
 import ResourceTable from '@/components/admin/ResourceTable.vue'
 import ResourceFormModal from '@/components/admin/ResourceFormModal.vue'
 import InviteLinkModal from '@/components/admin/InviteLinkModal.vue'
 import { searchPersonProfileV1PersonsGet, createPersonProfileV1PersonsPost, patchPersonProfileV1PersonsPersonIdPatch, deletePersonProfileV1PersonsPersonIdDelete } from '@/api/generated/almaEventFlow'
-import type { ColumnDef, SortOption } from '@/components/admin/ResourceTable.vue'
+import type { ColumnDef } from '@/components/admin/ResourceTable.vue'
 import type { FormField } from '@/components/admin/ResourceFormModal.vue'
 
 const tableRef = ref()
+
+const filters: FilterDef[] = [
+  ...TIMESTAMP_FILTERS,
+]
 const adminNavigate = useAdminNavigate()
 
 const columns: ColumnDef[] = [
@@ -54,10 +60,12 @@ const columns: ColumnDef[] = [
   { key: 'patronymic', label: 'Отчество', render: (p) => p.patronymic || '—' },
 ]
 
-const sortOptions: SortOption[] = [
+const baseSortOptions: SortOption[] = [
   { value: 'surname', label: 'Фамилии' },
   { value: 'name', label: 'Имени' },
 ]
+
+const sortOptions: SortOption[] = [...baseSortOptions, ...TIMESTAMP_SORT_OPTIONS]
 
 const formFields: FormField[] = [
   { key: 'surname', label: 'Фамилия', type: 'text', required: true },

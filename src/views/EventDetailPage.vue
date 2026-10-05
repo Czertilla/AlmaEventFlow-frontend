@@ -42,6 +42,7 @@
                 <UuidBadge :id="event.id" />
               </div>
               <p class="info-description">{{ event.description || 'Нет описания' }}</p>
+              <TimestampsMeta :created-at="event.created_at" :edited-at="event.edited_at" />
             </div>
 
             <div class="info-card">
@@ -467,6 +468,7 @@ import {
 } from '@/api/generated/almaEventFlow'
 import { format as fnsFormat } from 'date-fns'
 import UuidBadge from '@/components/common/UuidBadge.vue'
+import TimestampsMeta from '@/components/common/TimestampsMeta.vue'
 import EventAttendanceChip from '@/components/event/EventAttendanceChip.vue'
 import EventCommentChip from '@/components/event/EventCommentChip.vue'
 import LocationField from '@/components/geo/LocationField.vue'
@@ -775,7 +777,7 @@ async function submitJoin() {
   try {
     await createMyCollectiveParticipationEventV1MeCollectivesCollectiveIdParticipationsPost(collective.id, {
       event_id: eventId,
-      EventPriorityEnumV1: joinForm.priority,
+      priority_degree: joinForm.priority,
     })
     showJoinModal.value = false
     await loadParticipations()

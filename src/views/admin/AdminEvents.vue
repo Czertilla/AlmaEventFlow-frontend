@@ -41,6 +41,7 @@ import {
 } from '@/api/generated/almaEventFlow'
 import type { EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1 } from '@/api/generated/almaEventFlow'
 import type { ColumnDef, SortOption, FilterDef } from '@/components/admin/ResourceTable.vue'
+import { TIMESTAMP_FILTERS, TIMESTAMP_SORT_OPTIONS } from '@/utils/timestamps'
 import type { FormField } from '@/components/admin/ResourceFormModal.vue'
 
 const tableRef = ref()
@@ -71,20 +72,27 @@ const columns: ColumnDef[] = [
   { key: 'format', label: 'Формат', render: (e) => formatLabels[e.format as EventFormatEnumV1] || '—', hideMobile: true },
 ]
 
-const sortOptions: SortOption[] = [
+const baseSortOptions: SortOption[] = [
   { value: 'name', label: 'Названию' },
   { value: 'date', label: 'Дате' },
   { value: 'status', label: 'Статусу' },
+  { value: 'level', label: 'Уровню' },
+  { value: 'type', label: 'Типу' },
 ]
 
-const filters: FilterDef[] = [
+const sortOptions: SortOption[] = [...baseSortOptions, ...TIMESTAMP_SORT_OPTIONS]
+
+const baseFilters: FilterDef[] = [
   { key: 'status', label: 'Статус', type: 'select', options: toOptions(statusLabels) },
   { key: 'type', label: 'Тип', type: 'select', options: toOptions(typeLabels) },
   { key: 'level', label: 'Уровень', type: 'select', options: toOptions(levelLabels) },
   { key: 'format', label: 'Формат', type: 'select', options: toOptions(formatLabels) },
   { key: 'date__gte', label: 'Дата с', type: 'date' },
   { key: 'date__lte', label: 'Дата по', type: 'date' },
+  { key: 'date__isnull', label: 'Дата', type: 'select', options: [{ value: 'true', label: 'Не назначена' }, { value: 'false', label: 'Назначена' }] },
 ]
+
+const filters: FilterDef[] = [...baseFilters, ...TIMESTAMP_FILTERS]
 
 const formFields: FormField[] = [
   { key: 'name', label: 'Название', type: 'text', required: true, maxLength: 128 },

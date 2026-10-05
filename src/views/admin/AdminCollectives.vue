@@ -6,6 +6,7 @@
         :get-subtitle="(c) => c.acronym"
         :fetch-items="fetchCollectives"
         :sort-options="sortOptions"
+        :filters="filters"
         default-sort="name"
         add-label="Добавить"
         @add="openCreate"
@@ -33,21 +34,28 @@ import ResourceFormModal from '@/components/admin/ResourceFormModal.vue'
 import { listCollectivesOrgV1CollectivesGet, createCollectiveOrgV1CollectivesPost, patchCollectiveOrgV1CollectivesCollectiveIdPatch, deleteCollectiveOrgV1CollectivesCollectiveIdDelete, listUniversitiesOrgV1UniversitiesGet } from '@/api/generated/almaEventFlow'
 import { searchPersonProfileV1PersonsGet } from '@/api/generated/almaEventFlow'
 import { getAddressesGeoV1AddressesGet } from '@/api/generated/almaEventFlow'
-import type { ColumnDef, SortOption } from '@/components/admin/ResourceTable.vue'
+import type { ColumnDef, SortOption, FilterDef } from '@/components/admin/ResourceTable.vue'
+import { TIMESTAMP_FILTERS, TIMESTAMP_SORT_OPTIONS } from '@/utils/timestamps'
 import type { FormField } from '@/components/admin/ResourceFormModal.vue'
 
 const tableRef = ref()
 
+const filters: FilterDef[] = [
+  ...TIMESTAMP_FILTERS,
+]
+
 const columns: ColumnDef[] = [
   { key: 'name', label: 'Название', sortable: true },
   { key: 'acronym', label: 'Аббревиатура', sortable: true },
-  { key: 'type', label: 'Тип', sortable: true },
+  { key: 'type', label: 'Тип' },
 ]
 
-const sortOptions: SortOption[] = [
+const baseSortOptions: SortOption[] = [
   { value: 'name', label: 'Названию' },
   { value: 'acronym', label: 'Аббревиатуре' },
 ]
+
+const sortOptions: SortOption[] = [...baseSortOptions, ...TIMESTAMP_SORT_OPTIONS]
 
 // Поля по схеме CollectiveCreate: name, acronym (опц.), university_id, principal_id, address_id
 const formFields: FormField[] = [

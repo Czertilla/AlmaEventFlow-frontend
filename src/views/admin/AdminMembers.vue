@@ -5,6 +5,8 @@
       :get-label="(m) => m.person_id"
       :label-resource="(m) => ({ kind: 'person', id: m.person_id })"
       :get-subtitle="(m) => (m.roles || []).map((r: any) => r.name).join(', ') || 'Без роли'"
+      :sort-options="sortOptions"
+      :filters="filters"
       :fetch-items="fetchItems"
       add-label="Добавить"
       @add="openCreate"
@@ -37,10 +39,21 @@ import {
   searchPersonProfileV1PersonsGet,
   listCollectivesOrgV1CollectivesGet,
 } from '@/api/generated/almaEventFlow'
-import type { ColumnDef } from '@/components/admin/ResourceTable.vue'
+import type { ColumnDef, SortOption, FilterDef } from '@/components/admin/ResourceTable.vue'
+import { TIMESTAMP_FILTERS, TIMESTAMP_SORT_OPTIONS } from '@/utils/timestamps'
 import type { FormField } from '@/components/admin/ResourceFormModal.vue'
 
 const tableRef = ref()
+
+const filters: FilterDef[] = [
+  { key: 'is_active', label: 'Активен', type: 'select', options: [{ value: 'true', label: 'Да' }, { value: 'false', label: 'Нет' }] },
+  ...TIMESTAMP_FILTERS,
+]
+
+const sortOptions: SortOption[] = [
+  { value: 'is_active', label: 'Активности' },
+  ...TIMESTAMP_SORT_OPTIONS,
+]
 
 const columns: ColumnDef[] = [
   { key: 'person_id', label: 'Персона', resource: (m) => ({ kind: 'person', id: m.person_id }) },
@@ -80,7 +93,7 @@ async function save(data: any) {
   if (isCreating.value) {
     await createMemberEventV1MembersPost(data as any)
   } else if (editingItem.value) {
-    await patchMemberEventV1MembersMemberIdPatch(editingItem.value.id, { id: editingItem.value.id, is_active: data.is_active })
+    await patchMemberEventV1MembersMemberIdPatch(editingItem.value.id, { is_active: data.is_active })
   }
   editModal.value = false
   tableRef.value?.loadData()

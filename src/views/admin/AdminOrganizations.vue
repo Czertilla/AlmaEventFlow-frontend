@@ -18,7 +18,7 @@
       <ResourceFormModal
         v-if="editModal"
         :title="isCreating ? 'Создать организацию' : 'Редактировать организацию'"
-        :fields="formFields"
+        :fields="isCreating ? createFields : editFields"
         :item="editingItem"
         :on-save="saveOrganization"
         @close="editModal = false"
@@ -31,10 +31,19 @@ import { ref } from 'vue'
 import { IonModal } from '@ionic/vue'
 import ResourceTable from '@/components/admin/ResourceTable.vue'
 import ResourceFormModal from '@/components/admin/ResourceFormModal.vue'
-import { listOrganizationsOrgV1OrganizationsGet, createOrganizationOrgV1OrganizationsPost, patchOrganizationOrgV1OrganizationsOrganizationIdPatch, deleteOrganizationOrgV1OrganizationsOrganizationIdDelete } from '@/api/generated/almaEventFlow'
+import {
+  listOrganizationsOrgV1OrganizationsGet,
+  createOrganizationOrgV1OrganizationsPost,
+  createUniversityOrgV1UniversitiesPost,
+  createFacultyOrgV1FacultiesPost,
+  createCollectiveOrgV1CollectivesPost,
+  patchOrganizationOrgV1OrganizationsOrganizationIdPatch,
+  deleteOrganizationOrgV1OrganizationsOrganizationIdDelete,
+} from '@/api/generated/almaEventFlow'
 import { searchPersonProfileV1PersonsGet } from '@/api/generated/almaEventFlow'
 import { getAddressesGeoV1AddressesGet } from '@/api/generated/almaEventFlow'
 import type { ColumnDef, SortOption, FilterDef } from '@/components/admin/ResourceTable.vue'
+import { TIMESTAMP_FILTERS, TIMESTAMP_SORT_OPTIONS } from '@/utils/timestamps'
 import type { FormField } from '@/components/admin/ResourceFormModal.vue'
 
 const tableRef = ref()
@@ -53,20 +62,24 @@ const columns: ColumnDef[] = [
   { key: 'type', label: 'Тип', sortable: true, render: (o) => typeLabels[o.type] || o.type || '—' },
 ]
 
-const sortOptions: SortOption[] = [
+const baseSortOptions: SortOption[] = [
   { value: 'name', label: 'Названию' },
   { value: 'acronym', label: 'Аббревиатуре' },
+  { value: 'type', label: 'Типу' },
 ]
 
-const filters: FilterDef[] = [
+const sortOptions: SortOption[] = [...baseSortOptions, ...TIMESTAMP_SORT_OPTIONS]
+
+const baseFilters: FilterDef[] = [
   { key: 'type', label: 'Тип', type: 'select', options: typeOptions },
 ]
 
-// Поля по схеме OrganizationCreate: type (обязателен), name, acronym (опц.), principal_id, address_id
-const formFields: FormField[] = [
+const filters: FilterDef[] = [...baseFilters, ...TIMESTAMP_FILTERS]
+
+// Тип задаётся только при создании: у каждого типа свой эндпоинт и своя запись-подтип
+const editFields: FormField[] = [
   { key: 'name', label: 'Название', type: 'text', required: true },
   { key: 'acronym', label: 'Аббревиатура', type: 'text' },
-  { key: 'type', label: 'Тип', type: 'select', required: true, options: typeOptions },
   {
     key: 'principal_id',
     label: 'Руководитель',
@@ -88,6 +101,20 @@ const formFields: FormField[] = [
     displayField: 'name',
   },
 ]
+
+const createFields: FormField[] = [
+  editFields[0],
+  editFields[1],
+  { key: 'type', label: 'Тип', type: 'select', required: true, options: typeOptions },
+  ...editFields.slice(2),
+]
+
+const creators: Record<string, (body: any) => Promise<unknown>> = {
+  organization: createOrganizationOrgV1OrganizationsPost,
+  university: createUniversityOrgV1UniversitiesPost,
+  faculty: createFacultyOrgV1FacultiesPost,
+  collective: createCollectiveOrgV1CollectivesPost,
+}
 
 const editModal = ref(false)
 const editingItem = ref<any>(null)
@@ -111,9 +138,13 @@ function openCreate() {
 
 async function saveOrganization(data: any) {
   if (isCreating.value) {
-    await createOrganizationOrgV1OrganizationsPost(data as any)
+    const { type, ...body } = data
+    await creators[type || 'organization'](body)
   } else if (editingItem.value) {
-    await patchOrganizationOrgV1OrganizationsOrganizationIdPatch(editingItem.value.id, data)
+    const { name, acronym, principal_id, address_id } = data
+    await patchOrganizationOrgV1OrganizationsOrganizationIdPatch(editingItem.value.id, {
+      name, acronym, principal_id, address_id,
+    })
   }
   editModal.value = false
   tableRef.value?.loadData()

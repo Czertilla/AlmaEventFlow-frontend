@@ -8,6 +8,9 @@
       <ion-icon :icon="closeOutline" />
     </button>
   </div>
+  <div v-if="item?.created_at" class="modal-meta">
+    <TimestampsMeta :created-at="item.created_at" :edited-at="item.edited_at" />
+  </div>
   <ion-content class="ion-padding">
     <ion-list lines="none" class="form-list">
       <ion-item v-for="field in fields" :key="field.key" class="form-item">
@@ -126,6 +129,7 @@ import {
 import { closeOutline } from 'ionicons/icons'
 import GeoMap from '@/components/geo/GeoMap.vue'
 import UuidBadge from '@/components/common/UuidBadge.vue'
+import TimestampsMeta from '@/components/common/TimestampsMeta.vue'
 
 export interface FormField {
   key: string
@@ -251,6 +255,11 @@ async function submit() {
   align-items: center;
   justify-content: space-between;
   padding: 18px 20px 12px;
+  background: var(--ion-card-background);
+}
+
+.modal-meta {
+  padding: 0 20px 10px;
   background: var(--ion-card-background);
 }
 

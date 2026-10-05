@@ -21,6 +21,7 @@
 
         <!-- Персона -->
         <section v-show="activeTab === 'person'" class="card">
+          <TimestampsMeta :created-at="personMeta.created_at" :edited-at="personMeta.edited_at" />
           <div class="field"><label>Фамилия</label><ion-input v-model="person.surname" mode="md" /></div>
           <div class="field"><label>Имя</label><ion-input v-model="person.name" mode="md" /></div>
           <div class="field"><label>Отчество</label><ion-input v-model="person.patronymic" mode="md" /></div>
@@ -29,6 +30,7 @@
 
         <!-- Профиль -->
         <section v-show="activeTab === 'profile'" class="card">
+          <TimestampsMeta :created-at="profileMeta.created_at" :edited-at="profileMeta.edited_at" />
           <p v-if="!profileExists" class="hint">Профиль ещё не создан — заполните и сохраните.</p>
           <div class="field"><label>Дата рождения</label><input v-model="profile.birthdate" type="date" class="native-input" /></div>
           <div class="field">
@@ -47,6 +49,7 @@
 
         <!-- Студент -->
         <section v-show="activeTab === 'student'" class="card">
+          <TimestampsMeta :created-at="studentMeta.created_at" :edited-at="studentMeta.edited_at" />
           <p v-if="!studentExists" class="hint">Студенческая карточка не создана — заполните и сохраните.</p>
           <p v-if="!profileExists" class="hint hint--warn">Сначала создайте профиль.</p>
           <div class="field"><label>Студенческий билет</label><ion-input v-model="student.student_id" mode="md" /></div>
@@ -66,14 +69,17 @@
 
         <!-- Контакты -->
         <section v-show="activeTab === 'contacts'" class="card">
-          <div v-for="c in contacts" :key="c.id" class="contact-row">
-            <ion-select v-model="c.type" interface="popover" mode="md" class="contact-type">
-              <ion-select-option v-for="[v, l] in contactTypeOptions" :key="v" :value="v">{{ l }}</ion-select-option>
-            </ion-select>
-            <ion-input v-model="c.value" mode="md" class="contact-value" placeholder="Значение" />
-            <button class="chip-toggle" :class="{ 'chip-toggle--on': c.is_main }" title="Основной" @click="c.is_main = !c.is_main">★</button>
-            <button class="icon-btn" title="Сохранить" @click="saveContact(c)"><ion-icon :icon="checkmarkOutline" /></button>
-            <button class="icon-btn icon-btn--danger" title="Удалить" @click="removeContact(c)"><ion-icon :icon="trashOutline" /></button>
+          <div v-for="c in contacts" :key="c.id" class="contact">
+            <div class="contact-row">
+              <ion-select v-model="c.type" interface="popover" mode="md" class="contact-type">
+                <ion-select-option v-for="[v, l] in contactTypeOptions" :key="v" :value="v">{{ l }}</ion-select-option>
+              </ion-select>
+              <ion-input v-model="c.value" mode="md" class="contact-value" placeholder="Значение" />
+              <button class="chip-toggle" :class="{ 'chip-toggle--on': c.is_main }" title="Основной" @click="c.is_main = !c.is_main">★</button>
+              <button class="icon-btn" title="Сохранить" @click="saveContact(c)"><ion-icon :icon="checkmarkOutline" /></button>
+              <button class="icon-btn icon-btn--danger" title="Удалить" @click="removeContact(c)"><ion-icon :icon="trashOutline" /></button>
+            </div>
+            <TimestampsMeta :created-at="c.created_at" :edited-at="c.edited_at" />
           </div>
           <div class="contact-row">
             <ion-select v-model="newContact.type" interface="popover" mode="md" class="contact-type" placeholder="Тип">
@@ -98,6 +104,7 @@ import {
 } from '@ionic/vue'
 import { arrowBackOutline, trashOutline, addOutline, checkmarkOutline } from 'ionicons/icons'
 import SearchPicker from '@/components/admin/SearchPicker.vue'
+import TimestampsMeta from '@/components/common/TimestampsMeta.vue'
 import {
   getPersonProfileV1PersonsPersonIdGet,
   patchPersonProfileV1PersonsPersonIdPatch,
@@ -136,11 +143,20 @@ const student = reactive({
   student_id: '', group_id: null as number | null, faculty_id: null as string | null,
   is_budget: false, is_full: false, is_active: true,
 })
+const personMeta = reactive<Meta>({ created_at: null, edited_at: null })
+const profileMeta = reactive<Meta>({ created_at: null, edited_at: null })
+const studentMeta = reactive<Meta>({ created_at: null, edited_at: null })
 const profileExists = ref(false)
+
+function setMeta(target: Meta, source: { created_at?: string | null; edited_at?: string | null }) {
+  target.created_at = source.created_at ?? null
+  target.edited_at = source.edited_at ?? null
+}
 const studentExists = ref(false)
 const diets = ref<DietRead[]>([])
 
-interface ContactRow { id: string; type: string; value: string; is_main: boolean }
+interface Meta { created_at: string | null; edited_at: string | null }
+interface ContactRow extends Meta { id: string; type: string; value: string; is_main: boolean }
 const contacts = ref<ContactRow[]>([])
 const newContact = reactive({ type: '' as string, value: '', is_main: false })
 
@@ -175,9 +191,10 @@ async function searchGroups(search: string) {
 async function savePerson() {
   savingPerson.value = true
   try {
-    await patchPersonProfileV1PersonsPersonIdPatch(personId, {
+    const res = await patchPersonProfileV1PersonsPersonIdPatch(personId, {
       surname: person.surname, name: person.name, patronymic: person.patronymic || null,
     })
+    setMeta(personMeta, res.data)
     toast('Персона сохранена')
   } catch (err) { showError(err, 'Не удалось сохранить персону') } finally { savingPerson.value = false }
 }
@@ -187,9 +204,9 @@ async function saveProfile() {
   try {
     const body = { birthdate: profile.birthdate || null, workplace_id: profile.workplace_id || null, diet_id: profile.diet_id ?? null }
     if (profileExists.value) {
-      await patchProfileProfileV1ProfilesProfileIdPatch(personId, body)
+      setMeta(profileMeta, (await patchProfileProfileV1ProfilesProfileIdPatch(personId, body)).data)
     } else {
-      await createProfileProfileV1ProfilesPost({ id: personId, ...body } as any)
+      setMeta(profileMeta, (await createProfileProfileV1ProfilesPost({ id: personId, ...body } as any)).data)
       profileExists.value = true
     }
     toast('Профиль сохранён')
@@ -204,9 +221,9 @@ async function saveStudent() {
       is_budget: student.is_budget, is_full: student.is_full, is_active: student.is_active,
     }
     if (studentExists.value) {
-      await patchStudentProfileV1StudentsStudentIdPatch(personId, body as any)
+      setMeta(studentMeta, (await patchStudentProfileV1StudentsStudentIdPatch(personId, body as any)).data)
     } else {
-      await createStudentProfileV1StudentsPost({ id: personId, ...body } as any)
+      setMeta(studentMeta, (await createStudentProfileV1StudentsPost({ id: personId, ...body } as any)).data)
       studentExists.value = true
     }
     toast('Студенческая карточка сохранена')
@@ -215,7 +232,8 @@ async function saveStudent() {
 
 async function saveContact(c: ContactRow) {
   try {
-    await patchContactProfileV1ContactsIdPatch(c.id, { type: c.type as any, value: c.value, is_main: c.is_main })
+    const res = await patchContactProfileV1ContactsIdPatch(c.id, { type: c.type as any, value: c.value, is_main: c.is_main })
+    setMeta(c, res.data)
     toast('Контакт сохранён')
   } catch (err) { showError(err, 'Не удалось сохранить контакт') }
 }
@@ -240,7 +258,7 @@ async function removeContact(c: ContactRow) {
 async function loadContacts() {
   try {
     const res = await getPersonContactsProfileV1PersonsPersonIdContactsGet(personId, { limit: 100 })
-    contacts.value = res.data.items.map((c: any) => ({ id: c.id, type: c.type, value: c.value, is_main: !!c.is_main }))
+    contacts.value = res.data.items.map((c: any) => ({ id: c.id, type: c.type, value: c.value, is_main: !!c.is_main, created_at: c.created_at ?? null, edited_at: c.edited_at ?? null }))
   } catch { contacts.value = [] }
 }
 
@@ -254,6 +272,7 @@ onMounted(async () => {
     person.surname = personRes.data.surname
     person.name = personRes.data.name
     person.patronymic = personRes.data.patronymic ?? ''
+    setMeta(personMeta, personRes.data)
     diets.value = dietsRes?.data.items ?? []
 
     try {
@@ -262,6 +281,7 @@ onMounted(async () => {
       profile.birthdate = p.birthdate ?? ''
       profile.workplace_id = p.workplace_id ?? null
       profile.diet_id = p.diet_id ?? null
+      setMeta(profileMeta, p)
     } catch { profileExists.value = false }
 
     try {
@@ -273,6 +293,7 @@ onMounted(async () => {
       student.is_budget = s.is_budget ?? false
       student.is_full = s.is_full ?? false
       student.is_active = s.is_active ?? true
+      setMeta(studentMeta, s)
     } catch { studentExists.value = false }
 
     await loadContacts()
@@ -314,6 +335,7 @@ onMounted(async () => {
 }
 .hint { margin: 0; font-size: 13px; color: var(--ion-color-medium); }
 .hint--warn { color: var(--ion-color-warning, #d9822b); }
+.contact { display: flex; flex-direction: column; gap: 2px; }
 .contact-row { display: flex; align-items: center; gap: 8px; }
 .contact-type { min-width: 110px; }
 .contact-value { flex: 1; }

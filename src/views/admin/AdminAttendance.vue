@@ -5,6 +5,10 @@
       :get-label="(a) => a.member_id"
       :label-resource="(a) => ({ kind: 'member', id: a.member_id })"
       :get-subtitle="(a) => a.is_attended ? 'Присутствовал' : 'Отсутствовал'"
+      :sort-options="sortOptions"
+      :filters="filters"
+      default-order="desc"
+      default-sort="created_at"
       :fetch-items="fetchItems"
       add-label="Добавить"
       @add="openCreate"
@@ -37,10 +41,23 @@ import {
   getMembersEventV1MembersGet,
   getParticipationsEventV1ParticipationsGet,
 } from '@/api/generated/almaEventFlow'
-import type { ColumnDef } from '@/components/admin/ResourceTable.vue'
+import type { ColumnDef, SortOption, FilterDef } from '@/components/admin/ResourceTable.vue'
+import { TIMESTAMP_FILTERS, TIMESTAMP_SORT_OPTIONS } from '@/utils/timestamps'
 import type { FormField } from '@/components/admin/ResourceFormModal.vue'
 
 const tableRef = ref()
+
+const filters: FilterDef[] = [
+  { key: 'is_attended', label: 'Присутствие', type: 'select', options: [{ value: 'true', label: 'Да' }, { value: 'false', label: 'Нет' }] },
+  { key: 'is_verified', label: 'Заверено', type: 'select', options: [{ value: 'true', label: 'Да' }, { value: 'false', label: 'Нет' }] },
+  ...TIMESTAMP_FILTERS,
+]
+
+const sortOptions: SortOption[] = [
+  { value: 'is_attended', label: 'Присутствию' },
+  { value: 'is_verified', label: 'Заверению' },
+  ...TIMESTAMP_SORT_OPTIONS,
+]
 
 const columns: ColumnDef[] = [
   { key: 'member_id', label: 'Участник', resource: (a) => ({ kind: 'member', id: a.member_id }) },

@@ -17,6 +17,7 @@
           <div class="profile-id">
             <span class="profile-name">{{ auth.user?.username || 'Пользователь' }}</span>
             <span class="profile-email">{{ auth.user?.email }}</span>
+            <TimestampsMeta :created-at="auth.user?.created_at" :edited-at="auth.user?.edited_at" />
           </div>
           <UuidBadge v-if="auth.user?.id" :id="auth.user.id" />
         </div>
@@ -51,6 +52,7 @@
 import { useAuthStore } from '@/stores/auth'
 import { usePlatform } from '@/composables/usePlatform'
 import UuidBadge from '@/components/common/UuidBadge.vue'
+import TimestampsMeta from '@/components/common/TimestampsMeta.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBackButton, IonIcon,

@@ -5,6 +5,8 @@
       :get-label="(p) => p.collective_name || p.collective_id"
       :get-subtitle="(p) => p.event_id"
       :subtitle-resource="(p) => ({ kind: 'event', id: p.event_id })"
+      :sort-options="sortOptions"
+      :filters="filters"
       :fetch-items="fetchItems"
       add-label="Добавить"
       @add="openCreate"
@@ -37,7 +39,8 @@ import {
   listCollectivesOrgV1CollectivesGet,
   getEventsEventV1EventsGet,
 } from '@/api/generated/almaEventFlow'
-import type { ColumnDef } from '@/components/admin/ResourceTable.vue'
+import type { ColumnDef, SortOption, FilterDef } from '@/components/admin/ResourceTable.vue'
+import { TIMESTAMP_FILTERS, TIMESTAMP_SORT_OPTIONS } from '@/utils/timestamps'
 import type { FormField } from '@/components/admin/ResourceFormModal.vue'
 
 const tableRef = ref()
@@ -45,10 +48,20 @@ const tableRef = ref()
 const priorityLabels: Record<string, string> = { hight: 'Высокий', medium: 'Средний', low: 'Низкий' }
 const priorityOptions = Object.entries(priorityLabels).map(([value, label]) => ({ value, label }))
 
+const filters: FilterDef[] = [
+  { key: 'priority_degree', label: 'Приоритет', type: 'select', options: priorityOptions },
+  ...TIMESTAMP_FILTERS,
+]
+
+const sortOptions: SortOption[] = [
+  { value: 'priority_degree', label: 'Приоритету' },
+  ...TIMESTAMP_SORT_OPTIONS,
+]
+
 const columns: ColumnDef[] = [
   { key: 'collective_name', label: 'Коллектив', render: (p) => p.collective_name || p.collective_id },
   { key: 'event_id', label: 'Мероприятие', resource: (p) => ({ kind: 'event', id: p.event_id }) },
-  { key: 'EventPriorityEnumV1', label: 'Приоритет', render: (p) => priorityLabels[p.EventPriorityEnumV1] || '—' },
+  { key: 'priority_degree', label: 'Приоритет', render: (p) => priorityLabels[p.priority_degree] || '—' },
 ]
 
 const formFields: FormField[] = [
@@ -62,7 +75,7 @@ const formFields: FormField[] = [
     fetchOptions: async (search) => (await getEventsEventV1EventsGet({ search, limit: 20 })).data.items,
     displayField: 'name',
   },
-  { key: 'EventPriorityEnumV1', label: 'Приоритет', type: 'select', options: priorityOptions },
+  { key: 'priority_degree', label: 'Приоритет', type: 'select', options: priorityOptions },
 ]
 
 const editModal = ref(false)

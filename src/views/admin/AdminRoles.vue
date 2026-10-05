@@ -5,6 +5,8 @@
       :get-label="(r) => r.name"
       :get-subtitle="(r) => r.collective_id"
       :subtitle-resource="(r) => ({ kind: 'collective', id: r.collective_id })"
+      :sort-options="sortOptions"
+      :filters="filters"
       :fetch-items="fetchItems"
       add-label="Добавить"
       @add="openCreate"
@@ -36,10 +38,20 @@ import {
   deleteRoleEventV1RolesRoleIdDelete,
   listCollectivesOrgV1CollectivesGet,
 } from '@/api/generated/almaEventFlow'
-import type { ColumnDef } from '@/components/admin/ResourceTable.vue'
+import type { ColumnDef, SortOption, FilterDef } from '@/components/admin/ResourceTable.vue'
+import { TIMESTAMP_FILTERS, TIMESTAMP_SORT_OPTIONS } from '@/utils/timestamps'
 import type { FormField } from '@/components/admin/ResourceFormModal.vue'
 
 const tableRef = ref()
+
+const filters: FilterDef[] = [
+  ...TIMESTAMP_FILTERS,
+]
+
+const sortOptions: SortOption[] = [
+  { value: 'name', label: 'Названию' },
+  ...TIMESTAMP_SORT_OPTIONS,
+]
 
 const columns: ColumnDef[] = [
   { key: 'name', label: 'Название', sortable: true },

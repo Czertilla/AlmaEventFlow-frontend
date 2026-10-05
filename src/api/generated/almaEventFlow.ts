@@ -10,6 +10,12 @@ import type {
   AxiosResponse
 } from 'axios';
 
+export interface CityCascadeCreate {
+  name: string;
+  region: string;
+  country: string;
+}
+
 export interface Point {
   /**
      * @minimum -90
@@ -21,6 +27,16 @@ export interface Point {
      * @maximum 180
      */
   lon: number;
+}
+
+export interface AddressCascadeCreate {
+  house?: string | null;
+  district?: string | null;
+  street?: string | null;
+  building?: string | null;
+  apartment?: string | null;
+  city: CityCascadeCreate;
+  spot?: Point | null;
 }
 
 export interface AddressFields {
@@ -53,11 +69,14 @@ export interface AddressPutData {
 }
 
 export interface AddressRead {
+  created_at: string;
+  edited_at: string | null;
   id: string;
   city_id: number;
   name: string;
   spot?: Point | null;
   parsed?: AddressFields | null;
+  source?: string | null;
   /**
      * RFC 5870 ``geo:`` URI -- the one scheme both Android and iOS
      * resolve to whatever maps app the viewer actually has installed,
@@ -127,7 +146,11 @@ export interface AvailableFeeds {
 }
 
 export interface BodyCreateRewardEventV1RewardsPost {
-  file: Blob;
+  participation_id: string;
+  /** @maxLength 128 */
+  name: string;
+  degree?: number | null;
+  file?: Blob | null;
 }
 
 export interface BodyLoginUserV1AuthJwtLoginPost {
@@ -140,6 +163,8 @@ export interface BodyLoginUserV1AuthJwtLoginPost {
 }
 
 export interface BodyPatchRewardEventV1RewardsRewardIdPatch {
+  name?: string | null;
+  degree?: number | null;
   file?: Blob | null;
 }
 
@@ -238,6 +263,8 @@ export interface CollectivePutData {
 }
 
 export interface CollectiveRead {
+  created_at: string;
+  edited_at: string | null;
   id: string;
   /** @maxLength 128 */
   name: string;
@@ -274,6 +301,13 @@ export interface ContactItemCreate {
   is_main?: boolean;
 }
 
+export interface ContactItemPutData {
+  type: ContactType;
+  /** @maxLength 256 */
+  value: string;
+  is_main?: boolean;
+}
+
 export interface ContactItemRead {
   id: string;
   type: ContactType;
@@ -297,6 +331,8 @@ export interface ContactPutData {
 }
 
 export interface ContactRead {
+  created_at: string;
+  edited_at: string | null;
   id: string;
   type: ContactType;
   /** @maxLength 256 */
@@ -311,14 +347,12 @@ export interface DietCreate {
   description?: string | null;
 }
 
-export interface DietPatch {
-  id: number;
+export interface DietPatchData {
   name?: string | null;
   description?: string | null;
 }
 
-export interface DietPut {
-  id: number;
+export interface DietPutData {
   /** @maxLength 128 */
   name: string;
   description?: string | null;
@@ -407,7 +441,7 @@ export interface EventPatchData {
   description?: string | null;
   location_id?: string | null;
   organizer_id?: string | null;
-  status?: EventStatusEnumV1;
+  status?: EventStatusEnumV1 | null;
   level?: EventLevelEnumV1 | null;
   type?: EventTypeEnumV1 | null;
   format?: EventFormatEnumV1 | null;
@@ -478,6 +512,8 @@ export interface FacultyPutData {
 }
 
 export interface FacultyRead {
+  created_at: string;
+  edited_at: string | null;
   id: string;
   /** @maxLength 128 */
   name: string;
@@ -523,21 +559,21 @@ export interface LinkInviteData {
   token: string;
 }
 
-export interface LinkPatch {
-  id: string;
+export interface LinkPatchData {
   url?: string | null;
-  type?: string | null;
+  type?: EventLinkTypeEnumV1 | null;
   description?: string | null;
 }
 
-export interface LinkPut {
-  id: string;
+export interface LinkPutData {
   url: string;
   type: EventLinkTypeEnumV1;
   description?: string | null;
 }
 
 export interface LinkRead {
+  created_at: string;
+  edited_at: string | null;
   id: string;
   url: string;
   type: EventLinkTypeEnumV1;
@@ -574,15 +610,24 @@ export interface LocationPutData {
 }
 
 export interface LocationRead {
+  created_at: string;
+  edited_at: string | null;
   id: string;
   name?: string | null;
   address_id?: string | null;
   spot?: Point | null;
   address?: AddressRead | null;
   readonly map_uri: string | null;
+  /**
+     * ``name`` is ``None`` for an address-proxy location by design --
+     * this is the text other services should actually show/sync (matches
+     * the ``name || address?.name`` fallback already used across the
+     * frontend, e.g. ``useGeoSearch.ts``).
+     */
+  readonly display_name: string | null;
 }
 
-export interface SPagination {
+export interface PaginationV1 {
   page?: number;
   /**
      * @maximum 100
@@ -592,14 +637,14 @@ export interface SPagination {
   total: number;
 }
 
-export interface SPageAddressRead {
+export interface PageV1AddressRead {
   items: AddressRead[];
-  pagination: SPagination;
+  pagination: PaginationV1;
 }
 
-export interface SPageLocationRead {
+export interface PageV1LocationRead {
   items: LocationRead[];
-  pagination: SPagination;
+  pagination: PaginationV1;
 }
 
 /**
@@ -608,8 +653,8 @@ export interface SPageLocationRead {
  * (two icons), and each already paginates independently.
  */
 export interface MapResult {
-  addresses: SPageAddressRead;
-  locations: SPageLocationRead;
+  addresses: PageV1AddressRead;
+  locations: PageV1LocationRead;
 }
 
 export interface MeAttendanceCreateData {
@@ -662,7 +707,7 @@ export interface MeEventRead {
 
 export interface MeParticipationCreate {
   event_id: string;
-  EventPriorityEnumV1?: EventPriorityEnumV1 | null;
+  priority_degree?: EventPriorityEnumV1 | null;
   member_ids?: string[] | null;
 }
 
@@ -681,19 +726,12 @@ export interface MemberCreateData {
   is_active?: boolean;
 }
 
-export interface MemberPatch {
-  id: string;
-  roles?: string[] | null;
-  is_active?: boolean | null;
-}
-
 export interface MemberPatchData {
   roles?: string[] | null;
   is_active?: boolean | null;
 }
 
-export interface MemberPut {
-  id: string;
+export interface MemberPutData {
   /** @maxItems 25 */
   roles?: string[];
   is_active?: boolean;
@@ -705,6 +743,8 @@ export interface RolePreview {
 }
 
 export interface MemberRead {
+  created_at: string;
+  edited_at: string | null;
   id: string;
   person_id: string;
   roles: RolePreview[];
@@ -760,7 +800,6 @@ export interface OAuth2AuthorizeResponse {
 }
 
 export interface OrganizationCreate {
-  type: string;
   /** @maxLength 128 */
   name: string;
   acronym?: string | null;
@@ -768,58 +807,302 @@ export interface OrganizationCreate {
   address_id?: string | null;
 }
 
-export interface OrganizationPatch {
-  id: string;
-  type?: string | null;
+export interface OrganizationPatchData {
   name?: string | null;
   acronym?: string | null;
   principal_id?: string | null;
   address_id?: string | null;
 }
 
-export interface OrganizationPut {
+export type OrganizationTypeEnum = typeof OrganizationTypeEnum[keyof typeof OrganizationTypeEnum];
+
+
+export const OrganizationTypeEnum = {
+  organization: 'organization',
+  university: 'university',
+  faculty: 'faculty',
+  collective: 'collective',
+} as const;
+
+export interface PageV1AttendanceRead {
+  items: AttendanceRead[];
+  pagination: PaginationV1;
+}
+
+export interface PageV1CityRead {
+  items: CityRead[];
+  pagination: PaginationV1;
+}
+
+export interface PageV1CollectiveRead {
+  items: CollectiveRead[];
+  pagination: PaginationV1;
+}
+
+export interface PageV1ContactItemRead {
+  items: ContactItemRead[];
+  pagination: PaginationV1;
+}
+
+export interface PageV1DietRead {
+  items: DietRead[];
+  pagination: PaginationV1;
+}
+
+export interface PageV1EventRead {
+  items: EventRead[];
+  pagination: PaginationV1;
+}
+
+export interface PageV1FacultyRead {
+  items: FacultyRead[];
+  pagination: PaginationV1;
+}
+
+export interface PageV1LinkRead {
+  items: LinkRead[];
+  pagination: PaginationV1;
+}
+
+export interface PageV1MemberRead {
+  items: MemberRead[];
+  pagination: PaginationV1;
+}
+
+export interface OrgApiV1SchemaOrganizationOrganizationRead {
+  created_at: string;
+  edited_at: string | null;
   id: string;
-  type: string;
   /** @maxLength 128 */
   name: string;
   acronym?: string | null;
   principal_id?: string | null;
   address_id?: string | null;
+  type: OrganizationTypeEnum;
+}
+
+export interface PageV1OrganizationRead {
+  items: OrgApiV1SchemaOrganizationOrganizationRead[];
+  pagination: PaginationV1;
+}
+
+export interface ParticipationRead {
+  created_at: string;
+  edited_at: string | null;
+  id: string;
+  event_id: string;
+  priority_degree?: EventPriorityEnumV1 | null;
+  collective_id: string;
+  collective_name?: string | null;
+}
+
+export interface PageV1ParticipationRead {
+  items: ParticipationRead[];
+  pagination: PaginationV1;
+}
+
+export interface PassportItemRead {
+  id: string;
+  /** @maxLength 32 */
+  number: string;
+  expire_date: string;
+  is_foreign: boolean;
+}
+
+export interface PageV1PassportItemRead {
+  items: PassportItemRead[];
+  pagination: PaginationV1;
+}
+
+export interface PersonItemRead {
+  id: string;
+  /** @maxLength 128 */
+  surname: string;
+  /** @maxLength 128 */
+  name: string;
+  patronymic: string | null;
+}
+
+export interface PageV1PersonItemRead {
+  items: PersonItemRead[];
+  pagination: PaginationV1;
+}
+
+export interface PersonRead {
+  created_at: string;
+  edited_at: string | null;
+  id: string;
+  /** @maxLength 128 */
+  surname: string;
+  /** @maxLength 128 */
+  name: string;
+  patronymic: string | null;
+}
+
+export interface ProfileApiV1SchemaOrganizationOrganizationRead {
+  id: string;
+  /** @maxLength 128 */
+  name: string;
+  acronym?: string | null;
+}
+
+export interface ProfileRead {
+  created_at: string;
+  edited_at: string | null;
+  id: string;
+  birthdate?: string | null;
+  workplace_id?: string | null;
+  diet_id?: number | null;
+  person?: PersonRead | null;
+  diet?: DietRead | null;
+  workplace?: ProfileApiV1SchemaOrganizationOrganizationRead | null;
+}
+
+export interface PageV1ProfileRead {
+  items: ProfileRead[];
+  pagination: PaginationV1;
+}
+
+export interface RewardRead {
+  created_at: string;
+  edited_at: string | null;
+  id: string;
+  name: string;
+  degree?: number | null;
+  participation_id: string | null;
+  file_link?: string | null;
+}
+
+export interface PageV1RewardRead {
+  items: RewardRead[];
+  pagination: PaginationV1;
+}
+
+export interface RoleRead {
+  created_at: string;
+  edited_at: string | null;
+  id: string;
+  name: string;
+  collective_id: string;
+}
+
+export interface PageV1RoleRead {
+  items: RoleRead[];
+  pagination: PaginationV1;
+}
+
+export interface StageRead {
+  created_at: string;
+  edited_at: string | null;
+  id: string;
+  /** @maxLength 32 */
+  name: string;
+  start_at: string;
+  end_at?: string | null;
+  description?: string | null;
+  timezone?: string | null;
+  event_id: string;
+}
+
+export interface PageV1StageRead {
+  items: StageRead[];
+  pagination: PaginationV1;
+}
+
+export interface StudentDegreeRead {
+  id: number;
+  /** @maxLength 32 */
+  name: string;
+}
+
+export interface PageV1StudentDegreeRead {
+  items: StudentDegreeRead[];
+  pagination: PaginationV1;
+}
+
+export interface StudentGroupRead {
+  id: number;
+  /** @maxLength 32 */
+  name: string;
+  degree_id: number;
+  faculty_id: string;
+  grade: number;
+}
+
+export interface PageV1StudentGroupRead {
+  items: StudentGroupRead[];
+  pagination: PaginationV1;
+}
+
+export interface StudentRead {
+  created_at: string;
+  edited_at: string | null;
+  id: string;
+  /** @maxLength 64 */
+  student_id: string;
+  faculty_id?: string | null;
+  group_id: number;
+  is_budget?: boolean | null;
+  is_full?: boolean | null;
+  is_active?: boolean;
+  person?: PersonRead | null;
+  profile?: ProfileRead | null;
+  group?: StudentGroupRead | null;
+}
+
+export interface PageV1StudentRead {
+  items: StudentRead[];
+  pagination: PaginationV1;
+}
+
+export interface UniversityRead {
+  created_at: string;
+  edited_at: string | null;
+  id: string;
+  /** @maxLength 128 */
+  name: string;
+  acronym?: string | null;
+  principal_id?: string | null;
+  address_id?: string | null;
+  type?: string;
+}
+
+export interface PageV1UniversityRead {
+  items: UniversityRead[];
+  pagination: PaginationV1;
+}
+
+export interface UserRead {
+  created_at: string;
+  edited_at: string | null;
+  id: string;
+  email: string;
+  is_active?: boolean;
+  is_superuser?: boolean;
+  is_verified?: boolean;
+  username: string | null;
+  person_id: string | null;
+}
+
+export interface PageV1UserRead {
+  items: UserRead[];
+  pagination: PaginationV1;
 }
 
 export interface ParticipationCreate {
   event_id: string;
-  EventPriorityEnumV1?: EventPriorityEnumV1 | null;
+  priority_degree?: EventPriorityEnumV1 | null;
   collective_id: string;
 }
 
 export interface ParticipationPatchData {
   event_id?: string | null;
-  EventPriorityEnumV1?: EventPriorityEnumV1 | null;
+  priority_degree?: EventPriorityEnumV1 | null;
 }
 
 export interface ParticipationPutData {
   event_id: string;
-  EventPriorityEnumV1?: EventPriorityEnumV1 | null;
-}
-
-export interface ParticipationRead {
-  id: string;
-  event_id: string;
-  EventPriorityEnumV1?: EventPriorityEnumV1 | null;
-  collective_id: string;
-  collective_name?: string | null;
-}
-
-export interface PassportCreate {
-  /** @maxLength 32 */
-  number: string;
-  expire_date: string;
-  is_foreign: boolean;
-  issued_date?: string | null;
-  issued_authority?: string | null;
-  name_variant?: NameVariantCreate | null;
-  profile_id: string;
+  priority_degree?: EventPriorityEnumV1 | null;
 }
 
 export interface PassportItemCreate {
@@ -830,10 +1113,6 @@ export interface PassportItemCreate {
   issued_date?: string | null;
   issued_authority?: string | null;
   name_variant?: NameVariantCreate | null;
-}
-
-export interface PassportItemRead {
-  id: string;
 }
 
 export interface PassportPatchData {
@@ -857,6 +1136,8 @@ export interface PassportPutData {
 }
 
 export interface PassportRead {
+  created_at: string;
+  edited_at: string | null;
   id: string;
   /** @maxLength 32 */
   number: string;
@@ -876,15 +1157,6 @@ export interface PersonCreate {
   patronymic?: string | null;
 }
 
-export interface PersonItemRead {
-  id: string;
-  /** @maxLength 128 */
-  surname: string;
-  /** @maxLength 128 */
-  name: string;
-  patronymic: string | null;
-}
-
 export interface PersonLinkRequest {
   person_id: string;
 }
@@ -901,15 +1173,6 @@ export interface PersonPutData {
   /** @maxLength 128 */
   name: string;
   patronymic?: string | null;
-}
-
-export interface PersonRead {
-  id: string;
-  /** @maxLength 128 */
-  surname: string;
-  /** @maxLength 128 */
-  name: string;
-  patronymic: string | null;
 }
 
 export interface PreferenceItem {
@@ -933,63 +1196,21 @@ export interface ProfileCreate {
   diet_id?: number | null;
 }
 
-export interface ProfilePatch {
-  id: string;
-  birthdate?: string | null;
-  workplace_id?: string | null;
-  diet_id?: number | null;
-}
-
 export interface ProfilePatchData {
   birthdate?: string | null;
   workplace_id?: string | null;
   diet_id?: number | null;
 }
 
-export interface ProfilePut {
-  id: string;
-  birthdate?: string | null;
-  workplace_id?: string | null;
-  diet_id?: number | null;
-}
-
 export interface ProfilePutData {
-  id: string;
   birthdate?: string | null;
   workplace_id?: string | null;
   diet_id?: number | null;
-}
-
-export interface ProfileSchemaOrganizationOrganizationRead {
-  id: string;
-  /** @maxLength 128 */
-  name: string;
-  acronym?: string | null;
-}
-
-export interface ProfileRead {
-  created_at: string;
-  edited_at: string | null;
-  id: string;
-  birthdate?: string | null;
-  workplace_id?: string | null;
-  diet_id?: number | null;
-  person?: PersonRead | null;
-  diet?: DietRead | null;
-  workplace?: ProfileSchemaOrganizationOrganizationRead | null;
 }
 
 export interface RewardPutData {
   name: string;
   degree?: number | null;
-}
-
-export interface RewardRead {
-  id: string;
-  name: string;
-  degree?: number | null;
-  participation_id: string;
-  file_link?: string | null;
 }
 
 export interface RoleCreate {
@@ -1003,192 +1224,6 @@ export interface RolePatchData {
 
 export interface RolePutData {
   name: string;
-}
-
-export interface RoleRead {
-  id: string;
-  name: string;
-  collective_id: string;
-}
-
-export interface SPageAttendanceRead {
-  items: AttendanceRead[];
-  pagination: SPagination;
-}
-
-export interface SPageCityRead {
-  items: CityRead[];
-  pagination: SPagination;
-}
-
-export interface SPageCollectiveRead {
-  items: CollectiveRead[];
-  pagination: SPagination;
-}
-
-export interface SPageContactItemRead {
-  items: ContactItemRead[];
-  pagination: SPagination;
-}
-
-export interface SPageDietRead {
-  items: DietRead[];
-  pagination: SPagination;
-}
-
-export interface SPageEventRead {
-  items: EventRead[];
-  pagination: SPagination;
-}
-
-export interface SPageFacultyRead {
-  items: FacultyRead[];
-  pagination: SPagination;
-}
-
-export interface SPageLinkRead {
-  items: LinkRead[];
-  pagination: SPagination;
-}
-
-export interface SPageMemberRead {
-  items: MemberRead[];
-  pagination: SPagination;
-}
-
-export interface OrgSchemaOrganizationOrganizationRead {
-  id: string;
-  type: string;
-  /** @maxLength 128 */
-  name: string;
-  acronym?: string | null;
-  principal_id?: string | null;
-  address_id?: string | null;
-}
-
-export interface SPageOrganizationRead {
-  items: OrgSchemaOrganizationOrganizationRead[];
-  pagination: SPagination;
-}
-
-export interface SPageParticipationRead {
-  items: ParticipationRead[];
-  pagination: SPagination;
-}
-
-export interface SPagePassportItemRead {
-  items: PassportItemRead[];
-  pagination: SPagination;
-}
-
-export interface SPagePersonItemRead {
-  items: PersonItemRead[];
-  pagination: SPagination;
-}
-
-export interface SPageProfileRead {
-  items: ProfileRead[];
-  pagination: SPagination;
-}
-
-export interface SPageRewardRead {
-  items: RewardRead[];
-  pagination: SPagination;
-}
-
-export interface SPageRoleRead {
-  items: RoleRead[];
-  pagination: SPagination;
-}
-
-export interface StageRead {
-  id: string;
-  /** @maxLength 32 */
-  name: string;
-  start_at: string;
-  end_at?: string | null;
-  description?: string | null;
-  timezone?: string | null;
-  event_id: string;
-}
-
-export interface SPageStageRead {
-  items: StageRead[];
-  pagination: SPagination;
-}
-
-export interface StudentDegreeRead {
-  id: number;
-  /** @maxLength 32 */
-  name: string;
-}
-
-export interface SPageStudentDegreeRead {
-  items: StudentDegreeRead[];
-  pagination: SPagination;
-}
-
-export interface StudentGroupRead {
-  id: number;
-  /** @maxLength 32 */
-  name: string;
-  degree_id: number;
-  faculty_id: string;
-  grade: number;
-}
-
-export interface SPageStudentGroupRead {
-  items: StudentGroupRead[];
-  pagination: SPagination;
-}
-
-export interface StudentRead {
-  id: string;
-  /** @maxLength 64 */
-  student_id: string;
-  faculty_id?: string | null;
-  group_id: number;
-  is_budget?: boolean | null;
-  is_full?: boolean | null;
-  is_active?: boolean;
-  person?: PersonRead | null;
-  profile?: ProfileRead | null;
-  group?: StudentGroupRead | null;
-}
-
-export interface SPageStudentRead {
-  items: StudentRead[];
-  pagination: SPagination;
-}
-
-export interface UniversityRead {
-  id: string;
-  /** @maxLength 128 */
-  name: string;
-  acronym?: string | null;
-  principal_id?: string | null;
-  address_id?: string | null;
-  type?: string;
-}
-
-export interface SPageUniversityRead {
-  items: UniversityRead[];
-  pagination: SPagination;
-}
-
-export interface UserRead {
-  id: string;
-  email: string;
-  is_active?: boolean;
-  is_superuser?: boolean;
-  is_verified?: boolean;
-  username: string;
-  person_id: string | null;
-}
-
-export interface SPageUserRead {
-  items: UserRead[];
-  pagination: SPagination;
 }
 
 /**
@@ -1290,7 +1325,6 @@ export interface StudentPatchData {
 }
 
 export interface StudentPutData {
-  id: string;
   /** @maxLength 64 */
   student_id: string;
   faculty_id?: string | null;
@@ -1400,7 +1434,7 @@ export interface UserUpdate {
   is_active?: boolean | null;
   is_superuser?: boolean | null;
   is_verified?: boolean | null;
-  username: string;
+  username?: string | null;
   current_password?: string | null;
 }
 
@@ -1409,12 +1443,22 @@ export interface VapidPublicKey {
 }
 
 export type GetAttendancesEventV1AttendancesGetParams = {
+created_at__gte?: string | null;
+created_at__lte?: string | null;
+edited_at__gte?: string | null;
+edited_at__lte?: string | null;
+edited_at__isnull?: boolean | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: is_attended, is_verified, created_at, edited_at.
+ */
 order_by?: string | null;
 search?: string | null;
 participation_id?: string | null;
 participation_id__in?: string | null;
-edited_at__isnull?: boolean | null;
 member_id?: string | null;
+member_id__in?: string | null;
+is_attended?: boolean | null;
+is_verified?: boolean | null;
 page?: number;
 /**
  * @maximum 100
@@ -1424,19 +1468,34 @@ limit?: number;
 };
 
 export type GetEventsEventV1EventsGetParams = {
+created_at__gte?: string | null;
+created_at__lte?: string | null;
+edited_at__gte?: string | null;
+edited_at__lte?: string | null;
+edited_at__isnull?: boolean | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: date, name, status, level, type, format, created_at, edited_at.
+ */
 order_by?: string | null;
 search?: string | null;
 status?: EventStatusEnumV1 | null;
+status__in?: string | null;
 level?: EventLevelEnumV1 | null;
 type?: EventTypeEnumV1 | null;
 format?: EventFormatEnumV1 | null;
 date__gte?: string | null;
 date__lte?: string | null;
+date__isnull?: boolean | null;
 level__in?: string | null;
 type__in?: string | null;
 format__in?: string | null;
 participant_id?: string | null;
 participant_id__in?: string | null;
+organizer_id?: string | null;
+organizer_id__in?: string | null;
+location_id?: string | null;
+location_id__in?: string | null;
+location_id__isnull?: boolean | null;
 page?: number;
 /**
  * @maximum 100
@@ -1446,9 +1505,22 @@ limit?: number;
 };
 
 export type GetEventStagesEventV1EventsEventIdStagesGetParams = {
+created_at__gte?: string | null;
+created_at__lte?: string | null;
+edited_at__gte?: string | null;
+edited_at__lte?: string | null;
+edited_at__isnull?: boolean | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: name, start_at, end_at, created_at, edited_at.
+ */
 order_by?: string | null;
 search?: string | null;
 event_id__in?: string | null;
+start_at__gte?: string | null;
+start_at__lte?: string | null;
+end_at__gte?: string | null;
+end_at__lte?: string | null;
+end_at__isnull?: boolean | null;
 page?: number;
 /**
  * @maximum 100
@@ -1458,8 +1530,20 @@ limit?: number;
 };
 
 export type GetLinksEventV1LinksGetParams = {
+created_at__gte?: string | null;
+created_at__lte?: string | null;
+edited_at__gte?: string | null;
+edited_at__lte?: string | null;
+edited_at__isnull?: boolean | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: type, description, url, created_at, edited_at.
+ */
 order_by?: string | null;
 search?: string | null;
+event_id?: string | null;
+event_id__in?: string | null;
+type?: EventLinkTypeEnumV1 | null;
+type__in?: string | null;
 page?: number;
 /**
  * @maximum 100
@@ -1469,9 +1553,20 @@ limit?: number;
 };
 
 export type GetMyCollectiveMembersEventV1MeCollectivesCollectiveIdMembersGetParams = {
+created_at__gte?: string | null;
+created_at__lte?: string | null;
+edited_at__gte?: string | null;
+edited_at__lte?: string | null;
+edited_at__isnull?: boolean | null;
+search?: string | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: person__surname, person__name, person__patronymic, is_active, created_at, edited_at.
+ */
 order_by?: string | null;
 is_active?: boolean;
+collective_id__in?: string | null;
 person_id?: string | null;
+person_id__in?: string | null;
 page?: number;
 /**
  * @maximum 100
@@ -1481,8 +1576,17 @@ limit?: number;
 };
 
 export type GetMyCollectiveRolesEventV1MeCollectivesCollectiveIdRolesGetParams = {
+created_at__gte?: string | null;
+created_at__lte?: string | null;
+edited_at__gte?: string | null;
+edited_at__lte?: string | null;
+edited_at__isnull?: boolean | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: name, created_at, edited_at.
+ */
 order_by?: string | null;
 search?: string | null;
+collective_id__in?: string | null;
 page?: number;
 /**
  * @maximum 100
@@ -1492,10 +1596,21 @@ limit?: number;
 };
 
 export type GetMembersEventV1MembersGetParams = {
+created_at__gte?: string | null;
+created_at__lte?: string | null;
+edited_at__gte?: string | null;
+edited_at__lte?: string | null;
+edited_at__isnull?: boolean | null;
+search?: string | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: person__surname, person__name, person__patronymic, is_active, created_at, edited_at.
+ */
 order_by?: string | null;
 is_active?: boolean;
 collective_id?: string | null;
+collective_id__in?: string | null;
 person_id?: string | null;
+person_id__in?: string | null;
 page?: number;
 /**
  * @maximum 100
@@ -1505,10 +1620,22 @@ limit?: number;
 };
 
 export type GetParticipationsEventV1ParticipationsGetParams = {
+created_at__gte?: string | null;
+created_at__lte?: string | null;
+edited_at__gte?: string | null;
+edited_at__lte?: string | null;
+edited_at__isnull?: boolean | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: collective_id, priority_degree, created_at, edited_at.
+ */
 order_by?: string | null;
 collective_id?: string | null;
 collective_id__in?: string | null;
+event_id?: string | null;
 event_id__in?: string | null;
+priority_degree?: EventPriorityEnumV1 | null;
+priority_degree__in?: string | null;
+priority_degree__isnull?: boolean | null;
 page?: number;
 /**
  * @maximum 100
@@ -1518,8 +1645,21 @@ limit?: number;
 };
 
 export type GetRewardsEventV1RewardsGetParams = {
+created_at__gte?: string | null;
+created_at__lte?: string | null;
+edited_at__gte?: string | null;
+edited_at__lte?: string | null;
+edited_at__isnull?: boolean | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: name, degree, created_at, edited_at.
+ */
 order_by?: string | null;
 search?: string | null;
+participation_id?: string | null;
+participation_id__in?: string | null;
+degree?: number | null;
+degree__in?: string | null;
+degree__isnull?: boolean | null;
 page?: number;
 /**
  * @maximum 100
@@ -1529,13 +1669,10 @@ limit?: number;
 };
 
 export type CreateRewardEventV1RewardsPostParams = {
-participation_id: string;
 endpoint_url?: string;
 bucket_name?: string;
 access_key?: string;
 secret_key?: string;
-name: string;
-degree?: number | null;
 };
 
 export type GetRewardEventV1RewardsRewardIdGetParams = {
@@ -1557,8 +1694,6 @@ endpoint_url?: string;
 bucket_name?: string;
 access_key?: string;
 secret_key?: string;
-name?: string | null;
-degree?: number | null;
 };
 
 export type DeleteRewardEventV1RewardsRewardIdDeleteParams = {
@@ -1569,9 +1704,18 @@ secret_key?: string;
 };
 
 export type GetRolesEventV1RolesGetParams = {
+created_at__gte?: string | null;
+created_at__lte?: string | null;
+edited_at__gte?: string | null;
+edited_at__lte?: string | null;
+edited_at__isnull?: boolean | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: name, created_at, edited_at.
+ */
 order_by?: string | null;
 search?: string | null;
 collective_id?: string | null;
+collective_id__in?: string | null;
 page?: number;
 /**
  * @maximum 100
@@ -1581,10 +1725,23 @@ limit?: number;
 };
 
 export type GetStagesEventV1StagesGetParams = {
+created_at__gte?: string | null;
+created_at__lte?: string | null;
+edited_at__gte?: string | null;
+edited_at__lte?: string | null;
+edited_at__isnull?: boolean | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: name, start_at, end_at, created_at, edited_at.
+ */
 order_by?: string | null;
 search?: string | null;
 event_id?: string | null;
 event_id__in?: string | null;
+start_at__gte?: string | null;
+start_at__lte?: string | null;
+end_at__gte?: string | null;
+end_at__lte?: string | null;
+end_at__isnull?: boolean | null;
 page?: number;
 /**
  * @maximum 100
@@ -1594,23 +1751,39 @@ limit?: number;
 };
 
 export type GetAddressesGeoV1AddressesGetParams = {
+near_lat?: number | null;
+near_lon?: number | null;
+created_at__gte?: string | null;
+created_at__lte?: string | null;
+edited_at__gte?: string | null;
+edited_at__lte?: string | null;
+edited_at__isnull?: boolean | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: name, created_at, edited_at.
+ */
 order_by?: string | null;
 search?: string | null;
 city_id?: number | null;
+city_id__in?: string | null;
+source?: string | null;
+source__isnull?: boolean | null;
+spot__isnull?: boolean | null;
 page?: number;
 /**
  * @maximum 100
  * @exclusiveMinimum 0
  */
 limit?: number;
-near_lat?: number | null;
-near_lon?: number | null;
 };
 
 export type GetCitiesGeoV1CitiesGetParams = {
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: name.
+ */
 order_by?: string | null;
 search?: string | null;
 region_id?: number | null;
+region_id__in?: string | null;
 page?: number;
 /**
  * @maximum 100
@@ -1620,18 +1793,28 @@ limit?: number;
 };
 
 export type GetLocationsGeoV1LocationsGetParams = {
+near_lat?: number | null;
+near_lon?: number | null;
+created_at__gte?: string | null;
+created_at__lte?: string | null;
+edited_at__gte?: string | null;
+edited_at__lte?: string | null;
+edited_at__isnull?: boolean | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: name, created_at, edited_at.
+ */
 order_by?: string | null;
 search?: string | null;
 address_id?: string | null;
+address_id__in?: string | null;
 name__isnull?: boolean | null;
+spot__isnull?: boolean | null;
 page?: number;
 /**
  * @maximum 100
  * @exclusiveMinimum 0
  */
 limit?: number;
-near_lat?: number | null;
-near_lon?: number | null;
 };
 
 export type GetMapGeoV1MapGetParams = {
@@ -1666,9 +1849,22 @@ limit?: number;
 export type SendTestNotificationNotifyV1TestPost200 = {[key: string]: string};
 
 export type ListCollectivesOrgV1CollectivesGetParams = {
+created_at__gte?: string | null;
+created_at__lte?: string | null;
+edited_at__gte?: string | null;
+edited_at__lte?: string | null;
+edited_at__isnull?: boolean | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: name, acronym, created_at, edited_at.
+ */
 order_by?: string | null;
 search?: string | null;
+principal_id?: string | null;
+principal_id__isnull?: boolean | null;
+address_id?: string | null;
+address_id__isnull?: boolean | null;
 university_id?: string | null;
+university_id__isnull?: boolean | null;
 page?: number;
 /**
  * @maximum 100
@@ -1678,8 +1874,22 @@ limit?: number;
 };
 
 export type ListFacultiesOrgV1FacultiesGetParams = {
+created_at__gte?: string | null;
+created_at__lte?: string | null;
+edited_at__gte?: string | null;
+edited_at__lte?: string | null;
+edited_at__isnull?: boolean | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: name, acronym, created_at, edited_at.
+ */
 order_by?: string | null;
 search?: string | null;
+principal_id?: string | null;
+principal_id__isnull?: boolean | null;
+address_id?: string | null;
+address_id__isnull?: boolean | null;
+university_id?: string | null;
+university_id__isnull?: boolean | null;
 page?: number;
 /**
  * @maximum 100
@@ -1689,10 +1899,22 @@ limit?: number;
 };
 
 export type ListOrganizationsOrgV1OrganizationsGetParams = {
+created_at__gte?: string | null;
+created_at__lte?: string | null;
+edited_at__gte?: string | null;
+edited_at__lte?: string | null;
+edited_at__isnull?: boolean | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: name, acronym, type, created_at, edited_at.
+ */
 order_by?: string | null;
 search?: string | null;
-type?: string | null;
+type?: OrganizationTypeEnum | null;
 type__in?: string | null;
+principal_id?: string | null;
+principal_id__isnull?: boolean | null;
+address_id?: string | null;
+address_id__isnull?: boolean | null;
 page?: number;
 /**
  * @maximum 100
@@ -1702,8 +1924,20 @@ limit?: number;
 };
 
 export type ListUniversitiesOrgV1UniversitiesGetParams = {
+created_at__gte?: string | null;
+created_at__lte?: string | null;
+edited_at__gte?: string | null;
+edited_at__lte?: string | null;
+edited_at__isnull?: boolean | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: name, acronym, created_at, edited_at.
+ */
 order_by?: string | null;
 search?: string | null;
+principal_id?: string | null;
+principal_id__isnull?: boolean | null;
+address_id?: string | null;
+address_id__isnull?: boolean | null;
 page?: number;
 /**
  * @maximum 100
@@ -1713,9 +1947,20 @@ limit?: number;
 };
 
 export type GetMyContactsProfileV1ContactsMyGetParams = {
+created_at__gte?: string | null;
+created_at__lte?: string | null;
+edited_at__gte?: string | null;
+edited_at__lte?: string | null;
+edited_at__isnull?: boolean | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: type, value, is_main, created_at, edited_at.
+ */
 order_by?: string | null;
 search?: string | null;
 person_id?: string | null;
+type?: ContactType | null;
+type__in?: string | null;
+is_main?: boolean | null;
 page?: number;
 /**
  * @maximum 100
@@ -1725,34 +1970,32 @@ limit?: number;
 };
 
 export type GetContactsProfileV1ContactsGetParams = {
+created_at__gte?: string | null;
+created_at__lte?: string | null;
+edited_at__gte?: string | null;
+edited_at__lte?: string | null;
+edited_at__isnull?: boolean | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: type, value, is_main, created_at, edited_at.
+ */
 order_by?: string | null;
 search?: string | null;
 person_id?: string | null;
+type?: ContactType | null;
+type__in?: string | null;
+is_main?: boolean | null;
 page?: number;
 /**
  * @maximum 100
  * @exclusiveMinimum 0
  */
 limit?: number;
-};
-
-export type PutContactProfileV1ContactsIdPutParams = {
-type: ContactType;
-/**
- * @maxLength 256
- */
-value: string;
-is_main?: boolean;
-person_id: string;
-};
-
-export type PatchContactProfileV1ContactsIdPatchParams = {
-type?: ContactType | null;
-value?: string | null;
-is_main?: boolean | null;
 };
 
 export type GetManyProfileV1DietsGetParams = {
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: name.
+ */
 order_by?: string | null;
 search?: string | null;
 page?: number;
@@ -1763,10 +2006,23 @@ page?: number;
 limit?: number;
 };
 
-export type GetMyPassportsProfileV1PassportsMyPostParams = {
+export type GetMyPassportsProfileV1PassportsMyGetParams = {
+created_at__gte?: string | null;
+created_at__lte?: string | null;
+edited_at__gte?: string | null;
+edited_at__lte?: string | null;
+edited_at__isnull?: boolean | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: expire_date, issued_date, number, is_foreign, created_at, edited_at.
+ */
 order_by?: string | null;
 search?: string | null;
 profile_id?: string | null;
+is_foreign?: boolean | null;
+expire_date__gte?: string | null;
+expire_date__lte?: string | null;
+issued_date__gte?: string | null;
+issued_date__lte?: string | null;
 page?: number;
 /**
  * @maximum 100
@@ -1776,9 +2032,22 @@ limit?: number;
 };
 
 export type GetPassportsProfileV1PassportsGetParams = {
+created_at__gte?: string | null;
+created_at__lte?: string | null;
+edited_at__gte?: string | null;
+edited_at__lte?: string | null;
+edited_at__isnull?: boolean | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: expire_date, issued_date, number, is_foreign, created_at, edited_at.
+ */
 order_by?: string | null;
 search?: string | null;
 profile_id?: string | null;
+is_foreign?: boolean | null;
+expire_date__gte?: string | null;
+expire_date__lte?: string | null;
+issued_date__gte?: string | null;
+issued_date__lte?: string | null;
 page?: number;
 /**
  * @maximum 100
@@ -1788,6 +2057,14 @@ limit?: number;
 };
 
 export type SearchPersonProfileV1PersonsGetParams = {
+created_at__gte?: string | null;
+created_at__lte?: string | null;
+edited_at__gte?: string | null;
+edited_at__lte?: string | null;
+edited_at__isnull?: boolean | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: surname, name, patronymic, created_at, edited_at.
+ */
 order_by?: string | null;
 search?: string | null;
 page?: number;
@@ -1799,8 +2076,19 @@ limit?: number;
 };
 
 export type GetPersonContactsProfileV1PersonsPersonIdContactsGetParams = {
+created_at__gte?: string | null;
+created_at__lte?: string | null;
+edited_at__gte?: string | null;
+edited_at__lte?: string | null;
+edited_at__isnull?: boolean | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: type, value, is_main, created_at, edited_at.
+ */
 order_by?: string | null;
 search?: string | null;
+type?: ContactType | null;
+type__in?: string | null;
+is_main?: boolean | null;
 page?: number;
 /**
  * @maximum 100
@@ -1810,8 +2098,24 @@ limit?: number;
 };
 
 export type GetManyProfileV1ProfilesGetParams = {
-order_by?: string | null;
+created_at__gte?: string | null;
+created_at__lte?: string | null;
+edited_at__gte?: string | null;
+edited_at__lte?: string | null;
+edited_at__isnull?: boolean | null;
 search?: string | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: birthdate, created_at, edited_at.
+ */
+order_by?: string | null;
+birthdate__gte?: string | null;
+birthdate__lte?: string | null;
+birthdate__isnull?: boolean | null;
+workplace_id?: string | null;
+workplace_id__isnull?: boolean | null;
+diet_id?: number | null;
+diet_id__in?: string | null;
+diet_id__isnull?: boolean | null;
 page?: number;
 /**
  * @maximum 100
@@ -1821,11 +2125,23 @@ limit?: number;
 };
 
 export type GetStudentsProfileV1StudentsGetParams = {
-order_by?: string | null;
+created_at__gte?: string | null;
+created_at__lte?: string | null;
+edited_at__gte?: string | null;
+edited_at__lte?: string | null;
+edited_at__isnull?: boolean | null;
 search?: string | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: student_id, is_active, is_budget, is_full, created_at, edited_at.
+ */
+order_by?: string | null;
 group_id?: number | null;
+group_id__in?: string | null;
 faculty_id?: string | null;
+faculty_id__isnull?: boolean | null;
 is_active?: boolean | null;
+is_budget?: boolean | null;
+is_full?: boolean | null;
 page?: number;
 /**
  * @maximum 100
@@ -1835,6 +2151,9 @@ limit?: number;
 };
 
 export type GetStudentDegreesProfileV1StudentsDegreesGetParams = {
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: name.
+ */
 order_by?: string | null;
 search?: string | null;
 page?: number;
@@ -1846,11 +2165,16 @@ limit?: number;
 };
 
 export type GetStudentGroupsProfileV1StudentsGroupsGetParams = {
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: name, grade.
+ */
 order_by?: string | null;
 search?: string | null;
 degree_id?: number | null;
+degree_id__in?: string | null;
 faculty_id?: string | null;
 grade?: number | null;
+grade__in?: string | null;
 page?: number;
 /**
  * @maximum 100
@@ -1894,8 +2218,21 @@ export type GetTelegramLoginConfigUserV1AuthTelegramConfigGet200 = {[key: string
 export type LoginWithTelegramUserV1AuthTelegramLoginPost200 = { [key: string]: unknown };
 
 export type GetManyUserV1UsersGetParams = {
+created_at__gte?: string | null;
+created_at__lte?: string | null;
+edited_at__gte?: string | null;
+edited_at__lte?: string | null;
+edited_at__isnull?: boolean | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: username, email, is_active, is_verified, is_superuser, created_at, edited_at.
+ */
 order_by?: string | null;
 search?: string | null;
+is_active?: boolean | null;
+is_verified?: boolean | null;
+is_superuser?: boolean | null;
+person_id?: string | null;
+person_id__isnull?: boolean | null;
 page?: number;
 /**
  * @maximum 100
@@ -1909,7 +2246,7 @@ limit?: number;
  */
 export const getAttendancesEventV1AttendancesGet = (
     params?: GetAttendancesEventV1AttendancesGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageAttendanceRead>> => {
+ ): Promise<AxiosResponse<PageV1AttendanceRead>> => {
     return axios.get(
       `/event/v1/attendances`,{
     ...options,
@@ -1982,7 +2319,7 @@ export const deleteAttendanceEventV1AttendancesAttendanceIdDelete = (
  */
 export const getEventsEventV1EventsGet = (
     params?: GetEventsEventV1EventsGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageEventRead>> => {
+ ): Promise<AxiosResponse<PageV1EventRead>> => {
     return axios.get(
       `/event/v1/events`,{
     ...options,
@@ -2056,7 +2393,7 @@ export const deleteEventEventV1EventsEventIdDelete = (
 export const getEventStagesEventV1EventsEventIdStagesGet = (
     eventId: string | null,
     params?: GetEventStagesEventV1EventsEventIdStagesGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageStageRead>> => {
+ ): Promise<AxiosResponse<PageV1StageRead>> => {
     return axios.get(
       `/event/v1/events/${eventId}/stages`,{
     ...options,
@@ -2069,7 +2406,7 @@ export const getEventStagesEventV1EventsEventIdStagesGet = (
  */
 export const getLinksEventV1LinksGet = (
     params?: GetLinksEventV1LinksGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageLinkRead>> => {
+ ): Promise<AxiosResponse<PageV1LinkRead>> => {
     return axios.get(
       `/event/v1/links`,{
     ...options,
@@ -2105,11 +2442,11 @@ export const getLinkEventV1LinksLinkIdGet = (
  */
 export const putLinkEventV1LinksLinkIdPut = (
     linkId: string,
-    linkPut: LinkPut, options?: AxiosRequestConfig
+    linkPutData: LinkPutData, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<LinkRead>> => {
     return axios.put(
       `/event/v1/links/${linkId}`,
-      linkPut,options
+      linkPutData,options
     );
   }
 
@@ -2118,11 +2455,11 @@ export const putLinkEventV1LinksLinkIdPut = (
  */
 export const patchLinkEventV1LinksLinkIdPatch = (
     linkId: string,
-    linkPatch: LinkPatch, options?: AxiosRequestConfig
+    linkPatchData: LinkPatchData, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<LinkRead>> => {
     return axios.patch(
       `/event/v1/links/${linkId}`,
-      linkPatch,options
+      linkPatchData,options
     );
   }
 
@@ -2166,7 +2503,7 @@ export const getMyMembersEventV1MeMembersGet = (
 export const getMyCollectiveMembersEventV1MeCollectivesCollectiveIdMembersGet = (
     collectiveId: string,
     params?: GetMyCollectiveMembersEventV1MeCollectivesCollectiveIdMembersGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageMemberRead>> => {
+ ): Promise<AxiosResponse<PageV1MemberRead>> => {
     return axios.get(
       `/event/v1/me/collectives/${collectiveId}/members`,{
     ...options,
@@ -2219,7 +2556,7 @@ export const deleteMyCollectiveMemberEventV1MeCollectivesCollectiveIdMembersMemb
 export const getMyCollectiveRolesEventV1MeCollectivesCollectiveIdRolesGet = (
     collectiveId: string,
     params?: GetMyCollectiveRolesEventV1MeCollectivesCollectiveIdRolesGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageRoleRead>> => {
+ ): Promise<AxiosResponse<PageV1RoleRead>> => {
     return axios.get(
       `/event/v1/me/collectives/${collectiveId}/roles`,{
     ...options,
@@ -2496,7 +2833,7 @@ export const createMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdPartici
  */
 export const getMembersEventV1MembersGet = (
     params?: GetMembersEventV1MembersGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageMemberRead>> => {
+ ): Promise<AxiosResponse<PageV1MemberRead>> => {
     return axios.get(
       `/event/v1/members`,{
     ...options,
@@ -2532,11 +2869,11 @@ export const getMemberEventV1MembersMemberIdGet = (
  */
 export const putMemberEventV1MembersMemberIdPut = (
     memberId: string,
-    memberPut: MemberPut, options?: AxiosRequestConfig
+    memberPutData: MemberPutData, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<MemberRead>> => {
     return axios.put(
       `/event/v1/members/${memberId}`,
-      memberPut,options
+      memberPutData,options
     );
   }
 
@@ -2545,11 +2882,11 @@ export const putMemberEventV1MembersMemberIdPut = (
  */
 export const patchMemberEventV1MembersMemberIdPatch = (
     memberId: string,
-    memberPatch: MemberPatch, options?: AxiosRequestConfig
+    memberPatchData: MemberPatchData, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<MemberRead>> => {
     return axios.patch(
       `/event/v1/members/${memberId}`,
-      memberPatch,options
+      memberPatchData,options
     );
   }
 
@@ -2569,7 +2906,7 @@ export const deleteMemberEventV1MembersMemberIdDelete = (
  */
 export const getParticipationsEventV1ParticipationsGet = (
     params?: GetParticipationsEventV1ParticipationsGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageParticipationRead>> => {
+ ): Promise<AxiosResponse<PageV1ParticipationRead>> => {
     return axios.get(
       `/event/v1/participations`,{
     ...options,
@@ -2642,7 +2979,7 @@ export const deleteParticipationEventV1ParticipationsParticipationIdDelete = (
  */
 export const getRewardsEventV1RewardsGet = (
     params?: GetRewardsEventV1RewardsGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageRewardRead>> => {
+ ): Promise<AxiosResponse<PageV1RewardRead>> => {
     return axios.get(
       `/event/v1/rewards`,{
     ...options,
@@ -2655,9 +2992,16 @@ export const getRewardsEventV1RewardsGet = (
  */
 export const createRewardEventV1RewardsPost = (
     bodyCreateRewardEventV1RewardsPost: BodyCreateRewardEventV1RewardsPost,
-    params: CreateRewardEventV1RewardsPostParams, options?: AxiosRequestConfig
+    params?: CreateRewardEventV1RewardsPostParams, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<RewardRead>> => {const formData = new FormData();
-formData.append(`file`, bodyCreateRewardEventV1RewardsPost.file);
+formData.append(`participation_id`, bodyCreateRewardEventV1RewardsPost.participation_id);
+formData.append(`name`, bodyCreateRewardEventV1RewardsPost.name);
+if(bodyCreateRewardEventV1RewardsPost.degree !== undefined && bodyCreateRewardEventV1RewardsPost.degree !== null) {
+ formData.append(`degree`, bodyCreateRewardEventV1RewardsPost.degree.toString())
+ }
+if(bodyCreateRewardEventV1RewardsPost.file !== undefined && bodyCreateRewardEventV1RewardsPost.file !== null) {
+ formData.append(`file`, bodyCreateRewardEventV1RewardsPost.file);
+ }
 
     return axios.post(
       `/event/v1/rewards`,
@@ -2702,10 +3046,16 @@ export const putRewardEventV1RewardsRewardIdPut = (
  */
 export const patchRewardEventV1RewardsRewardIdPatch = (
     rewardId: string,
-    bodyPatchRewardEventV1RewardsRewardIdPatch: BodyPatchRewardEventV1RewardsRewardIdPatch,
+    bodyPatchRewardEventV1RewardsRewardIdPatch?: BodyPatchRewardEventV1RewardsRewardIdPatch,
     params?: PatchRewardEventV1RewardsRewardIdPatchParams, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<RewardRead>> => {const formData = new FormData();
-if(bodyPatchRewardEventV1RewardsRewardIdPatch.file !== undefined && bodyPatchRewardEventV1RewardsRewardIdPatch.file !== null) {
+if(bodyPatchRewardEventV1RewardsRewardIdPatch?.name !== undefined && bodyPatchRewardEventV1RewardsRewardIdPatch.name !== null) {
+ formData.append(`name`, bodyPatchRewardEventV1RewardsRewardIdPatch.name);
+ }
+if(bodyPatchRewardEventV1RewardsRewardIdPatch?.degree !== undefined && bodyPatchRewardEventV1RewardsRewardIdPatch.degree !== null) {
+ formData.append(`degree`, bodyPatchRewardEventV1RewardsRewardIdPatch.degree.toString())
+ }
+if(bodyPatchRewardEventV1RewardsRewardIdPatch?.file !== undefined && bodyPatchRewardEventV1RewardsRewardIdPatch.file !== null) {
  formData.append(`file`, bodyPatchRewardEventV1RewardsRewardIdPatch.file);
  }
 
@@ -2736,7 +3086,7 @@ export const deleteRewardEventV1RewardsRewardIdDelete = (
  */
 export const getRolesEventV1RolesGet = (
     params?: GetRolesEventV1RolesGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageRoleRead>> => {
+ ): Promise<AxiosResponse<PageV1RoleRead>> => {
     return axios.get(
       `/event/v1/roles`,{
     ...options,
@@ -2809,7 +3159,7 @@ export const deleteRoleEventV1RolesRoleIdDelete = (
  */
 export const getStagesEventV1StagesGet = (
     params?: GetStagesEventV1StagesGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageStageRead>> => {
+ ): Promise<AxiosResponse<PageV1StageRead>> => {
     return axios.get(
       `/event/v1/stages`,{
     ...options,
@@ -2952,7 +3302,7 @@ export const getCalendarFeedEventV2CalendarFeedTokenIcsGet = (
  */
 export const getAddressesGeoV1AddressesGet = (
     params?: GetAddressesGeoV1AddressesGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageAddressRead>> => {
+ ): Promise<AxiosResponse<PageV1AddressRead>> => {
     return axios.get(
       `/geo/v1/addresses`,{
     ...options,
@@ -3021,6 +3371,22 @@ export const deleteAddressGeoV1AddressesAddressIdDelete = (
   }
 
 /**
+ * Like ``POST /addresses``, but for a hand-entered address whose city
+ * isn't in the database yet -- names the country/region/city instead of
+ * requiring an existing ``city_id``, and creates whichever levels are
+ * missing.
+ * @summary Create Address Cascade
+ */
+export const createAddressCascadeGeoV1AddressesCascadePost = (
+    addressCascadeCreate: AddressCascadeCreate, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<AddressRead>> => {
+    return axios.post(
+      `/geo/v1/addresses/cascade`,
+      addressCascadeCreate,options
+    );
+  }
+
+/**
  * List/search-only -- cities are seeded (bootstrap or hand-entered
  * alongside an address's city), not admin-CRUD-managed in their own
  * right. This exists so a city picker never has to fall back to typing
@@ -3029,7 +3395,7 @@ export const deleteAddressGeoV1AddressesAddressIdDelete = (
  */
 export const getCitiesGeoV1CitiesGet = (
     params?: GetCitiesGeoV1CitiesGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageCityRead>> => {
+ ): Promise<AxiosResponse<PageV1CityRead>> => {
     return axios.get(
       `/geo/v1/cities`,{
     ...options,
@@ -3053,7 +3419,7 @@ export const getCityGeoV1CitiesCityIdGet = (
  */
 export const getLocationsGeoV1LocationsGet = (
     params?: GetLocationsGeoV1LocationsGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageLocationRead>> => {
+ ): Promise<AxiosResponse<PageV1LocationRead>> => {
     return axios.get(
       `/geo/v1/locations`,{
     ...options,
@@ -3260,7 +3626,7 @@ export const getVapidPublicKeyNotifyV1WebpushVapidPublicKeyGet = (
  */
 export const listCollectivesOrgV1CollectivesGet = (
     params?: ListCollectivesOrgV1CollectivesGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageCollectiveRead>> => {
+ ): Promise<AxiosResponse<PageV1CollectiveRead>> => {
     return axios.get(
       `/org/v1/collectives`,{
     ...options,
@@ -3333,7 +3699,7 @@ export const deleteCollectiveOrgV1CollectivesCollectiveIdDelete = (
  */
 export const listFacultiesOrgV1FacultiesGet = (
     params?: ListFacultiesOrgV1FacultiesGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageFacultyRead>> => {
+ ): Promise<AxiosResponse<PageV1FacultyRead>> => {
     return axios.get(
       `/org/v1/faculties`,{
     ...options,
@@ -3406,7 +3772,7 @@ export const deleteFacultyOrgV1FacultiesFacultyIdDelete = (
  */
 export const listOrganizationsOrgV1OrganizationsGet = (
     params?: ListOrganizationsOrgV1OrganizationsGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageOrganizationRead>> => {
+ ): Promise<AxiosResponse<PageV1OrganizationRead>> => {
     return axios.get(
       `/org/v1/organizations`,{
     ...options,
@@ -3419,7 +3785,7 @@ export const listOrganizationsOrgV1OrganizationsGet = (
  */
 export const createOrganizationOrgV1OrganizationsPost = (
     organizationCreate: OrganizationCreate, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<OrgSchemaOrganizationOrganizationRead>> => {
+ ): Promise<AxiosResponse<OrgApiV1SchemaOrganizationOrganizationRead>> => {
     return axios.post(
       `/org/v1/organizations`,
       organizationCreate,options
@@ -3431,22 +3797,9 @@ export const createOrganizationOrgV1OrganizationsPost = (
  */
 export const getOrganizationOrgV1OrganizationsOrganizationIdGet = (
     organizationId: string, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<OrgSchemaOrganizationOrganizationRead>> => {
+ ): Promise<AxiosResponse<OrgApiV1SchemaOrganizationOrganizationRead>> => {
     return axios.get(
       `/org/v1/organizations/${organizationId}`,options
-    );
-  }
-
-/**
- * @summary Put Organization
- */
-export const putOrganizationOrgV1OrganizationsOrganizationIdPut = (
-    organizationId: string,
-    organizationPut: OrganizationPut, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<OrgSchemaOrganizationOrganizationRead>> => {
-    return axios.put(
-      `/org/v1/organizations/${organizationId}`,
-      organizationPut,options
     );
   }
 
@@ -3455,11 +3808,11 @@ export const putOrganizationOrgV1OrganizationsOrganizationIdPut = (
  */
 export const patchOrganizationOrgV1OrganizationsOrganizationIdPatch = (
     organizationId: string,
-    organizationPatch: OrganizationPatch, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<OrgSchemaOrganizationOrganizationRead>> => {
+    organizationPatchData: OrganizationPatchData, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<OrgApiV1SchemaOrganizationOrganizationRead>> => {
     return axios.patch(
       `/org/v1/organizations/${organizationId}`,
-      organizationPatch,options
+      organizationPatchData,options
     );
   }
 
@@ -3479,7 +3832,7 @@ export const deleteOrganizationOrgV1OrganizationsOrganizationIdDelete = (
  */
 export const listUniversitiesOrgV1UniversitiesGet = (
     params?: ListUniversitiesOrgV1UniversitiesGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageUniversityRead>> => {
+ ): Promise<AxiosResponse<PageV1UniversityRead>> => {
     return axios.get(
       `/org/v1/universities`,{
     ...options,
@@ -3552,7 +3905,7 @@ export const deleteUniversityOrgV1UniversitiesUniversityIdDelete = (
  */
 export const getMyContactsProfileV1ContactsMyGet = (
     params?: GetMyContactsProfileV1ContactsMyGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageContactItemRead>> => {
+ ): Promise<AxiosResponse<PageV1ContactItemRead>> => {
     return axios.get(
       `/profile/v1/contacts/my`,{
     ...options,
@@ -3577,11 +3930,11 @@ export const createMyContactProfileV1ContactsMyPost = (
  */
 export const putMyContactProfileV1ContactsMyContactIdPut = (
     contactId: string,
-    contactPutData: ContactPutData, options?: AxiosRequestConfig
+    contactItemPutData: ContactItemPutData, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<ContactRead>> => {
     return axios.put(
       `/profile/v1/contacts/my/${contactId}`,
-      contactPutData,options
+      contactItemPutData,options
     );
   }
 
@@ -3614,7 +3967,7 @@ export const deleteMyContactProfileV1ContactsMyContactIdDelete = (
  */
 export const getContactsProfileV1ContactsGet = (
     params?: GetContactsProfileV1ContactsGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageContactItemRead>> => {
+ ): Promise<AxiosResponse<PageV1ContactItemRead>> => {
     return axios.get(
       `/profile/v1/contacts`,{
     ...options,
@@ -3650,13 +4003,11 @@ export const getContactProfileV1ContactsIdGet = (
  */
 export const putContactProfileV1ContactsIdPut = (
     id: string,
-    params: PutContactProfileV1ContactsIdPutParams, options?: AxiosRequestConfig
+    contactPutData: ContactPutData, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<ContactRead>> => {
     return axios.put(
       `/profile/v1/contacts/${id}`,
-      undefined,{
-    ...options,
-        params: {...params, ...options?.params},}
+      contactPutData,options
     );
   }
 
@@ -3665,13 +4016,11 @@ export const putContactProfileV1ContactsIdPut = (
  */
 export const patchContactProfileV1ContactsIdPatch = (
     id: string,
-    params?: PatchContactProfileV1ContactsIdPatchParams, options?: AxiosRequestConfig
+    contactPatchData: ContactPatchData, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<ContactRead>> => {
     return axios.patch(
       `/profile/v1/contacts/${id}`,
-      undefined,{
-    ...options,
-        params: {...params, ...options?.params},}
+      contactPatchData,options
     );
   }
 
@@ -3691,7 +4040,7 @@ export const deleteContactProfileV1ContactsIdDelete = (
  */
 export const getManyProfileV1DietsGet = (
     params?: GetManyProfileV1DietsGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageDietRead>> => {
+ ): Promise<AxiosResponse<PageV1DietRead>> => {
     return axios.get(
       `/profile/v1/diets`,{
     ...options,
@@ -3715,7 +4064,7 @@ export const createDietProfileV1DietsPost = (
  * @summary Get Diet
  */
 export const getDietProfileV1DietsIdGet = (
-    id: string, options?: AxiosRequestConfig
+    id: number, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<DietRead>> => {
     return axios.get(
       `/profile/v1/diets/${id}`,options
@@ -3726,12 +4075,12 @@ export const getDietProfileV1DietsIdGet = (
  * @summary Put Diet
  */
 export const putDietProfileV1DietsIdPut = (
-    id: string,
-    dietPut: DietPut, options?: AxiosRequestConfig
+    id: number,
+    dietPutData: DietPutData, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<DietRead>> => {
     return axios.put(
       `/profile/v1/diets/${id}`,
-      dietPut,options
+      dietPutData,options
     );
   }
 
@@ -3739,12 +4088,12 @@ export const putDietProfileV1DietsIdPut = (
  * @summary Patch Diet
  */
 export const patchDietProfileV1DietsIdPatch = (
-    id: string,
-    dietPatch: DietPatch, options?: AxiosRequestConfig
+    id: number,
+    dietPatchData: DietPatchData, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<DietRead>> => {
     return axios.patch(
       `/profile/v1/diets/${id}`,
-      dietPatch,options
+      dietPatchData,options
     );
   }
 
@@ -3752,7 +4101,7 @@ export const patchDietProfileV1DietsIdPatch = (
  * @summary Delete Diet
  */
 export const deleteDietProfileV1DietsIdDelete = (
-    id: string, options?: AxiosRequestConfig
+    id: number, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<unknown>> => {
     return axios.delete(
       `/profile/v1/diets/${id}`,options
@@ -3762,12 +4111,11 @@ export const deleteDietProfileV1DietsIdDelete = (
 /**
  * @summary Get My Passports
  */
-export const getMyPassportsProfileV1PassportsMyPost = (
-    params?: GetMyPassportsProfileV1PassportsMyPostParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPagePassportItemRead>> => {
-    return axios.post(
-      `/profile/v1/passports/my`,
-      undefined,{
+export const getMyPassportsProfileV1PassportsMyGet = (
+    params?: GetMyPassportsProfileV1PassportsMyGetParams, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<PageV1PassportItemRead>> => {
+    return axios.get(
+      `/profile/v1/passports/my`,{
     ...options,
         params: {...params, ...options?.params},}
     );
@@ -3776,12 +4124,23 @@ export const getMyPassportsProfileV1PassportsMyPost = (
 /**
  * @summary Create My Passport
  */
-export const createMyPassportProfileV1PassportsMyNewPost = (
-    passportCreate: PassportCreate, options?: AxiosRequestConfig
+export const createMyPassportProfileV1PassportsMyPost = (
+    passportItemCreate: PassportItemCreate, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<PassportRead>> => {
     return axios.post(
-      `/profile/v1/passports/my/new`,
-      passportCreate,options
+      `/profile/v1/passports/my`,
+      passportItemCreate,options
+    );
+  }
+
+/**
+ * @summary Get My Passport
+ */
+export const getMyPassportProfileV1PassportsMyPassportIdGet = (
+    passportId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<PassportRead>> => {
+    return axios.get(
+      `/profile/v1/passports/my/${passportId}`,options
     );
   }
 
@@ -3815,11 +4174,10 @@ export const patchMyPassportProfileV1PassportsMyPassportIdPatch = (
  * @summary Delete My Passport
  */
 export const deleteMyPassportProfileV1PassportsMyPassportIdDelete = (
-    passportId: string,
-    passportPatchData: PassportPatchData, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<PassportRead>> => {
+    passportId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<unknown>> => {
     return axios.delete(
-      `/profile/v1/passports/my/${passportId}`,{data: passportPatchData,...options}
+      `/profile/v1/passports/my/${passportId}`,options
     );
   }
 
@@ -3828,7 +4186,7 @@ export const deleteMyPassportProfileV1PassportsMyPassportIdDelete = (
  */
 export const getPassportsProfileV1PassportsGet = (
     params?: GetPassportsProfileV1PassportsGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPagePassportItemRead>> => {
+ ): Promise<AxiosResponse<PageV1PassportItemRead>> => {
     return axios.get(
       `/profile/v1/passports`,{
     ...options,
@@ -3839,12 +4197,11 @@ export const getPassportsProfileV1PassportsGet = (
 /**
  * @summary Get Passport
  */
-export const getPassportProfileV1PassportsPassportIdPost = (
+export const getPassportProfileV1PassportsPassportIdGet = (
     passportId: string, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<PassportRead>> => {
-    return axios.post(
-      `/profile/v1/passports/${passportId}`,
-      undefined,options
+    return axios.get(
+      `/profile/v1/passports/${passportId}`,options
     );
   }
 
@@ -3888,12 +4245,11 @@ export const deletePassportProfileV1PassportsPassportIdDelete = (
 /**
  * @summary Get Name Variant
  */
-export const getNameVariantProfileV1PassportsPassportIdNameVariantPost = (
+export const getNameVariantProfileV1PassportsPassportIdNameVariantGet = (
     passportId: string, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<NameVariantRead | null>> => {
-    return axios.post(
-      `/profile/v1/passports/${passportId}/name-variant`,
-      undefined,options
+ ): Promise<AxiosResponse<NameVariantRead>> => {
+    return axios.get(
+      `/profile/v1/passports/${passportId}/name-variant`,options
     );
   }
 
@@ -3939,7 +4295,7 @@ export const deleteNameVariantProfileV1PassportsPassportIdNameVariantDelete = (
  */
 export const searchPersonProfileV1PersonsGet = (
     params?: SearchPersonProfileV1PersonsGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPagePersonItemRead>> => {
+ ): Promise<AxiosResponse<PageV1PersonItemRead>> => {
     return axios.get(
       `/profile/v1/persons`,{
     ...options,
@@ -4048,7 +4404,7 @@ export const deletePersonProfileV1PersonsPersonIdDelete = (
 export const getPersonContactsProfileV1PersonsPersonIdContactsGet = (
     personId: string | null,
     params?: GetPersonContactsProfileV1PersonsPersonIdContactsGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageContactItemRead>> => {
+ ): Promise<AxiosResponse<PageV1ContactItemRead>> => {
     return axios.get(
       `/profile/v1/persons/${personId}/contacts`,{
     ...options,
@@ -4074,7 +4430,7 @@ export const createPersonContactProfileV1PersonsPersonIdContactsPost = (
  */
 export const getManyProfileV1ProfilesGet = (
     params?: GetManyProfileV1ProfilesGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageProfileRead>> => {
+ ): Promise<AxiosResponse<PageV1ProfileRead>> => {
     return axios.get(
       `/profile/v1/profiles`,{
     ...options,
@@ -4109,11 +4465,11 @@ export const getMyProfileProfileV1ProfilesMyGet = (
  * @summary Put My Profile
  */
 export const putMyProfileProfileV1ProfilesMyPut = (
-    profilePut: ProfilePut, options?: AxiosRequestConfig
+    profilePutData: ProfilePutData, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<ProfileRead>> => {
     return axios.put(
       `/profile/v1/profiles/my`,
-      profilePut,options
+      profilePutData,options
     );
   }
 
@@ -4121,11 +4477,11 @@ export const putMyProfileProfileV1ProfilesMyPut = (
  * @summary Patch My Profile
  */
 export const patchMyProfileProfileV1ProfilesMyPatch = (
-    profilePatch: ProfilePatch, options?: AxiosRequestConfig
+    profilePatchData: ProfilePatchData, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<ProfileRead>> => {
     return axios.patch(
       `/profile/v1/profiles/my`,
-      profilePatch,options
+      profilePatchData,options
     );
   }
 
@@ -4182,7 +4538,7 @@ export const deleteProfileProfileV1ProfilesProfileIdDelete = (
  */
 export const getStudentsProfileV1StudentsGet = (
     params?: GetStudentsProfileV1StudentsGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageStudentRead>> => {
+ ): Promise<AxiosResponse<PageV1StudentRead>> => {
     return axios.get(
       `/profile/v1/students`,{
     ...options,
@@ -4255,7 +4611,7 @@ export const deleteStudentProfileV1StudentsStudentIdDelete = (
  */
 export const getStudentDegreesProfileV1StudentsDegreesGet = (
     params?: GetStudentDegreesProfileV1StudentsDegreesGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageStudentDegreeRead>> => {
+ ): Promise<AxiosResponse<PageV1StudentDegreeRead>> => {
     return axios.get(
       `/profile/v1/students/degrees`,{
     ...options,
@@ -4279,7 +4635,7 @@ export const createStudentDegreeProfileV1StudentsDegreesPost = (
  * @summary Get Student Degree
  */
 export const getStudentDegreeProfileV1StudentsDegreesDegreeIdGet = (
-    degreeId: string, options?: AxiosRequestConfig
+    degreeId: number, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<StudentDegreeRead>> => {
     return axios.get(
       `/profile/v1/students/degrees/${degreeId}`,options
@@ -4290,7 +4646,7 @@ export const getStudentDegreeProfileV1StudentsDegreesDegreeIdGet = (
  * @summary Put Student Degree
  */
 export const putStudentDegreeProfileV1StudentsDegreesDegreeIdPut = (
-    degreeId: string,
+    degreeId: number,
     studentDegreePutData: StudentDegreePutData, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<StudentDegreeRead>> => {
     return axios.put(
@@ -4303,7 +4659,7 @@ export const putStudentDegreeProfileV1StudentsDegreesDegreeIdPut = (
  * @summary Patch Student Degree
  */
 export const patchStudentDegreeProfileV1StudentsDegreesDegreeIdPatch = (
-    degreeId: string,
+    degreeId: number,
     studentDegreePatchData: StudentDegreePatchData, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<StudentDegreeRead>> => {
     return axios.patch(
@@ -4316,7 +4672,7 @@ export const patchStudentDegreeProfileV1StudentsDegreesDegreeIdPatch = (
  * @summary Delete Student Degree
  */
 export const deleteStudentDegreeProfileV1StudentsDegreesDegreeIdDelete = (
-    degreeId: string, options?: AxiosRequestConfig
+    degreeId: number, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<unknown>> => {
     return axios.delete(
       `/profile/v1/students/degrees/${degreeId}`,options
@@ -4328,7 +4684,7 @@ export const deleteStudentDegreeProfileV1StudentsDegreesDegreeIdDelete = (
  */
 export const getStudentGroupsProfileV1StudentsGroupsGet = (
     params?: GetStudentGroupsProfileV1StudentsGroupsGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageStudentGroupRead>> => {
+ ): Promise<AxiosResponse<PageV1StudentGroupRead>> => {
     return axios.get(
       `/profile/v1/students/groups`,{
     ...options,
@@ -4352,7 +4708,7 @@ export const createStudentGroupProfileV1StudentsGroupsPost = (
  * @summary Get Student Group
  */
 export const getStudentGroupProfileV1StudentsGroupsGroupIdGet = (
-    groupId: string, options?: AxiosRequestConfig
+    groupId: number, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<StudentGroupRead>> => {
     return axios.get(
       `/profile/v1/students/groups/${groupId}`,options
@@ -4363,7 +4719,7 @@ export const getStudentGroupProfileV1StudentsGroupsGroupIdGet = (
  * @summary Put Student Group
  */
 export const putStudentGroupProfileV1StudentsGroupsGroupIdPut = (
-    groupId: string,
+    groupId: number,
     studentGroupPutData: StudentGroupPutData, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<StudentGroupRead>> => {
     return axios.put(
@@ -4376,7 +4732,7 @@ export const putStudentGroupProfileV1StudentsGroupsGroupIdPut = (
  * @summary Patch Student Group
  */
 export const patchStudentGroupProfileV1StudentsGroupsGroupIdPatch = (
-    groupId: string,
+    groupId: number,
     studentGroupPatchData: StudentGroupPatchData, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<StudentGroupRead>> => {
     return axios.patch(
@@ -4389,7 +4745,7 @@ export const patchStudentGroupProfileV1StudentsGroupsGroupIdPatch = (
  * @summary Delete Student Group
  */
 export const deleteStudentGroupProfileV1StudentsGroupsGroupIdDelete = (
-    groupId: string, options?: AxiosRequestConfig
+    groupId: number, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<unknown>> => {
     return axios.delete(
       `/profile/v1/students/groups/${groupId}`,options
@@ -4728,7 +5084,7 @@ export const checkUsernameUserV1UsersCheckUsernameGet = (
  */
 export const getManyUserV1UsersGet = (
     params?: GetManyUserV1UsersGetParams, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<SPageUserRead>> => {
+ ): Promise<AxiosResponse<PageV1UserRead>> => {
     return axios.get(
       `/user/v1/users`,{
     ...options,
@@ -4778,20 +5134,20 @@ export const linkInviteUserV1UsersMeLinkInvitePost = (
     );
   }
 
-export type GetAttendancesEventV1AttendancesGetResult = AxiosResponse<SPageAttendanceRead>
+export type GetAttendancesEventV1AttendancesGetResult = AxiosResponse<PageV1AttendanceRead>
 export type CreateAttendanceEventV1AttendancesPostResult = AxiosResponse<AttendanceRead>
 export type GetAttendanceEventV1AttendancesAttendanceIdGetResult = AxiosResponse<AttendanceRead>
 export type PutAttendanceEventV1AttendancesAttendanceIdPutResult = AxiosResponse<AttendanceRead>
 export type PatchAttendanceEventV1AttendancesAttendanceIdPatchResult = AxiosResponse<AttendanceRead>
 export type DeleteAttendanceEventV1AttendancesAttendanceIdDeleteResult = AxiosResponse<unknown>
-export type GetEventsEventV1EventsGetResult = AxiosResponse<SPageEventRead>
+export type GetEventsEventV1EventsGetResult = AxiosResponse<PageV1EventRead>
 export type CreateEventEventV1EventsPostResult = AxiosResponse<EventRead>
 export type GetEventEventV1EventsEventIdGetResult = AxiosResponse<EventRead>
 export type PutEventEventV1EventsEventIdPutResult = AxiosResponse<EventRead>
 export type PatchEventEventV1EventsEventIdPatchResult = AxiosResponse<EventRead>
 export type DeleteEventEventV1EventsEventIdDeleteResult = AxiosResponse<unknown>
-export type GetEventStagesEventV1EventsEventIdStagesGetResult = AxiosResponse<SPageStageRead>
-export type GetLinksEventV1LinksGetResult = AxiosResponse<SPageLinkRead>
+export type GetEventStagesEventV1EventsEventIdStagesGetResult = AxiosResponse<PageV1StageRead>
+export type GetLinksEventV1LinksGetResult = AxiosResponse<PageV1LinkRead>
 export type CreateLinkEventV1LinksPostResult = AxiosResponse<LinkRead>
 export type GetLinkEventV1LinksLinkIdGetResult = AxiosResponse<LinkRead>
 export type PutLinkEventV1LinksLinkIdPutResult = AxiosResponse<LinkRead>
@@ -4799,11 +5155,11 @@ export type PatchLinkEventV1LinksLinkIdPatchResult = AxiosResponse<LinkRead>
 export type DeleteLinkEventV1LinksLinkIdDeleteResult = AxiosResponse<unknown>
 export type GetMyCollectivesEventV1MeCollectivesGetResult = AxiosResponse<MyCollectiveRead[]>
 export type GetMyMembersEventV1MeMembersGetResult = AxiosResponse<MemberRead[]>
-export type GetMyCollectiveMembersEventV1MeCollectivesCollectiveIdMembersGetResult = AxiosResponse<SPageMemberRead>
+export type GetMyCollectiveMembersEventV1MeCollectivesCollectiveIdMembersGetResult = AxiosResponse<PageV1MemberRead>
 export type CreateMyCollectiveMemberEventV1MeCollectivesCollectiveIdMembersPostResult = AxiosResponse<MemberRead>
 export type PatchMyCollectiveMemberEventV1MeCollectivesCollectiveIdMembersMemberIdPatchResult = AxiosResponse<MemberRead>
 export type DeleteMyCollectiveMemberEventV1MeCollectivesCollectiveIdMembersMemberIdDeleteResult = AxiosResponse<unknown>
-export type GetMyCollectiveRolesEventV1MeCollectivesCollectiveIdRolesGetResult = AxiosResponse<SPageRoleRead>
+export type GetMyCollectiveRolesEventV1MeCollectivesCollectiveIdRolesGetResult = AxiosResponse<PageV1RoleRead>
 export type CreateMyCollectiveRoleEventV1MeCollectivesCollectiveIdRolesPostResult = AxiosResponse<RoleRead>
 export type PatchMyCollectiveRoleEventV1MeCollectivesCollectiveIdRolesRoleIdPatchResult = AxiosResponse<RoleRead>
 export type DeleteMyCollectiveRoleEventV1MeCollectivesCollectiveIdRolesRoleIdDeleteResult = AxiosResponse<unknown>
@@ -4824,31 +5180,31 @@ export type CreateMyCollectiveEventStageEventV1MeCollectivesCollectiveIdEventsEv
 export type PatchMyCollectiveEventStageEventV1MeCollectivesCollectiveIdStagesStageIdPatchResult = AxiosResponse<StageRead>
 export type DeleteMyCollectiveEventStageEventV1MeCollectivesCollectiveIdStagesStageIdDeleteResult = AxiosResponse<unknown>
 export type CreateMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdParticipationParticipationIdAttendancePostResult = AxiosResponse<AttendanceRead>
-export type GetMembersEventV1MembersGetResult = AxiosResponse<SPageMemberRead>
+export type GetMembersEventV1MembersGetResult = AxiosResponse<PageV1MemberRead>
 export type CreateMemberEventV1MembersPostResult = AxiosResponse<MemberRead>
 export type GetMemberEventV1MembersMemberIdGetResult = AxiosResponse<MemberRead>
 export type PutMemberEventV1MembersMemberIdPutResult = AxiosResponse<MemberRead>
 export type PatchMemberEventV1MembersMemberIdPatchResult = AxiosResponse<MemberRead>
 export type DeleteMemberEventV1MembersMemberIdDeleteResult = AxiosResponse<unknown>
-export type GetParticipationsEventV1ParticipationsGetResult = AxiosResponse<SPageParticipationRead>
+export type GetParticipationsEventV1ParticipationsGetResult = AxiosResponse<PageV1ParticipationRead>
 export type CreateParticipationEventV1ParticipationsPostResult = AxiosResponse<ParticipationRead>
 export type GetParticipationEventV1ParticipationsParticipationIdGetResult = AxiosResponse<ParticipationRead>
 export type PutParticipationEventV1ParticipationsParticipationIdPutResult = AxiosResponse<ParticipationRead>
 export type PatchParticipationEventV1ParticipationsParticipationIdPatchResult = AxiosResponse<ParticipationRead>
 export type DeleteParticipationEventV1ParticipationsParticipationIdDeleteResult = AxiosResponse<unknown>
-export type GetRewardsEventV1RewardsGetResult = AxiosResponse<SPageRewardRead>
+export type GetRewardsEventV1RewardsGetResult = AxiosResponse<PageV1RewardRead>
 export type CreateRewardEventV1RewardsPostResult = AxiosResponse<RewardRead>
 export type GetRewardEventV1RewardsRewardIdGetResult = AxiosResponse<RewardRead>
 export type PutRewardEventV1RewardsRewardIdPutResult = AxiosResponse<RewardRead>
 export type PatchRewardEventV1RewardsRewardIdPatchResult = AxiosResponse<RewardRead>
 export type DeleteRewardEventV1RewardsRewardIdDeleteResult = AxiosResponse<unknown>
-export type GetRolesEventV1RolesGetResult = AxiosResponse<SPageRoleRead>
+export type GetRolesEventV1RolesGetResult = AxiosResponse<PageV1RoleRead>
 export type CreateRoleEventV1RolesPostResult = AxiosResponse<RoleRead>
 export type GetRoleEventV1RolesRoleIdGetResult = AxiosResponse<RoleRead>
 export type PutRoleEventV1RolesRoleIdPutResult = AxiosResponse<RoleRead>
 export type PatchRoleEventV1RolesRoleIdPatchResult = AxiosResponse<RoleRead>
 export type DeleteRoleEventV1RolesRoleIdDeleteResult = AxiosResponse<unknown>
-export type GetStagesEventV1StagesGetResult = AxiosResponse<SPageStageRead>
+export type GetStagesEventV1StagesGetResult = AxiosResponse<PageV1StageRead>
 export type CreateStageEventV1StagesPostResult = AxiosResponse<StageRead>
 export type GetStageEventV1StagesStageIdGetResult = AxiosResponse<StageRead>
 export type PutStageEventV1StagesStageIdPutResult = AxiosResponse<StageRead>
@@ -4860,15 +5216,16 @@ export type CreateSubscriptionEventV2CalendarSubscriptionsPostResult = AxiosResp
 export type RotateSubscriptionTokenEventV2CalendarSubscriptionsSubscriptionIdRotateTokenPostResult = AxiosResponse<SubscriptionCreated>
 export type DeleteSubscriptionEventV2CalendarSubscriptionsSubscriptionIdDeleteResult = AxiosResponse<void>
 export type GetCalendarFeedEventV2CalendarFeedTokenIcsGetResult = AxiosResponse<unknown>
-export type GetAddressesGeoV1AddressesGetResult = AxiosResponse<SPageAddressRead>
+export type GetAddressesGeoV1AddressesGetResult = AxiosResponse<PageV1AddressRead>
 export type CreateAddressGeoV1AddressesPostResult = AxiosResponse<AddressRead>
 export type GetAddressGeoV1AddressesAddressIdGetResult = AxiosResponse<AddressRead>
 export type PutAddressGeoV1AddressesAddressIdPutResult = AxiosResponse<AddressRead>
 export type PatchAddressGeoV1AddressesAddressIdPatchResult = AxiosResponse<AddressRead>
 export type DeleteAddressGeoV1AddressesAddressIdDeleteResult = AxiosResponse<unknown>
-export type GetCitiesGeoV1CitiesGetResult = AxiosResponse<SPageCityRead>
+export type CreateAddressCascadeGeoV1AddressesCascadePostResult = AxiosResponse<AddressRead>
+export type GetCitiesGeoV1CitiesGetResult = AxiosResponse<PageV1CityRead>
 export type GetCityGeoV1CitiesCityIdGetResult = AxiosResponse<CityRead>
-export type GetLocationsGeoV1LocationsGetResult = AxiosResponse<SPageLocationRead>
+export type GetLocationsGeoV1LocationsGetResult = AxiosResponse<PageV1LocationRead>
 export type CreateLocationGeoV1LocationsPostResult = AxiosResponse<LocationRead>
 export type GetLocationGeoV1LocationsLocationIdGetResult = AxiosResponse<LocationRead>
 export type PutLocationGeoV1LocationsLocationIdPutResult = AxiosResponse<LocationRead>
@@ -4884,62 +5241,62 @@ export type SetMyPreferencesNotifyV1PreferencesMyPutResult = AxiosResponse<Prefe
 export type SendTestNotificationNotifyV1TestPostResult = AxiosResponse<SendTestNotificationNotifyV1TestPost200>
 export type ListTransportsNotifyV1TransportsGetResult = AxiosResponse<TransportInfo[]>
 export type GetVapidPublicKeyNotifyV1WebpushVapidPublicKeyGetResult = AxiosResponse<VapidPublicKey>
-export type ListCollectivesOrgV1CollectivesGetResult = AxiosResponse<SPageCollectiveRead>
+export type ListCollectivesOrgV1CollectivesGetResult = AxiosResponse<PageV1CollectiveRead>
 export type CreateCollectiveOrgV1CollectivesPostResult = AxiosResponse<CollectiveRead>
 export type GetCollectiveOrgV1CollectivesCollectiveIdGetResult = AxiosResponse<CollectiveRead>
 export type PutCollectiveOrgV1CollectivesCollectiveIdPutResult = AxiosResponse<CollectiveRead>
 export type PatchCollectiveOrgV1CollectivesCollectiveIdPatchResult = AxiosResponse<CollectiveRead>
 export type DeleteCollectiveOrgV1CollectivesCollectiveIdDeleteResult = AxiosResponse<unknown>
-export type ListFacultiesOrgV1FacultiesGetResult = AxiosResponse<SPageFacultyRead>
+export type ListFacultiesOrgV1FacultiesGetResult = AxiosResponse<PageV1FacultyRead>
 export type CreateFacultyOrgV1FacultiesPostResult = AxiosResponse<FacultyRead>
 export type GetFacultyOrgV1FacultiesFacultyIdGetResult = AxiosResponse<FacultyRead>
 export type PutFacultyOrgV1FacultiesFacultyIdPutResult = AxiosResponse<FacultyRead>
 export type PatchFacultyOrgV1FacultiesFacultyIdPatchResult = AxiosResponse<FacultyRead>
 export type DeleteFacultyOrgV1FacultiesFacultyIdDeleteResult = AxiosResponse<unknown>
-export type ListOrganizationsOrgV1OrganizationsGetResult = AxiosResponse<SPageOrganizationRead>
-export type CreateOrganizationOrgV1OrganizationsPostResult = AxiosResponse<OrgSchemaOrganizationOrganizationRead>
-export type GetOrganizationOrgV1OrganizationsOrganizationIdGetResult = AxiosResponse<OrgSchemaOrganizationOrganizationRead>
-export type PutOrganizationOrgV1OrganizationsOrganizationIdPutResult = AxiosResponse<OrgSchemaOrganizationOrganizationRead>
-export type PatchOrganizationOrgV1OrganizationsOrganizationIdPatchResult = AxiosResponse<OrgSchemaOrganizationOrganizationRead>
+export type ListOrganizationsOrgV1OrganizationsGetResult = AxiosResponse<PageV1OrganizationRead>
+export type CreateOrganizationOrgV1OrganizationsPostResult = AxiosResponse<OrgApiV1SchemaOrganizationOrganizationRead>
+export type GetOrganizationOrgV1OrganizationsOrganizationIdGetResult = AxiosResponse<OrgApiV1SchemaOrganizationOrganizationRead>
+export type PatchOrganizationOrgV1OrganizationsOrganizationIdPatchResult = AxiosResponse<OrgApiV1SchemaOrganizationOrganizationRead>
 export type DeleteOrganizationOrgV1OrganizationsOrganizationIdDeleteResult = AxiosResponse<unknown>
-export type ListUniversitiesOrgV1UniversitiesGetResult = AxiosResponse<SPageUniversityRead>
+export type ListUniversitiesOrgV1UniversitiesGetResult = AxiosResponse<PageV1UniversityRead>
 export type CreateUniversityOrgV1UniversitiesPostResult = AxiosResponse<UniversityRead>
 export type GetUniversityOrgV1UniversitiesUniversityIdGetResult = AxiosResponse<UniversityRead>
 export type PutUniversityOrgV1UniversitiesUniversityIdPutResult = AxiosResponse<UniversityRead>
 export type PatchUniversityOrgV1UniversitiesUniversityIdPatchResult = AxiosResponse<UniversityRead>
 export type DeleteUniversityOrgV1UniversitiesUniversityIdDeleteResult = AxiosResponse<unknown>
-export type GetMyContactsProfileV1ContactsMyGetResult = AxiosResponse<SPageContactItemRead>
+export type GetMyContactsProfileV1ContactsMyGetResult = AxiosResponse<PageV1ContactItemRead>
 export type CreateMyContactProfileV1ContactsMyPostResult = AxiosResponse<ContactRead>
 export type PutMyContactProfileV1ContactsMyContactIdPutResult = AxiosResponse<ContactRead>
 export type PatchMyContactProfileV1ContactsMyContactIdPatchResult = AxiosResponse<ContactRead>
 export type DeleteMyContactProfileV1ContactsMyContactIdDeleteResult = AxiosResponse<unknown>
-export type GetContactsProfileV1ContactsGetResult = AxiosResponse<SPageContactItemRead>
+export type GetContactsProfileV1ContactsGetResult = AxiosResponse<PageV1ContactItemRead>
 export type CreateContactProfileV1ContactsPostResult = AxiosResponse<ContactRead>
 export type GetContactProfileV1ContactsIdGetResult = AxiosResponse<ContactRead>
 export type PutContactProfileV1ContactsIdPutResult = AxiosResponse<ContactRead>
 export type PatchContactProfileV1ContactsIdPatchResult = AxiosResponse<ContactRead>
 export type DeleteContactProfileV1ContactsIdDeleteResult = AxiosResponse<unknown>
-export type GetManyProfileV1DietsGetResult = AxiosResponse<SPageDietRead>
+export type GetManyProfileV1DietsGetResult = AxiosResponse<PageV1DietRead>
 export type CreateDietProfileV1DietsPostResult = AxiosResponse<DietRead>
 export type GetDietProfileV1DietsIdGetResult = AxiosResponse<DietRead>
 export type PutDietProfileV1DietsIdPutResult = AxiosResponse<DietRead>
 export type PatchDietProfileV1DietsIdPatchResult = AxiosResponse<DietRead>
 export type DeleteDietProfileV1DietsIdDeleteResult = AxiosResponse<unknown>
-export type GetMyPassportsProfileV1PassportsMyPostResult = AxiosResponse<SPagePassportItemRead>
-export type CreateMyPassportProfileV1PassportsMyNewPostResult = AxiosResponse<PassportRead>
+export type GetMyPassportsProfileV1PassportsMyGetResult = AxiosResponse<PageV1PassportItemRead>
+export type CreateMyPassportProfileV1PassportsMyPostResult = AxiosResponse<PassportRead>
+export type GetMyPassportProfileV1PassportsMyPassportIdGetResult = AxiosResponse<PassportRead>
 export type PutMyPassportProfileV1PassportsMyPassportIdPutResult = AxiosResponse<PassportRead>
 export type PatchMyPassportProfileV1PassportsMyPassportIdPatchResult = AxiosResponse<PassportRead>
-export type DeleteMyPassportProfileV1PassportsMyPassportIdDeleteResult = AxiosResponse<PassportRead>
-export type GetPassportsProfileV1PassportsGetResult = AxiosResponse<SPagePassportItemRead>
-export type GetPassportProfileV1PassportsPassportIdPostResult = AxiosResponse<PassportRead>
+export type DeleteMyPassportProfileV1PassportsMyPassportIdDeleteResult = AxiosResponse<unknown>
+export type GetPassportsProfileV1PassportsGetResult = AxiosResponse<PageV1PassportItemRead>
+export type GetPassportProfileV1PassportsPassportIdGetResult = AxiosResponse<PassportRead>
 export type PutPassportProfileV1PassportsPassportIdPutResult = AxiosResponse<PassportRead>
 export type PatchPassportProfileV1PassportsPassportIdPatchResult = AxiosResponse<PassportRead>
 export type DeletePassportProfileV1PassportsPassportIdDeleteResult = AxiosResponse<unknown>
-export type GetNameVariantProfileV1PassportsPassportIdNameVariantPostResult = AxiosResponse<NameVariantRead | null>
+export type GetNameVariantProfileV1PassportsPassportIdNameVariantGetResult = AxiosResponse<NameVariantRead>
 export type PutNameVariantProfileV1PassportsPassportIdNameVariantPutResult = AxiosResponse<NameVariantRead>
 export type PatchNameVariantProfileV1PassportsPassportIdNameVariantPatchResult = AxiosResponse<NameVariantRead>
 export type DeleteNameVariantProfileV1PassportsPassportIdNameVariantDeleteResult = AxiosResponse<unknown>
-export type SearchPersonProfileV1PersonsGetResult = AxiosResponse<SPagePersonItemRead>
+export type SearchPersonProfileV1PersonsGetResult = AxiosResponse<PageV1PersonItemRead>
 export type CreatePersonProfileV1PersonsPostResult = AxiosResponse<PersonRead>
 export type GetMyPersonProfileV1PersonsMyGetResult = AxiosResponse<PersonRead>
 export type PutMyPersonProfileV1PersonsMyPutResult = AxiosResponse<PersonRead>
@@ -4948,9 +5305,9 @@ export type GetPersonProfileV1PersonsPersonIdGetResult = AxiosResponse<PersonRea
 export type PutPersonProfileV1PersonsPersonIdPutResult = AxiosResponse<PersonRead>
 export type PatchPersonProfileV1PersonsPersonIdPatchResult = AxiosResponse<PersonRead>
 export type DeletePersonProfileV1PersonsPersonIdDeleteResult = AxiosResponse<unknown>
-export type GetPersonContactsProfileV1PersonsPersonIdContactsGetResult = AxiosResponse<SPageContactItemRead>
+export type GetPersonContactsProfileV1PersonsPersonIdContactsGetResult = AxiosResponse<PageV1ContactItemRead>
 export type CreatePersonContactProfileV1PersonsPersonIdContactsPostResult = AxiosResponse<ContactRead>
-export type GetManyProfileV1ProfilesGetResult = AxiosResponse<SPageProfileRead>
+export type GetManyProfileV1ProfilesGetResult = AxiosResponse<PageV1ProfileRead>
 export type CreateProfileProfileV1ProfilesPostResult = AxiosResponse<ProfileRead>
 export type GetMyProfileProfileV1ProfilesMyGetResult = AxiosResponse<ProfileRead>
 export type PutMyProfileProfileV1ProfilesMyPutResult = AxiosResponse<ProfileRead>
@@ -4959,19 +5316,19 @@ export type GetProfileProfileV1ProfilesProfileIdGetResult = AxiosResponse<Profil
 export type PutProfileProfileV1ProfilesProfileIdPutResult = AxiosResponse<ProfileRead>
 export type PatchProfileProfileV1ProfilesProfileIdPatchResult = AxiosResponse<ProfileRead>
 export type DeleteProfileProfileV1ProfilesProfileIdDeleteResult = AxiosResponse<unknown>
-export type GetStudentsProfileV1StudentsGetResult = AxiosResponse<SPageStudentRead>
+export type GetStudentsProfileV1StudentsGetResult = AxiosResponse<PageV1StudentRead>
 export type CreateStudentProfileV1StudentsPostResult = AxiosResponse<StudentRead>
 export type GetStudentProfileV1StudentsStudentIdGetResult = AxiosResponse<StudentRead>
 export type PutStudentProfileV1StudentsStudentIdPutResult = AxiosResponse<StudentRead>
 export type PatchStudentProfileV1StudentsStudentIdPatchResult = AxiosResponse<StudentRead>
 export type DeleteStudentProfileV1StudentsStudentIdDeleteResult = AxiosResponse<unknown>
-export type GetStudentDegreesProfileV1StudentsDegreesGetResult = AxiosResponse<SPageStudentDegreeRead>
+export type GetStudentDegreesProfileV1StudentsDegreesGetResult = AxiosResponse<PageV1StudentDegreeRead>
 export type CreateStudentDegreeProfileV1StudentsDegreesPostResult = AxiosResponse<StudentDegreeRead>
 export type GetStudentDegreeProfileV1StudentsDegreesDegreeIdGetResult = AxiosResponse<StudentDegreeRead>
 export type PutStudentDegreeProfileV1StudentsDegreesDegreeIdPutResult = AxiosResponse<StudentDegreeRead>
 export type PatchStudentDegreeProfileV1StudentsDegreesDegreeIdPatchResult = AxiosResponse<StudentDegreeRead>
 export type DeleteStudentDegreeProfileV1StudentsDegreesDegreeIdDeleteResult = AxiosResponse<unknown>
-export type GetStudentGroupsProfileV1StudentsGroupsGetResult = AxiosResponse<SPageStudentGroupRead>
+export type GetStudentGroupsProfileV1StudentsGroupsGetResult = AxiosResponse<PageV1StudentGroupRead>
 export type CreateStudentGroupProfileV1StudentsGroupsPostResult = AxiosResponse<StudentGroupRead>
 export type GetStudentGroupProfileV1StudentsGroupsGroupIdGetResult = AxiosResponse<StudentGroupRead>
 export type PutStudentGroupProfileV1StudentsGroupsGroupIdPutResult = AxiosResponse<StudentGroupRead>
@@ -5002,7 +5359,7 @@ export type CreateTelegramLinkTokenUserV1UsersMeTelegramLinkTokenPostResult = Ax
 export type GetTelegramLoginConfigUserV1AuthTelegramConfigGetResult = AxiosResponse<GetTelegramLoginConfigUserV1AuthTelegramConfigGet200>
 export type LoginWithTelegramUserV1AuthTelegramLoginPostResult = AxiosResponse<LoginWithTelegramUserV1AuthTelegramLoginPost200>
 export type CheckUsernameUserV1UsersCheckUsernameGetResult = AxiosResponse<CheckResponse>
-export type GetManyUserV1UsersGetResult = AxiosResponse<SPageUserRead>
+export type GetManyUserV1UsersGetResult = AxiosResponse<PageV1UserRead>
 export type CreateInviteTokenUserV1UsersInvitePostResult = AxiosResponse<InviteTokenRead>
 export type LinkPersonUserV1UsersUserIdPersonPatchResult = AxiosResponse<UserRead>
 export type LinkInviteUserV1UsersMeLinkInvitePostResult = AxiosResponse<UserRead>

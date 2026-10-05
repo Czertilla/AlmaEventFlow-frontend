@@ -6,6 +6,7 @@
         :get-subtitle="(u) => u.email"
         :fetch-items="fetchUsers"
         :sort-options="sortOptions"
+        :filters="filters"
         default-sort="username"
         @edit="openEdit"
         @delete="handleDelete"
@@ -31,10 +32,19 @@ import ResourceTable from '@/components/admin/ResourceTable.vue'
 import ResourceFormModal from '@/components/admin/ResourceFormModal.vue'
 import { getManyUserV1UsersGet, usersPatchUserUserV1UsersIdPatch, usersDeleteUserUserV1UsersIdDelete } from '@/api/generated/almaEventFlow'
 import type { UserRead } from '@/api/generated/almaEventFlow'
-import type { ColumnDef, SortOption } from '@/components/admin/ResourceTable.vue'
+import type { ColumnDef, SortOption, FilterDef } from '@/components/admin/ResourceTable.vue'
+import { TIMESTAMP_FILTERS, TIMESTAMP_SORT_OPTIONS } from '@/utils/timestamps'
 import type { FormField } from '@/components/admin/ResourceFormModal.vue'
 
 const tableRef = ref()
+
+const filters: FilterDef[] = [
+  { key: 'is_active', label: 'Активен', type: 'select', options: [{ value: 'true', label: 'Да' }, { value: 'false', label: 'Нет' }] },
+  { key: 'is_verified', label: 'Верифицирован', type: 'select', options: [{ value: 'true', label: 'Да' }, { value: 'false', label: 'Нет' }] },
+  { key: 'is_superuser', label: 'Администратор', type: 'select', options: [{ value: 'true', label: 'Да' }, { value: 'false', label: 'Нет' }] },
+  { key: 'person_id__isnull', label: 'Персона', type: 'select', options: [{ value: 'true', label: 'Не привязана' }, { value: 'false', label: 'Привязана' }] },
+  ...TIMESTAMP_FILTERS,
+]
 
 const columns: ColumnDef[] = [
   { key: 'username', label: 'Username', sortable: true },
@@ -44,11 +54,15 @@ const columns: ColumnDef[] = [
   { key: 'is_verified', label: 'Верифицирован', render: (u) => u.is_verified ? 'Да' : 'Нет' },
 ]
 
-const sortOptions: SortOption[] = [
+const baseSortOptions: SortOption[] = [
   { value: 'username', label: 'Имени' },
   { value: 'email', label: 'Email' },
   { value: 'is_active', label: 'Активности' },
+  { value: 'is_verified', label: 'Верификации' },
+  { value: 'is_superuser', label: 'Роли' },
 ]
+
+const sortOptions: SortOption[] = [...baseSortOptions, ...TIMESTAMP_SORT_OPTIONS]
 
 const editFields: FormField[] = [
   { key: 'username', label: 'Username', type: 'text', required: true },

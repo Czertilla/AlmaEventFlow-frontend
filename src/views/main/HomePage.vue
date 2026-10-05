@@ -220,7 +220,7 @@ import {
   patchMyAttendanceEventV1MeMembersMemberIdAttendanceAttendanceIdPatch,
   patchMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdAttendanceAttendanceIdPatch,
 } from '@/api/generated/almaEventFlow'
-import type { EventRead, SPageEventRead, EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1 } from '@/api/generated/almaEventFlow'
+import type { EventRead, PageV1EventRead, EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1 } from '@/api/generated/almaEventFlow'
 import CalendarGrid from '@/components/calendar/CalendarGrid.vue'
 import MiniCalendar from '@/components/calendar/MiniCalendar.vue'
 import EventList from '@/components/event/EventList.vue'
@@ -378,8 +378,8 @@ async function fetchEventWindow(anchorStr: string): Promise<EventWindow<EventRea
     getEventsEventV1EventsGet({ date__gte: anchorStr, order_by: 'date', limit: EVENTS_PAGE_SIZE }, eventsOptions()),
   ])
   return buildEventWindow(
-    (pastResp.data as SPageEventRead).items,
-    (futureResp.data as SPageEventRead).items,
+    (pastResp.data as PageV1EventRead).items,
+    (futureResp.data as PageV1EventRead).items,
     EVENTS_PAGE_SIZE,
   )
 }
@@ -414,7 +414,7 @@ async function loadMoreUp(): Promise<boolean> {
       limit: EVENTS_PAGE_SIZE,
       order_by: '-date',
     }, eventsOptions())
-    const items = (response.data as SPageEventRead).items
+    const items = (response.data as PageV1EventRead).items
     hasMoreUp.value = items.length === EVENTS_PAGE_SIZE
     if (items.length === 0) return false
     const ids = newEventIds(items)
@@ -445,7 +445,7 @@ async function loadMoreDown(): Promise<boolean> {
       limit: EVENTS_PAGE_SIZE,
       order_by: 'date',
     }, eventsOptions())
-    const items = (response.data as SPageEventRead).items
+    const items = (response.data as PageV1EventRead).items
     hasMoreDown.value = items.length === EVENTS_PAGE_SIZE
     if (items.length === 0) return false
     const ids = newEventIds(items)
@@ -499,7 +499,7 @@ async function checkCalendarFill() {
     if (firstDate) {
       try {
         const resp = await getEventsEventV1EventsGet({ date__lte: firstDate, limit: 3, order_by: '-date' }, eventsOptions())
-        const items = (resp.data as SPageEventRead).items
+        const items = (resp.data as PageV1EventRead).items
         if (!items.some((e) => e.date && e.date < firstDate)) hasMoreUp.value = false
       } catch { /* ignore */ }
     }
@@ -509,7 +509,7 @@ async function checkCalendarFill() {
     if (lastDate) {
       try {
         const resp = await getEventsEventV1EventsGet({ date__gte: lastDate, limit: 3, order_by: 'date' }, eventsOptions())
-        const items = (resp.data as SPageEventRead).items
+        const items = (resp.data as PageV1EventRead).items
         if (!items.some((e) => e.date && e.date > lastDate)) hasMoreDown.value = false
       } catch { /* ignore */ }
     }

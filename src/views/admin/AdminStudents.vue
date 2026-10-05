@@ -4,6 +4,8 @@
       :columns="columns"
       :get-label="(s) => s.student_id"
       :get-subtitle="(s) => personName(s.person) || s.id"
+      :sort-options="sortOptions"
+      :filters="filters"
       :fetch-items="fetchItems"
       add-label="Добавить"
       @add="openCreate"
@@ -37,10 +39,24 @@ import {
   searchPersonProfileV1PersonsGet,
   listOrganizationsOrgV1OrganizationsGet,
 } from '@/api/generated/almaEventFlow'
-import type { ColumnDef } from '@/components/admin/ResourceTable.vue'
+import type { ColumnDef, SortOption, FilterDef } from '@/components/admin/ResourceTable.vue'
+import { TIMESTAMP_FILTERS, TIMESTAMP_SORT_OPTIONS } from '@/utils/timestamps'
 import type { FormField } from '@/components/admin/ResourceFormModal.vue'
 
 const tableRef = ref()
+
+const filters: FilterDef[] = [
+  { key: 'is_active', label: 'Активен', type: 'select', options: [{ value: 'true', label: 'Да' }, { value: 'false', label: 'Нет' }] },
+  { key: 'is_budget', label: 'Бюджет', type: 'select', options: [{ value: 'true', label: 'Да' }, { value: 'false', label: 'Нет' }] },
+  { key: 'is_full', label: 'Очная форма', type: 'select', options: [{ value: 'true', label: 'Да' }, { value: 'false', label: 'Нет' }] },
+  ...TIMESTAMP_FILTERS,
+]
+
+const sortOptions: SortOption[] = [
+  { value: 'student_id', label: 'Студ. билету' },
+  { value: 'is_active', label: 'Активности' },
+  ...TIMESTAMP_SORT_OPTIONS,
+]
 
 const personName = (p: any) => p ? [p.surname, p.name, p.patronymic].filter(Boolean).join(' ') : ''
 
