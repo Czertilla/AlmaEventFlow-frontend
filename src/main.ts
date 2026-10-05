@@ -33,6 +33,7 @@ import '@ionic/vue/css/display.css';
 import '@ionic/vue/css/palettes/dark.class.css';
 
 import './theme/variables.css';
+import './theme/autofill.css';
 
 function resolveAnimated(): boolean {
   try {
