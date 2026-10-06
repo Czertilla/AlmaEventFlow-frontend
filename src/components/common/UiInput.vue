@@ -2,6 +2,7 @@
   <UiField
     v-bind="rootAttrs()"
     :label="label"
+    :float="float"
     :filled="hasValue"
     :invalid="invalid"
     :disabled="disabled"
@@ -36,6 +37,7 @@ defineOptions({ inheritAttrs: false })
 const props = defineProps<{
   modelValue?: string | number | null
   label?: string
+  float?: boolean
   invalid?: boolean
   disabled?: boolean
   error?: string

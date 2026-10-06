@@ -264,6 +264,7 @@
                   :key="i"
                   v-model="form.stages[i]"
                   :start-suggestion="stageStartSuggestion(i)"
+                  :auto-name="stageAutoNameList[i]"
                   @remove="removeStage(i)"
                 >
                   <span v-if="s.fromTemplate" class="stage-template-badge">из шаблона</span>
@@ -371,7 +372,7 @@ import {
   createMyCollectiveParticipationEventV1MeCollectivesCollectiveIdParticipationsPost,
 } from '@/api/generated/almaEventFlow'
 import { resolvePersonName, rememberMemberPerson, shortId } from '@/utils/names'
-import { stageEffectiveName, stageEndBeforeStart } from '@/utils/stages'
+import { stageAutoNames, stageEffectiveNames, stageEndBeforeStart } from '@/utils/stages'
 import type { EventRead, EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1, MemberRead, RoleRead, LocationRead } from '@/api/generated/almaEventFlow'
 
 const EVENT_NAME_MAX = 128
@@ -539,6 +540,8 @@ function setPlanMode(mode: 'time' | 'stages') {
   }
   planMode.value = mode
 }
+
+const stageAutoNameList = computed(() => stageAutoNames(form.value.stages))
 
 const hasStageTimeError = computed(() =>
   planMode.value === 'stages' && form.value.stages.some(stageEndBeforeStart),
@@ -781,6 +784,7 @@ async function submit() {
       })
     } else {
       // Режим «время» → один этап «Начало»; иначе — подробные этапы формы
+      const stageNames = stageEffectiveNames(form.value.stages)
       const stages = planMode.value === 'time'
         ? (startTime.value && form.value.date
             ? [{
@@ -790,14 +794,16 @@ async function submit() {
                 description: null,
               }]
             : [])
-        : form.value.stages
-            .filter((s) => stageEffectiveName(s) && s.start_at)
-            .map((s) => ({
-              name: stageEffectiveName(s),
-              start_at: toTzIso(s.start_at),
-              end_at: s.end_at ? toTzIso(s.end_at) : null,
-              description: s.description ?? null,
-            }))
+        : form.value.stages.flatMap((s, i) =>
+            stageNames[i] && s.start_at
+              ? [{
+                  name: stageNames[i],
+                  start_at: toTzIso(s.start_at),
+                  end_at: s.end_at ? toTzIso(s.end_at) : null,
+                  description: s.description ?? null,
+                }]
+              : [],
+          )
       // ТЗ: настройка не активирована → member_ids = null (None);
       // но для шаблона — именно пустой список, т.к. шаблон не имеет участников
       let memberIds: string[] | null

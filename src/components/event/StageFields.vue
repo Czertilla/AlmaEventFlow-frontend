@@ -5,8 +5,9 @@
         class="stage-fields-name"
         label="Название этапа"
         counter
+        :float="!!nameHint"
         :model-value="modelValue.name"
-        :placeholder="stageNamePlaceholder(modelValue)"
+        :placeholder="nameHint || STAGE_NAME_PLACEHOLDER"
         :maxlength="STAGE_NAME_MAX"
         @update:model-value="patch({ name: $event })"
       />
@@ -55,18 +56,22 @@
 <script setup lang="ts" generic="T extends StageDraft">
 import { IonIcon } from '@ionic/vue'
 import { trashOutline } from 'ionicons/icons'
+import { computed } from 'vue'
 import DateTimeField from '@/components/common/DateTimeField.vue'
 import UiInput from '@/components/common/UiInput.vue'
 import UiTextarea from '@/components/common/UiTextarea.vue'
 import {
   STAGE_DESCRIPTION_MAX,
   STAGE_NAME_MAX,
+  STAGE_NAME_PLACEHOLDER,
+  stageAutoNames,
   stageEndBeforeStart,
-  stageNamePlaceholder,
   type StageDraft,
 } from '@/utils/stages'
 
-const props = defineProps<{ modelValue: T; startSuggestion?: string }>()
+const props = defineProps<{ modelValue: T; startSuggestion?: string; autoName?: string }>()
+
+const nameHint = computed(() => props.autoName ?? stageAutoNames([props.modelValue])[0] ?? '')
 
 const emit = defineEmits<{ 'update:modelValue': [value: T]; remove: [] }>()
 

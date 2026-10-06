@@ -2,7 +2,6 @@ import { mount } from '@vue/test-utils'
 import { afterEach, describe, expect, test } from 'vitest'
 import { defineComponent, h } from 'vue'
 import StageFields from '@/components/event/StageFields.vue'
-import { stageEffectiveName, stageEndBeforeStart, stageNamePlaceholder } from '@/utils/stages'
 
 const IonModal = defineComponent({
   name: 'IonModal',
@@ -48,10 +47,31 @@ describe('StageFields', () => {
     ])
   })
 
-  test('the name hint comes from the first word of the description', () => {
+  test('the name hint comes from the first words of the description', () => {
     const wrapper = stage({ description: 'Сбор участников в зале' })
 
-    expect(wrapper.findAll('input')[0]!.attributes('placeholder')).toBe('Сбор')
+    expect(wrapper.findAll('input')[0]!.attributes('placeholder')).toBe('Сбор участников')
+  })
+
+  test('the hint the list works out takes the place of the one of a lone stage', () => {
+    const wrapper = stage({ description: 'Сбор участников в зале' }, { autoName: 'Сбор участников в' })
+
+    expect(wrapper.findAll('input')[0]!.attributes('placeholder')).toBe('Сбор участников в')
+  })
+
+  test('the label floats so the automatic name can be seen without focus', () => {
+    const named = stage({ description: 'Сбор участников в зале' }).get('.ui-field')
+    const bare = stage().get('.ui-field')
+
+    expect(named.classes()).toContain('ui-field--float')
+    expect(bare.classes()).not.toContain('ui-field--float')
+    expect(stage().findAll('input')[0]!.attributes('placeholder')).toBe('Название этапа')
+  })
+
+  test('a stage with a name of its own has no automatic one', () => {
+    const wrapper = stage({ name: 'Финал', description: 'Сбор участников в зале' })
+
+    expect(wrapper.findAll('input')[0]!.attributes('placeholder')).toBe('Название этапа')
   })
 
   test('an end before the start is reported on the end field', () => {
@@ -78,22 +98,5 @@ describe('StageFields', () => {
 
     expect(wrapper.emitted('remove')).toHaveLength(1)
     expect(wrapper.get('.extra').text()).toBe('из шаблона')
-  })
-})
-
-describe('stage helpers', () => {
-  test('the effective name falls back to the first word of the description', () => {
-    expect(stageEffectiveName({ name: '  ', start_at: '', end_at: '', description: 'Сбор участников' })).toBe('Сбор')
-    expect(stageEffectiveName({ name: 'Финал', start_at: '', end_at: '', description: 'Сбор' })).toBe('Финал')
-  })
-
-  test('the placeholder is the generic one without a description', () => {
-    expect(stageNamePlaceholder({ name: '', start_at: '', end_at: '', description: null })).toBe('Название этапа')
-  })
-
-  test('only a range with both ends can be reversed', () => {
-    expect(stageEndBeforeStart({ name: '', start_at: '2026-10-05T12:00', end_at: '' })).toBe(false)
-    expect(stageEndBeforeStart({ name: '', start_at: '2026-10-05T12:00', end_at: '2026-10-05T12:00' })).toBe(false)
-    expect(stageEndBeforeStart({ name: '', start_at: '2026-10-05T12:00', end_at: '2026-10-05T11:59' })).toBe(true)
   })
 })

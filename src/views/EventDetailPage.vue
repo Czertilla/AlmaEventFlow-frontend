@@ -293,12 +293,13 @@
               :key="s.id ?? `new-${i}`"
               v-model="stageForms[i]"
               :start-suggestion="stageStartSuggestion(i)"
+              :auto-name="stageAutoNameList[i]"
               @remove="deleteStage(i)"
             >
               <ion-button
                 size="small"
                 expand="block"
-                :disabled="stagePending || !stageEffectiveName(s) || !s.start_at || stageEndBeforeStart(s) || !stageIsDirty(s)"
+                :disabled="stagePending || !stageNameList[i] || !s.start_at || stageEndBeforeStart(s) || !stageIsDirty(s)"
                 @click="saveStage(i)"
               >
                 {{ s.id ? 'Сохранить этап' : 'Добавить этап' }}
@@ -412,7 +413,7 @@ import UiSelect from '@/components/common/UiSelect.vue'
 import UiTextarea from '@/components/common/UiTextarea.vue'
 import StageFields from '@/components/event/StageFields.vue'
 import { useEntityPicker } from '@/composables/useEntityPicker'
-import { stageEffectiveName, stageEndBeforeStart } from '@/utils/stages'
+import { stageAutoNames, stageEffectiveNames, stageEndBeforeStart } from '@/utils/stages'
 import type {
   EventRead, EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1,
   EventPriorityEnumV1, StageRead, LocationRead,
@@ -562,6 +563,8 @@ interface StageForm { id?: string; name: string; start_at: string; end_at: strin
 const showStagesModal = ref(false)
 const stagePending = ref(false)
 const stageForms = ref<StageForm[]>([])
+const stageAutoNameList = computed(() => stageAutoNames(stageForms.value))
+const stageNameList = computed(() => stageEffectiveNames(stageForms.value))
 
 const stageOriginals = new Map<string, string>()
 
@@ -614,7 +617,7 @@ async function reloadStages() {
 async function saveStage(i: number) {
   const cid = editableCollectiveId.value
   const s = stageForms.value[i]
-  const name = stageEffectiveName(s)
+  const name = stageNameList.value[i]
   if (!cid || !name || !s.start_at || stageEndBeforeStart(s)) return
   stagePending.value = true
   try {
