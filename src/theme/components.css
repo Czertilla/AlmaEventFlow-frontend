@@ -458,6 +458,12 @@ ion-select.ui-field-control::part(icon) {
   color: var(--ion-color-primary);
 }
 
+.ui-btn--sm {
+  min-height: 36px;
+  padding: 0 14px;
+  font-size: var(--fs-md);
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;

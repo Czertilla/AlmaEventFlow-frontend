@@ -1,4 +1,6 @@
 import axios from 'axios'
+import { isSessionRejected, isUnreachable, serviceOf } from '@/api/availability'
+import { markUp, suspect } from '@/composables/useBackendStatus'
 
 const BASE_URL = import.meta.env.VITE_API_URL || ''
 
@@ -24,42 +26,52 @@ axios.interceptors.request.use((config) => {
   return config
 })
 
-let isRefreshing = false
-let pendingQueue: Array<{ resolve: () => void; reject: (err: unknown) => void }> = []
+let refreshing: Promise<string> | null = null
+
+// Один refresh на всех: бэкенд отзывает всю сессию, если refresh-токен
+// предъявлен дважды, поэтому параллельные или повторные вызовы недопустимы.
+export function refreshAccessToken(): Promise<string> {
+  refreshing ??= axios
+    .post('/user/v1/auth/jwt/refresh')
+    .then(({ data }) => {
+      setAccessToken(data.access_token)
+      return data.access_token as string
+    })
+    .catch((error) => {
+      if (isSessionRejected(error)) setAccessToken(null)
+      throw error
+    })
+    .finally(() => {
+      refreshing = null
+    })
+  return refreshing
+}
+
+function trackAvailability(url: string | undefined, error?: unknown) {
+  const service = serviceOf(url)
+  if (!service) return
+  if (error && isUnreachable(error)) suspect(service)
+  else markUp(service)
+}
 
 // Response interceptor — refresh on 401
 axios.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    trackAvailability(response.config.url)
+    return response
+  },
   async (error) => {
     const originalRequest = error.config
+    trackAvailability(originalRequest?.url, error)
     // Don't retry refresh requests — prevents infinite loop
     if (originalRequest.url?.includes('/auth/jwt/refresh')) {
       throw error
     }
     if (error.response?.status === 401 && !originalRequest._retry) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          pendingQueue.push({ resolve: () => resolve(axios(originalRequest)), reject })
-        })
-      }
       originalRequest._retry = true
-      isRefreshing = true
-      try {
-        const { data } = await axios.post('/user/v1/auth/jwt/refresh')
-        const newToken: string = data.access_token
-        setAccessToken(newToken)
-        originalRequest.headers.Authorization = `Bearer ${newToken}`
-        pendingQueue.forEach((p) => p.resolve())
-        pendingQueue = []
-        return axios(originalRequest)
-      } catch (refreshError) {
-        setAccessToken(null)
-        pendingQueue.forEach((p) => p.reject(refreshError))
-        pendingQueue = []
-        throw refreshError
-      } finally {
-        isRefreshing = false
-      }
+      const newToken = await refreshAccessToken()
+      originalRequest.headers.Authorization = `Bearer ${newToken}`
+      return axios(originalRequest)
     }
     throw error
   },

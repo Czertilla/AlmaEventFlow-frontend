@@ -5,6 +5,7 @@
          вообще -- полоса загрузки закрывает это окно. -->
     <div v-if="isNavigating" class="nav-progress" />
     <div class="app-shell">
+      <BackendStatusBanner />
       <!-- Desktop Header (normal flow — never overlaps content) -->
       <DesktopHeader v-if="isDesktop && auth.isAuthenticated" />
       <div class="app-outlet">
@@ -29,6 +30,7 @@ import { useEventCalendarStore } from '@/stores/eventCalendar'
 import { usePlatform } from '@/composables/usePlatform'
 import { isNavigating } from '@/composables/useNavigationProgress'
 import { checkForNewVersion } from '@/utils/changelogVersion'
+import BackendStatusBanner from '@/components/layout/BackendStatusBanner.vue'
 import DesktopHeader from '@/components/layout/DesktopHeader.vue'
 import ProfileMenu from '@/components/layout/ProfileMenu.vue'
 

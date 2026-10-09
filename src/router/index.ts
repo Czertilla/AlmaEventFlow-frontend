@@ -3,6 +3,7 @@ import type { RouteRecordRaw } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePrincipalStore } from '@/stores/principal'
 import { isNavigating } from '@/composables/useNavigationProgress'
+import { verifyReachable } from '@/composables/useBackendStatus'
 
 // Аутентифицированные страницы живут детьми TabsShell, поэтому их рендерит
 // внутренний ion-router-outlet внутри ion-tabs (отдельные стеки на вкладку,
@@ -115,6 +116,12 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('@/views/auth/LinkInvitePage.vue'),
     meta: { auth: true },
   },
+  // Сессию нельзя ни подтвердить, ни отменить, пока бэкенд молчит: ждём его здесь, а не на логине
+  {
+    path: '/unavailable',
+    component: () => import('@/views/UnavailablePage.vue'),
+    meta: { offline: true },
+  },
   // Authenticated app shell with tab navigation
   {
     path: '/',
@@ -133,16 +140,21 @@ const router = createRouter({
   routes,
 })
 
-// Попытку refresh делаем один раз за загрузку приложения: иначе аноним дёргает
-// /auth/jwt/refresh на каждой навигации (после первой неудачи токена так и нет).
-let refreshAttempted = false
-
 router.beforeEach(async (to, _from, next) => {
   isNavigating.value = true
+  if (to.meta.offline) return next()
   const auth = useAuthStore()
-  if (!auth.isAuthenticated && !auth.accessToken && !refreshAttempted) {
-    refreshAttempted = true
-    await auth.tryRefresh()
+  // Попытку refresh делаем один раз за загрузку приложения: иначе аноним дёргает
+  // /auth/jwt/refresh на каждой навигации (после первой неудачи токена так и нет).
+  if (!auth.isAuthenticated && !auth.accessToken && !auth.refreshAttempted) {
+    auth.refreshAttempted = true
+    let outcome = await auth.tryRefresh()
+    // Сбой при живом сервисе -- обычно мгновенная помеха связи: одной повторной попытки хватает
+    if (outcome === 'unknown' && (await verifyReachable('user'))) outcome = await auth.tryRefresh()
+    if (outcome === 'unknown') {
+      auth.refreshAttempted = false
+      return next({ path: '/unavailable', query: { next: to.fullPath } })
+    }
   }
   const isAuthenticated = auth.isAuthenticated
   const isSuperuser = auth.isSuperuser

@@ -1,12 +1,12 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { setAccessToken, getAccessToken } from '@/api/client'
+import { setAccessToken, getAccessToken, refreshAccessToken } from '@/api/client'
+import { isSessionRejected } from '@/api/availability'
 import { decodeJwt, type JwtPayload } from '@/utils/jwt'
 import { useEventCalendarStore } from './eventCalendar'
 import {
   loginUserV1AuthJwtLoginPost,
   logoutUserV1AuthJwtLogoutPost,
-  refreshUserV1AuthJwtRefreshPost,
   usersCurrentUserUserV1UsersMeGet,
   usersPatchCurrentUserUserV1UsersMePatch,
   registerRegisterUserV1AuthRegisterPost,
@@ -22,10 +22,14 @@ import type {
   TelegramWidgetAuth,
 } from '@/api/generated/almaEventFlow'
 
+// 'unknown': бэкенд не ответил про сессию (сеть, 5xx) -- её нельзя ни считать, ни сбрасывать
+export type RefreshOutcome = 'signed-in' | 'signed-out' | 'unknown'
+
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<UserRead | null>(null)
   const accessToken = ref<string | null>(getAccessToken())
   const jwtPayload = ref<JwtPayload | null>(null)
+  const refreshAttempted = ref(false)
 
   const isAuthenticated = computed(() => !!accessToken.value)
   const isSuperuser = computed(() => jwtPayload.value?.sup === true)
@@ -63,17 +67,16 @@ export const useAuthStore = defineStore('auth', () => {
     await fetchUser()
   }
 
-  async function tryRefresh() {
+  async function tryRefresh(): Promise<RefreshOutcome> {
     try {
-      const response = await refreshUserV1AuthJwtRefreshPost()
-      const data = response.data as { access_token: string }
-      setAccess(data.access_token)
-      await fetchUser()
-      return true
-    } catch {
+      setAccess(await refreshAccessToken())
+    } catch (error) {
+      if (!isSessionRejected(error)) return 'unknown'
       clearAuth()
-      return false
+      return 'signed-out'
     }
+    await fetchUser()
+    return 'signed-in'
   }
 
   async function fetchUser() {
@@ -119,6 +122,7 @@ export const useAuthStore = defineStore('auth', () => {
     user,
     accessToken,
     jwtPayload,
+    refreshAttempted,
     isAuthenticated,
     isSuperuser,
     login,
