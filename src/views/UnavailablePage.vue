@@ -2,13 +2,10 @@
   <ion-page>
     <ion-content class="unavailable-page">
       <div class="unavailable">
-        <ion-icon :icon="cloudOfflineOutline" class="unavailable-icon" />
+        <ion-icon :icon="icon" class="unavailable-icon" />
         <template v-if="down">
-          <h1>Сервер недоступен</h1>
-          <p>
-            Не удаётся связаться с сервером. Ваш вход сохранён: как только связь
-            восстановится, мы вернём вас на нужную страницу.
-          </p>
+          <h1>{{ copy.title }}</h1>
+          <p>{{ copy.text }}</p>
           <button class="ui-btn ui-btn--primary" :disabled="isChecking" @click="recheck">
             {{ isChecking ? 'Проверяем…' : 'Повторить сейчас' }}
           </button>
@@ -27,13 +24,16 @@
 import { computed, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { IonPage, IonContent, IonIcon } from '@ionic/vue'
-import { cloudOfflineOutline } from 'ionicons/icons'
+import { cloudOfflineOutline, constructOutline } from 'ionicons/icons'
 import { useBackendStatus } from '@/composables/useBackendStatus'
+import { backendCopy } from '@/utils/backendCopy'
 
 const route = useRoute()
 const router = useRouter()
-const { isDown, isChecking, recheck } = useBackendStatus()
+const { isDown, reasonOf, isChecking, recheck } = useBackendStatus()
 const down = computed(() => isDown('user'))
+const copy = computed(() => backendCopy(reasonOf('user')))
+const icon = computed(() => (down.value && copy.value.icon === 'maintenance' ? constructOutline : cloudOfflineOutline))
 
 function target(): string {
   const next = route.query.next

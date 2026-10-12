@@ -87,3 +87,15 @@ test('asks again after the backend is back and only then decides about the login
   expect(stub.to(REFRESH)).toHaveLength(2)
   expect(router.currentRoute.value.path).toBe('/auth/login')
 })
+
+test('tells planned work from a lost connection when the proxy says so', async () => {
+  const page: Reply = { status: 503, data: { status: 'maintenance', retry_after: 120 } }
+  refresh = [page]
+  health = page
+
+  await go('/')
+
+  expect(router.currentRoute.value.path).toBe('/unavailable')
+  expect(useBackendStatus().reasonOf('user')).toBe('maintenance')
+  expect(stub.to(REFRESH)).toHaveLength(1)
+})

@@ -1,7 +1,7 @@
 <template>
   <div v-if="anyDown && !route.meta.offline" class="backend-banner" role="status">
-    <ion-icon :icon="cloudOfflineOutline" class="backend-banner-icon" />
-    <span class="backend-banner-text">Нет связи с сервером. Вход сохранён, переподключаемся.</span>
+    <ion-icon :icon="copy.icon === 'maintenance' ? constructOutline : cloudOfflineOutline" class="backend-banner-icon" />
+    <span class="backend-banner-text">{{ copy.banner }}</span>
     <button class="ui-btn ui-btn--ghost ui-btn--sm" :disabled="isChecking" @click="recheck">
       Повторить
     </button>
@@ -9,13 +9,16 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { IonIcon } from '@ionic/vue'
-import { cloudOfflineOutline } from 'ionicons/icons'
+import { cloudOfflineOutline, constructOutline } from 'ionicons/icons'
 import { useBackendStatus } from '@/composables/useBackendStatus'
+import { backendCopy } from '@/utils/backendCopy'
 
 const route = useRoute()
-const { anyDown, isChecking, recheck } = useBackendStatus()
+const { anyDown, reason, isChecking, recheck } = useBackendStatus()
+const copy = computed(() => backendCopy(reason.value))
 </script>
 
 <style scoped>

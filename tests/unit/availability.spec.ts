@@ -54,7 +54,7 @@ describe('probe', () => {
   test('is alive only when the service says ok', async () => {
     stub = stubBackend(() => ({ status: 200, data: { status: 'ok', service: 'user' } }))
 
-    expect(await probe('user')).toBe(true)
+    expect(await probe('user')).toEqual({ alive: true })
     expect(stub.calls[0].url).toMatch(/\/user\/v1\/health$/)
     expect(stub.calls[0].withCredentials).toBe(false)
   })
@@ -62,18 +62,39 @@ describe('probe', () => {
   test('is not alive for a page that is not the health answer', async () => {
     stub = stubBackend(() => ({ status: 200, data: '<html></html>' }))
 
-    expect(await probe('user')).toBe(false)
+    expect(await probe('user')).toEqual({ alive: false })
   })
 
   test.each([{ status: 503 }, 'network' as const])('is not alive on %j', async (reply) => {
     stub = stubBackend(() => reply)
 
-    expect(await probe('user')).toBe(false)
+    expect(await probe('user')).toEqual({ alive: false })
   })
 
   test('is alive when the service answers, even with an error of its own', async () => {
     stub = stubBackend(() => ({ status: 500, data: { detail: 'boom' } }))
 
-    expect(await probe('user')).toBe(true)
+    expect(await probe('user')).toEqual({ alive: true })
+  })
+
+  test.each(['maintenance', 'unavailable'] as const)(
+    'reads the reason from the %s page of the proxy',
+    async (reason) => {
+      stub = stubBackend(() => ({ status: 503, data: { status: reason, message: 'x', retry_after: 30 } }))
+
+      expect(await probe('user')).toEqual({ alive: false, reason })
+    },
+  )
+
+  test('does not take the own 503 of an application for a page of the proxy', async () => {
+    stub = stubBackend(() => ({ status: 503, data: { detail: 'WEBPUSH_NOT_CONFIGURED' } }))
+
+    expect(await probe('user')).toEqual({ alive: false })
+  })
+
+  test('ignores a status that only looks like a page when the code is not 503', async () => {
+    stub = stubBackend(() => ({ status: 500, data: { status: 'maintenance' } }))
+
+    expect(await probe('user')).toEqual({ alive: true })
   })
 })

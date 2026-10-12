@@ -31,15 +31,33 @@ export function serviceOf(url: string | undefined): string | null {
   return path?.match(SERVICE_PATH)?.[1] ?? null
 }
 
+export type OutageReason = 'maintenance' | 'unavailable'
+
+export interface ProbeResult {
+  alive: boolean
+  reason?: OutageReason
+}
+
+// Страницы Traefik (docker/status): 503 с JSON {status: "maintenance" | "unavailable"}.
+// Это прямой ответ инфраструктуры, а не помеха связи.
+function outageReason(error: { response?: { status: number; data?: unknown } }): OutageReason | undefined {
+  if (error.response?.status !== 503) return undefined
+  const status = (error.response.data as { status?: unknown } | null)?.status
+  return status === 'maintenance' || status === 'unavailable' ? status : undefined
+}
+
 // Отдельный инстанс: без интерсепторов и cookie, чтобы проба не запускала refresh.
 // Любой ответ самого сервиса (даже 500) значит, что связь есть.
-export async function probe(service: string): Promise<boolean> {
+export async function probe(service: string): Promise<ProbeResult> {
   try {
     const { data } = await axios
       .create()
       .get(`${BASE_URL}/${service}/v1/health`, { timeout: PROBE_TIMEOUT_MS, withCredentials: false })
-    return data?.status === 'ok'
+    return { alive: data?.status === 'ok' }
   } catch (error) {
-    return isAxiosError(error) && !!error.response && !isUnreachable(error)
+    if (!isAxiosError(error) || !error.response) return { alive: false }
+    const reason = outageReason(error)
+    if (reason) return { alive: false, reason }
+    return { alive: !isUnreachable(error) }
   }
 }

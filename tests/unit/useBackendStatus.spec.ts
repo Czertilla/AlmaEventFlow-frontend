@@ -18,7 +18,7 @@ describe('verifyReachable', () => {
 
   test('is reachable on the first answer and marks nothing down', async () => {
     const { probe, verifyReachable, useBackendStatus } = await load()
-    probe.mockResolvedValue(true)
+    probe.mockResolvedValue({ alive: true })
 
     expect(await verifyReachable('user')).toBe(true)
 
@@ -28,7 +28,7 @@ describe('verifyReachable', () => {
 
   test('tolerates silent probes as long as one answers', async () => {
     const { probe, verifyReachable, useBackendStatus } = await load()
-    probe.mockResolvedValueOnce(false).mockResolvedValueOnce(false).mockResolvedValueOnce(true)
+    probe.mockResolvedValueOnce({ alive: false }).mockResolvedValueOnce({ alive: false }).mockResolvedValueOnce({ alive: true })
 
     const result = verifyReachable('user')
     await vi.advanceTimersByTimeAsync(2000)
@@ -40,7 +40,7 @@ describe('verifyReachable', () => {
 
   test('marks the service down only when every probe stays silent', async () => {
     const { probe, verifyReachable, useBackendStatus } = await load()
-    probe.mockResolvedValue(false)
+    probe.mockResolvedValue({ alive: false })
 
     const result = verifyReachable('user')
     await vi.advanceTimersByTimeAsync(1999)
@@ -54,7 +54,7 @@ describe('verifyReachable', () => {
 
   test('callers share one verification', async () => {
     const { probe, verifyReachable } = await load()
-    probe.mockResolvedValue(true)
+    probe.mockResolvedValue({ alive: true })
 
     const results = await Promise.all([verifyReachable('user'), verifyReachable('user')])
 
@@ -69,7 +69,7 @@ describe('suspect', () => {
 
   test('only starts a check, so one failed request never shows an outage', async () => {
     const { probe, suspect, useBackendStatus } = await load()
-    probe.mockResolvedValue(true)
+    probe.mockResolvedValue({ alive: true })
 
     suspect('user')
     await vi.advanceTimersByTimeAsync(10000)
@@ -80,7 +80,7 @@ describe('suspect', () => {
 
   test('does not check again right after the service answered', async () => {
     const { probe, suspect } = await load()
-    probe.mockResolvedValue(true)
+    probe.mockResolvedValue({ alive: true })
 
     suspect('user')
     await vi.advanceTimersByTimeAsync(0)
@@ -101,7 +101,7 @@ describe('recovery of a service that is down', () => {
 
   async function goDown() {
     const loaded = await load()
-    loaded.probe.mockResolvedValue(false)
+    loaded.probe.mockResolvedValue({ alive: false })
     const result = loaded.verifyReachable('user')
     await vi.advanceTimersByTimeAsync(2000)
     await result
@@ -111,7 +111,7 @@ describe('recovery of a service that is down', () => {
 
   test('probes again after a second and clears the service once it answers', async () => {
     const { probe, useBackendStatus } = await goDown()
-    probe.mockResolvedValue(true)
+    probe.mockResolvedValue({ alive: true })
 
     await vi.advanceTimersByTimeAsync(1000)
 
@@ -154,12 +154,70 @@ describe('recovery of a service that is down', () => {
 
   test('rechecks when the browser comes back online', async () => {
     const { probe, useBackendStatus } = await goDown()
-    probe.mockResolvedValue(true)
+    probe.mockResolvedValue({ alive: true })
 
     window.dispatchEvent(new Event('online'))
     await vi.advanceTimersByTimeAsync(0)
 
     expect(probe).toHaveBeenCalledWith('user')
     expect(useBackendStatus().isDown('user')).toBe(false)
+  })
+})
+
+describe('the reason the proxy gives', () => {
+  beforeEach(() => vi.useFakeTimers())
+  afterEach(() => vi.useRealTimers())
+
+  test('is taken at once from a status page of the proxy, without waiting for more probes', async () => {
+    const { probe, verifyReachable, useBackendStatus } = await load()
+    probe.mockResolvedValue({ alive: false, reason: 'maintenance' })
+
+    expect(await verifyReachable('user')).toBe(false)
+
+    const status = useBackendStatus()
+    expect(probe).toHaveBeenCalledTimes(1)
+    expect(status.isDown('user')).toBe(true)
+    expect(status.reasonOf('user')).toBe('maintenance')
+    expect(status.reason.value).toBe('maintenance')
+  })
+
+  test('is unknown when the service is simply silent', async () => {
+    const { probe, verifyReachable, useBackendStatus } = await load()
+    probe.mockResolvedValue({ alive: false })
+
+    const result = verifyReachable('user')
+    await vi.advanceTimersByTimeAsync(2000)
+    await result
+
+    expect(useBackendStatus().reasonOf('user')).toBeNull()
+    expect(useBackendStatus().reason.value).toBeNull()
+  })
+
+  test('follows the proxy while the service stays down and goes away with it', async () => {
+    const { probe, verifyReachable, useBackendStatus } = await load()
+    probe.mockResolvedValue({ alive: false, reason: 'maintenance' })
+    await verifyReachable('user')
+    const status = useBackendStatus()
+
+    probe.mockResolvedValue({ alive: false, reason: 'unavailable' })
+    await vi.advanceTimersByTimeAsync(1000)
+    expect(status.reasonOf('user')).toBe('unavailable')
+
+    probe.mockResolvedValue({ alive: true })
+    await vi.advanceTimersByTimeAsync(2000)
+    expect(status.isDown('user')).toBe(false)
+    expect(status.reasonOf('user')).toBeNull()
+  })
+
+  test('puts maintenance ahead of an outage when several services are down', async () => {
+    const { probe, verifyReachable, useBackendStatus } = await load()
+    probe.mockImplementation(async (service: string) => ({
+      alive: false,
+      reason: service === 'user' ? 'unavailable' : 'maintenance',
+    }))
+
+    await Promise.all([verifyReachable('user'), verifyReachable('event')])
+
+    expect(useBackendStatus().reason.value).toBe('maintenance')
   })
 })
