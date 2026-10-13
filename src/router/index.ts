@@ -21,6 +21,12 @@ const appRoutes: Array<RouteRecordRaw> = [
     component: () => import('@/views/EventDetailPage.vue'),
     meta: { auth: true },
   },
+  // Профиль участника для руководителя и участников коллектива (вне панели руководителя)
+  {
+    path: '/member/:memberId',
+    component: () => import('@/views/MemberPage.vue'),
+    meta: { auth: true },
+  },
   // Principal panel: один route-матч на весь /principal/* -- PrincipalLayout
   // монтируется один раз и сам переключает вложенную страницу по route.path
   // (см. PrincipalLayout.vue). Так внутренние переходы вообще не проходят

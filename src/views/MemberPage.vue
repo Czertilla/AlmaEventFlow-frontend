@@ -1,0 +1,38 @@
+<template>
+  <ion-page>
+    <ion-header v-if="!isDesktop">
+      <ion-toolbar>
+        <ion-buttons slot="start">
+          <ion-back-button default-href="/" />
+        </ion-buttons>
+        <ion-title>Участник</ion-title>
+      </ion-toolbar>
+    </ion-header>
+    <ion-content>
+      <div class="member-page">
+        <MemberProfilePage :key="memberId" :member-id="memberId" />
+      </div>
+    </ion-content>
+  </ion-page>
+</template>
+
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { IonPage, IonHeader, IonToolbar, IonTitle, IonButtons, IonBackButton, IonContent } from '@ionic/vue'
+import MemberProfilePage from '@/views/principal/MemberProfilePage.vue'
+import { usePlatform } from '@/composables/usePlatform'
+
+const route = useRoute()
+const { isDesktop } = usePlatform()
+
+const memberId = computed(() => String(route.params.memberId))
+</script>
+
+<style scoped>
+.member-page {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 16px;
+}
+</style>

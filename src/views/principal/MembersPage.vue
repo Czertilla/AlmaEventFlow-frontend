@@ -8,7 +8,15 @@
           </button>
         </div>
         <div class="member-cards">
-          <div v-for="m in displayMembers" :key="m.id" class="member-card">
+          <div
+            v-for="m in displayMembers"
+            :key="m.id"
+            class="member-card member-card--link"
+            role="link"
+            tabindex="0"
+            @click="openProfile(m)"
+            @keydown.enter.self="openProfile(m)"
+          >
             <div class="member-avatar">{{ initials(m) }}</div>
             <div class="member-info">
               <span class="member-name">{{ displayName(m) }}</span>
@@ -18,10 +26,13 @@
               {{ m.is_active !== false ? 'Активен' : 'Неактивен' }}
             </span>
             <div class="member-actions">
-              <button class="icon-btn" title="Редактировать" @click="openEdit(m)">
+              <button class="icon-btn" title="Профиль и посещаемость" aria-label="Профиль и посещаемость" @click.stop="openProfile(m)">
+                <ion-icon :icon="statsChartOutline" />
+              </button>
+              <button class="icon-btn" title="Редактировать" @click.stop="openEdit(m)">
                 <ion-icon :icon="pencilOutline" />
               </button>
-              <button class="icon-btn icon-btn--danger" title="Удалить" @click="confirmDelete(m)">
+              <button class="icon-btn icon-btn--danger" title="Удалить" @click.stop="confirmDelete(m)">
                 <ion-icon :icon="trashOutline" />
               </button>
             </div>
@@ -61,71 +72,25 @@
       </ion-content>
     </ion-modal>
 
-    <!-- Add / edit member -->
-    <ion-modal :is-open="editorOpen" @ion-modal-did-dismiss="editorOpen = false">
-      <ion-header>
-        <ion-toolbar>
-          <ion-title>{{ editingMember ? 'Участник' : 'Новый участник' }}</ion-title>
-          <ion-buttons slot="end">
-            <ion-button aria-label="Закрыть" @click="editorOpen = false">
-              <ion-icon slot="icon-only" :icon="closeOutline" />
-            </ion-button>
-          </ion-buttons>
-        </ion-toolbar>
-      </ion-header>
-      <ion-content class="ion-padding">
-        <div class="form">
-          <EntityPickerField
-            v-if="!editingMember"
-            v-model:search="personSearch"
-            label="Персона"
-            placeholder="Поиск персоны…"
-            clear-label="Сбросить персону"
-            :options="personPickerOptions"
-            :selected="selectedPersonOption"
-            @search="searchPersons"
-            @select="selectedPerson = $event.raw"
-            @clear="selectedPerson = null"
-          />
-          <UiField v-else label="Персона" float>
-            <span class="ui-field-value">{{ displayName(editingMember) }}</span>
-          </UiField>
+    <MemberEditorModal
+      v-if="collectiveId"
+      :is-open="editorOpen"
+      :collective-id="collectiveId"
+      :member="editingMember"
+      :member-name="editingMember ? displayName(editingMember) : ''"
+      :roles="roles"
+      @close="editorOpen = false"
+      @saved="reload"
+    />
 
-          <div class="form-field">
-            <p class="ui-field-title">Роли</p>
-            <div class="ui-chips">
-              <button
-                v-for="r in roles"
-                :key="r.id"
-                type="button"
-                class="ui-chip"
-                :class="{ 'ui-chip--active': selectedRoleIds.has(r.id) }"
-                @click="toggleRoleSelection(r.id)"
-              >
-                {{ r.name }}
-              </button>
-              <span v-if="!roles.length" class="form-hint">Сначала создайте роли в разделе «Роли»</span>
-            </div>
-          </div>
-
-          <label class="ui-toggle-row">
-            <span>Активен</span>
-            <ion-toggle v-model="editIsActive" />
-          </label>
-
-          <ion-button expand="block" :disabled="saving || (!editingMember && !selectedPerson)" @click="saveMember">
-            Сохранить
-          </ion-button>
-        </div>
-      </ion-content>
-    </ion-modal>
-
-    <ion-alert
+    <MemberDeleteAlert
+      v-if="collectiveId"
       :is-open="deleteOpen"
-      header="Удалить участника?"
-      :message="`«${deletingMember ? displayName(deletingMember) : ''}» будет исключён из коллектива.`"
-      :buttons="deleteButtons"
-      @ion-alert-did-dismiss="deleteOpen = false"
+      :collective-id="collectiveId"
+      :member-id="deletingMember?.id ?? null"
+      :member-name="deletingMember ? displayName(deletingMember) : ''"
+      @close="deleteOpen = false"
+      @deleted="reload"
     />
 </template>
 
@@ -133,30 +98,26 @@
 import { ref, computed, reactive, watch } from 'vue'
 import {
   IonHeader, IonToolbar, IonButtons, IonTitle, IonContent, IonSearchbar,
-  IonButton, IonIcon, IonModal, IonToggle, IonAlert, IonReorderGroup, IonReorder,
-  IonItem, IonLabel, IonSegment, IonSegmentButton, toastController,
+  IonButton, IonIcon, IonModal, IonReorderGroup, IonReorder,
+  IonItem, IonLabel, IonSegment, IonSegmentButton,
 } from '@ionic/vue'
 import type { ItemReorderEventDetail } from '@ionic/vue'
-import { pencilOutline, trashOutline, closeOutline, swapVerticalOutline } from 'ionicons/icons'
+import { pencilOutline, trashOutline, closeOutline, swapVerticalOutline, statsChartOutline } from 'ionicons/icons'
 import { usePrincipalStore } from '@/stores/principal'
+import { usePrincipalNavigate } from '@/composables/usePrincipalNavigate'
 import { useLayoutAddButton } from '@/composables/usePrincipalPageActions'
 import { reconcileRoleOrder, saveRoleOrder as persistRoleOrder, rankByRoleIds, loadSortMode, saveSortMode, type SortMode } from '@/utils/roleSort'
 import {
   getMyCollectiveMembersEventV1MeCollectivesCollectiveIdMembersGet,
   getMyCollectiveRolesEventV1MeCollectivesCollectiveIdRolesGet,
-  createMyCollectiveMemberEventV1MeCollectivesCollectiveIdMembersPost,
-  patchMyCollectiveMemberEventV1MeCollectivesCollectiveIdMembersMemberIdPatch,
-  deleteMyCollectiveMemberEventV1MeCollectivesCollectiveIdMembersMemberIdDelete,
 } from '@/api/generated/almaEventFlow'
-import { searchPersonProfileV1PersonsGet } from '@/api/generated/almaEventFlow'
-import EntityPickerField from '@/components/common/EntityPickerField.vue'
-import UiField from '@/components/common/UiField.vue'
+import MemberDeleteAlert from '@/components/member/MemberDeleteAlert.vue'
+import MemberEditorModal from '@/components/member/MemberEditorModal.vue'
 import { resolvePersonName, shortId } from '@/utils/names'
 import type { MemberRead, RoleRead } from '@/api/generated/almaEventFlow'
 
-interface PersonOption { id: string; name: string; surname: string; patronymic?: string | null }
-
 const principal = usePrincipalStore()
+const navigate = usePrincipalNavigate()
 const searchQuery = ref('')
 const members = ref<MemberRead[]>([])
 const roles = ref<RoleRead[]>([])
@@ -213,31 +174,13 @@ const displayMembers = computed(() => {
   return sorted.sort((a, b) => memberRoleRank(a) - memberRoleRank(b) || byName(a, b))
 })
 
+const collectiveId = computed(() => principal.activePrincipalCollectiveId)
+
 const editorOpen = ref(false)
 const editingMember = ref<MemberRead | null>(null)
-const selectedRoleIds = ref<Set<string>>(new Set())
-const editIsActive = ref(true)
-const saving = ref(false)
-
-const personSearch = ref('')
-const personOptions = ref<PersonOption[]>([])
-const selectedPerson = ref<PersonOption | null>(null)
-
-const personFullName = (p: PersonOption) => [p.surname, p.name, p.patronymic].filter(Boolean).join(' ')
-const personPickerOptions = computed(() =>
-  personOptions.value.map((raw) => ({ id: raw.id, name: personFullName(raw), raw })),
-)
-const selectedPersonOption = computed(() =>
-  selectedPerson.value ? { id: selectedPerson.value.id, name: personFullName(selectedPerson.value) } : null,
-)
 
 const deleteOpen = ref(false)
 const deletingMember = ref<MemberRead | null>(null)
-
-const deleteButtons = [
-  { text: 'Отмена', role: 'cancel' },
-  { text: 'Удалить', role: 'destructive', handler: () => { deleteMember() } },
-]
 
 function displayName(m: MemberRead): string {
   return personNames[m.person_id] || `#${shortId(m.person_id)}`
@@ -258,37 +201,18 @@ const filteredMembers = computed(() => {
   )
 })
 
-async function showError(err: any, fallback: string) {
-  const toast = await toastController.create({
-    message: err?.response?.data?.detail || fallback,
-    duration: 3000,
-    color: 'danger',
-  })
-  toast.present()
-}
-
-function toggleRoleSelection(roleId: string) {
-  const next = new Set(selectedRoleIds.value)
-  if (next.has(roleId)) next.delete(roleId)
-  else next.add(roleId)
-  selectedRoleIds.value = next
-}
-
 function openAdd() {
   editingMember.value = null
-  selectedPerson.value = null
-  personSearch.value = ''
-  personOptions.value = []
-  selectedRoleIds.value = new Set()
-  editIsActive.value = true
   editorOpen.value = true
 }
 
 function openEdit(m: MemberRead) {
   editingMember.value = m
-  selectedRoleIds.value = new Set(m.roles.map((r) => r.id))
-  editIsActive.value = m.is_active !== false
   editorOpen.value = true
+}
+
+function openProfile(m: MemberRead) {
+  navigate(`/principal/members/${m.id}`)
 }
 
 function confirmDelete(m: MemberRead) {
@@ -296,54 +220,8 @@ function confirmDelete(m: MemberRead) {
   deleteOpen.value = true
 }
 
-async function searchPersons() {
-  if (!personSearch.value) {
-    personOptions.value = []
-    return
-  }
-  try {
-    const res = await searchPersonProfileV1PersonsGet({ search: personSearch.value, limit: 10 })
-    personOptions.value = (res.data.items as PersonOption[]) || []
-  } catch {
-    personOptions.value = []
-  }
-}
-
-async function saveMember() {
-  const collectiveId = principal.activePrincipalCollectiveId
-  if (!collectiveId) return
-  saving.value = true
-  try {
-    if (editingMember.value) {
-      await patchMyCollectiveMemberEventV1MeCollectivesCollectiveIdMembersMemberIdPatch(collectiveId, editingMember.value.id, {
-        roles: Array.from(selectedRoleIds.value),
-        is_active: editIsActive.value,
-      })
-    } else if (selectedPerson.value) {
-      await createMyCollectiveMemberEventV1MeCollectivesCollectiveIdMembersPost(collectiveId, {
-        person_id: selectedPerson.value.id,
-        roles: Array.from(selectedRoleIds.value),
-        is_active: editIsActive.value,
-      })
-    }
-    editorOpen.value = false
-    await loadMembers(collectiveId)
-  } catch (err) {
-    showError(err, 'Не удалось сохранить участника')
-  } finally {
-    saving.value = false
-  }
-}
-
-async function deleteMember() {
-  const collectiveId = principal.activePrincipalCollectiveId
-  if (!collectiveId || !deletingMember.value) return
-  try {
-    await deleteMyCollectiveMemberEventV1MeCollectivesCollectiveIdMembersMemberIdDelete(collectiveId, deletingMember.value.id)
-    await loadMembers(collectiveId)
-  } catch (err) {
-    showError(err, 'Не удалось удалить участника')
-  }
+async function reload() {
+  if (collectiveId.value) await loadMembers(collectiveId.value)
 }
 
 async function loadMembers(collectiveId: string) {
@@ -427,6 +305,17 @@ useLayoutAddButton('Добавить участника', openAdd)
   border-radius: 14px;
   background: var(--ion-card-background);
   box-shadow: var(--ion-card-shadow);
+}
+
+.member-card--link {
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+
+.member-card--link:hover,
+.member-card--link:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 var(--border-w) var(--ion-color-primary), var(--ion-card-shadow);
 }
 
 .member-avatar {
@@ -521,30 +410,10 @@ useLayoutAddButton('Добавить участника', openAdd)
   padding: 40px 0;
 }
 
-.form {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  max-width: 560px;
-  margin: 0 auto;
-}
-
-.form-field {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
 .form-hint {
   margin: 4px 0 0;
   font-size: var(--fs-xs);
   color: var(--ion-color-medium);
-}
-
-.form-static {
-  margin: 0;
-  font-size: var(--fs-md);
-  color: var(--ion-text-color);
 }
 
 </style>

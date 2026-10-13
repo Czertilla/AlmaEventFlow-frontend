@@ -86,6 +86,35 @@ export interface AddressRead {
   readonly map_uri: string | null;
 }
 
+export interface AttendanceByMonth {
+  attended: number;
+  absent: number;
+  unmarked: number;
+  upcoming: number;
+  /** The first day of the month. */
+  month: string;
+}
+
+export type EventTypeEnumV1 = typeof EventTypeEnumV1[keyof typeof EventTypeEnumV1];
+
+
+export const EventTypeEnumV1 = {
+  rehearsal: 'rehearsal',
+  competition: 'competition',
+  concert: 'concert',
+  festival: 'festival',
+  play: 'play',
+  performance: 'performance',
+} as const;
+
+export interface AttendanceByType {
+  attended: number;
+  absent: number;
+  unmarked: number;
+  upcoming: number;
+  type: EventTypeEnumV1 | null;
+}
+
 export interface AttendanceCreate {
   member_id: string;
   participation_id: string;
@@ -93,6 +122,16 @@ export interface AttendanceCreate {
   is_verified?: boolean | null;
   comment?: string | null;
 }
+
+export type AttendanceOutcomeEnumV1 = typeof AttendanceOutcomeEnumV1[keyof typeof AttendanceOutcomeEnumV1];
+
+
+export const AttendanceOutcomeEnumV1 = {
+  attended: 'attended',
+  absent: 'absent',
+  unmarked: 'unmarked',
+  upcoming: 'upcoming',
+} as const;
 
 export interface AttendancePatchData {
   is_attended?: boolean | null;
@@ -389,18 +428,6 @@ export const EventLevelEnumV1 = {
   regional: 'regional',
   national: 'national',
   international: 'international',
-} as const;
-
-export type EventTypeEnumV1 = typeof EventTypeEnumV1[keyof typeof EventTypeEnumV1];
-
-
-export const EventTypeEnumV1 = {
-  rehearsal: 'rehearsal',
-  competition: 'competition',
-  concert: 'concert',
-  festival: 'festival',
-  play: 'play',
-  performance: 'performance',
 } as const;
 
 export type EventFormatEnumV1 = typeof EventFormatEnumV1[keyof typeof EventFormatEnumV1];
@@ -717,6 +744,39 @@ export interface MeParticipationCreate {
   member_ids?: string[] | null;
 }
 
+export interface MemberAttendanceItem {
+  attendance_id: string;
+  event_id: string;
+  event_name: string;
+  date: string;
+  status: EventStatusEnumV1;
+  type: EventTypeEnumV1 | null;
+  /** `attended` / `absent`: the mark was set by hand; `unmarked`: nobody marked it and the event is over; `upcoming`: the event is today (unmarked) or later. */
+  outcome: AttendanceOutcomeEnumV1;
+  /** null while the row was never marked, whatever is stored. */
+  is_attended: boolean | null;
+  is_verified: boolean;
+  /** Only for the leader, a superuser and the member themself. */
+  comment: string | null;
+}
+
+export interface MemberAttendanceSummary {
+  attended: number;
+  absent: number;
+  unmarked: number;
+  upcoming: number;
+  /** Events already decided: attended + absent + unmarked. */
+  past: number;
+  /** Of those, how many the leader confirmed. */
+  verified: number;
+  /** attended / past, 0..1; null while nothing is decided. */
+  rate: number | null;
+  /** Attended events in a row up to the latest decided one. */
+  current_streak: number;
+  longest_streak: number;
+  last_attended: string | null;
+}
+
 export interface MemberCreate {
   person_id: string;
   /** @maxItems 25 */
@@ -737,10 +797,11 @@ export interface MemberPatchData {
   is_active?: boolean | null;
 }
 
-export interface MemberPutData {
-  /** @maxItems 25 */
-  roles?: string[];
-  is_active?: boolean;
+export interface MemberPerson {
+  id: string;
+  surname: string;
+  name: string;
+  patronymic: string | null;
 }
 
 export interface RolePreview {
@@ -756,6 +817,31 @@ export interface MemberRead {
   roles: RolePreview[];
   is_active?: boolean;
   collective_id: string;
+}
+
+/**
+ * Counts cover active and archived events dated inside the period.
+ */
+export interface MemberProfileRead {
+  member: MemberRead;
+  person: MemberPerson;
+  /** The caller leads the collective (or is a superuser). */
+  can_manage: boolean;
+  date_from: string;
+  date_to: string;
+  /** Years with events of the member, newest first, any period. */
+  years: number[];
+  summary: MemberAttendanceSummary;
+  by_type: AttendanceByType[];
+  by_month: AttendanceByMonth[];
+  /** Newest first. */
+  items: MemberAttendanceItem[];
+}
+
+export interface MemberPutData {
+  /** @maxItems 25 */
+  roles?: string[];
+  is_active?: boolean;
 }
 
 /**
@@ -1754,6 +1840,17 @@ page?: number;
  * @exclusiveMinimum 0
  */
 limit?: number;
+};
+
+export type GetMemberProfileEventV2MembersMemberIdProfileGetParams = {
+/**
+ * First day of the period; the last 365 days when omitted.
+ */
+date_from?: string | null;
+/**
+ * Last day of the period; today when omitted.
+ */
+date_to?: string | null;
 };
 
 export type GetAddressesGeoV1AddressesGetParams = {
@@ -3312,6 +3409,24 @@ export const getCalendarFeedEventV2CalendarFeedTokenIcsGet = (
  ): Promise<AxiosResponse<unknown>> => {
     return axios.get(
       `/event/v2/calendar/feed/${token}.ics`,options
+    );
+  }
+
+/**
+ * A member's card with attendance statistics.
+ *
+ * Open to the leader of the member's collective, the collective's active
+ * members and superusers (``403 NOT_COLLECTIVE_MEMBER`` otherwise).
+ * @summary Get Member Profile
+ */
+export const getMemberProfileEventV2MembersMemberIdProfileGet = (
+    memberId: string,
+    params?: GetMemberProfileEventV2MembersMemberIdProfileGetParams, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<MemberProfileRead>> => {
+    return axios.get(
+      `/event/v2/members/${memberId}/profile`,{
+    ...options,
+        params: {...params, ...options?.params},}
     );
   }
 
@@ -5307,6 +5422,7 @@ export type CreateSubscriptionEventV2CalendarSubscriptionsPostResult = AxiosResp
 export type RotateSubscriptionTokenEventV2CalendarSubscriptionsSubscriptionIdRotateTokenPostResult = AxiosResponse<SubscriptionCreated>
 export type DeleteSubscriptionEventV2CalendarSubscriptionsSubscriptionIdDeleteResult = AxiosResponse<void>
 export type GetCalendarFeedEventV2CalendarFeedTokenIcsGetResult = AxiosResponse<unknown>
+export type GetMemberProfileEventV2MembersMemberIdProfileGetResult = AxiosResponse<MemberProfileRead>
 export type GetAddressesGeoV1AddressesGetResult = AxiosResponse<PageV1AddressRead>
 export type CreateAddressGeoV1AddressesPostResult = AxiosResponse<AddressRead>
 export type GetAddressGeoV1AddressesAddressIdGetResult = AxiosResponse<AddressRead>

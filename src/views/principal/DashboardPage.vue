@@ -181,8 +181,15 @@
                 </tr>
                 <tr>
                   <th class="matrix-row-head" :class="{ 'matrix-row-head--inactive': row.member.is_active === false }">
-                    <span class="matrix-member-name">{{ rowMemberName(row.member) }}</span>
-                    <span v-if="row.roleSubtitle" class="matrix-member-roles">{{ row.roleSubtitle }}</span>
+                    <button
+                      type="button"
+                      class="matrix-member-link"
+                      title="Профиль и посещаемость"
+                      @click="openMemberProfile(row.member)"
+                    >
+                      <span class="matrix-member-name">{{ rowMemberName(row.member) }}</span>
+                      <span v-if="row.roleSubtitle" class="matrix-member-roles">{{ row.roleSubtitle }}</span>
+                    </button>
                   </th>
                   <td
                     v-for="(cell, i) in row.cells"
@@ -303,7 +310,9 @@ import { usePrincipalStore } from '@/stores/principal'
 import { useSettingsStore } from '@/stores/settings'
 import { formatDate } from '@/utils/date'
 import { resolvePersonName, shortId, shortenName } from '@/utils/names'
+import { isUnmarkedAttendance } from '@/utils/memberAttendance'
 import { usePlatform } from '@/composables/usePlatform'
+import { usePrincipalNavigate } from '@/composables/usePrincipalNavigate'
 import { typeOptions, typeColor } from '@/utils/eventLabels'
 import { fetchAllPages } from '@/api/pagination'
 import {
@@ -330,6 +339,7 @@ import type {
 } from '@/api/generated/almaEventFlow'
 
 const router = useRouter()
+const navigate = usePrincipalNavigate()
 const principal = usePrincipalStore()
 const settings = useSettingsStore()
 const { isDesktop } = usePlatform()
@@ -620,8 +630,8 @@ function buildCellInfo(a: AttendanceRead | undefined, participationId: string | 
   }
   const hasComment = !!a.comment
   const verified = !!a.is_verified
-  const unmarked = a.is_attended == null
-  const baseTitle = a.is_attended === true ? 'Присутствовал' : a.is_attended === false ? 'Отсутствовал' : 'Не отмечено'
+  const unmarked = isUnmarkedAttendance(a)
+  const baseTitle = unmarked ? 'Не отмечено' : a.is_attended ? 'Присутствовал' : 'Отсутствовал'
   return { attendance: a, title: withComment(baseTitle, a), hasComment, verified, unmarked, pendingKey: a.id }
 }
 
@@ -964,6 +974,11 @@ async function onCreateCell(event: EventRead, member: MemberRead) {
 
 function isPending(key: string): boolean {
   return !!key && pending.has(key)
+}
+
+function openMemberProfile(member: MemberRead) {
+  if (dragMoved) return
+  navigate(`/principal/members/${member.id}`)
 }
 
 function onEventHeaderClick(eventId: string) {
@@ -1545,6 +1560,25 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
   color: var(--ion-text-color);
   white-space: normal;
   overflow-wrap: break-word;
+}
+
+.matrix-member-link {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.matrix-member-link:hover .matrix-member-name,
+.matrix-member-link:focus-visible .matrix-member-name {
+  color: var(--ion-color-primary);
+}
+
+.matrix-member-link:focus-visible {
+  outline: none;
 }
 
 .matrix-member-roles {

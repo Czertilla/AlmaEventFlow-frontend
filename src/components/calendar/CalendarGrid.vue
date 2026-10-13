@@ -1,11 +1,11 @@
 <template>
   <div class="calendar-grid">
     <div class="calendar-header">
-      <ion-button fill="clear" @click="$emit('prevMonth')">
+      <ion-button fill="clear" :disabled="!canPrev" @click="$emit('prevMonth')">
         <ion-icon :icon="chevronBackOutline" />
       </ion-button>
       <span class="calendar-title">{{ monthYearLabel }}</span>
-      <ion-button fill="clear" @click="$emit('nextMonth')">
+      <ion-button fill="clear" :disabled="!canNext" @click="$emit('nextMonth')">
         <ion-icon :icon="chevronForwardOutline" />
       </ion-button>
     </div>
@@ -30,7 +30,16 @@
         >
           {{ day.dayNumber }}
         </span>
-        <span class="day-dot" :class="{ 'day-dot--visible': day.hasEvents }" />
+        <span v-if="day.marks.length" class="day-dots">
+          <span
+            v-for="mark in day.marks"
+            :key="mark.key"
+            class="day-dot day-dot--marked"
+            :class="mark.outcome ? `ui-att--${mark.outcome}` : mark.hatch ? 'ui-att-hatch' : 'ui-att-rate'"
+            :style="mark.color ? { '--att-rate': mark.color } : undefined"
+          />
+        </span>
+        <span v-else class="day-dot" :class="{ 'day-dot--visible': day.hasEvents }" />
       </div>
     </div>
   </div>
@@ -46,12 +55,16 @@ import { ru } from 'date-fns/locale'
 import { useSettingsStore } from '@/stores/settings'
 import { IonButton, IonIcon } from '@ionic/vue'
 import { chevronBackOutline, chevronForwardOutline } from 'ionicons/icons'
+import { dayKey, type DayMark } from '@/utils/memberAttendance'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   currentMonth: Date
   selectedDate: Date
   eventDates: Date[]
-}>()
+  dayMarks?: Record<string, DayMark[]>
+  canPrev?: boolean
+  canNext?: boolean
+}>(), { dayMarks: undefined, canPrev: true, canNext: true })
 
 defineEmits<{
   selectDay: [date: Date]
@@ -85,6 +98,7 @@ const days = computed(() => {
     isToday: isSameDay(d, today),
     isSelected: isSameDay(d, props.selectedDate),
     hasEvents: props.eventDates.some((ed) => isSameDay(ed, d)),
+    marks: props.dayMarks?.[dayKey(d)] ?? [],
   }))
 })
 </script>
@@ -178,10 +192,25 @@ const days = computed(() => {
   height: 5px;
   border-radius: 50%;
   margin-top: 1px;
-  background: transparent;
 }
 
 .day-dot--visible {
   background: var(--ion-color-primary);
+}
+
+.day-dots {
+  display: flex;
+  gap: 2px;
+  margin-top: 1px;
+}
+
+.day-dots .day-dot {
+  margin-top: 0;
+}
+
+.day-dot--marked {
+  --att-hatch: 3px;
+  width: 7px;
+  height: 7px;
 }
 </style>

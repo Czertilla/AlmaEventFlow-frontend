@@ -28,6 +28,11 @@
   --ion-color-medium: #92949c;
   --ion-color-light: #f4f5f8;
 
+  --att-attended-rgb: var(--ion-color-secondary-rgb);
+  --att-absent-rgb: var(--ion-color-danger-rgb);
+  --att-unmarked-rgb: var(--ion-color-warning-rgb);
+  --att-upcoming-rgb: var(--ion-color-primary-rgb);
+
   /* Surfaces */
   --ion-background-color: #f8f9fe;
   --ion-background-color-rgb: 248, 249, 254;

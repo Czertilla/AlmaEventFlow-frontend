@@ -58,7 +58,7 @@
                 :key="tab.path"
                 type="button"
                 class="principal-tab"
-                :class="{ 'principal-tab--active': activeSection === tab.path }"
+                :class="{ 'principal-tab--active': activeTab === tab.path }"
                 @click="goTab(tab.path)"
               >
                 <ion-icon :icon="tab.icon" />
@@ -80,7 +80,7 @@
                activeSection, а не через vue-router -- см. goTab()/utils/inPlaceNav.ts.
                remountTick в ключе форсирует пересоздание (и повторную загрузку
                данных) при возврате в раздел -- см. onIonViewWillEnter выше. -->
-          <component :is="currentPage.component" v-if="currentPage" :key="`${activeSection}-${remountTick}`" />
+          <component :is="currentPage.component" v-if="currentPage" v-bind="pageProps" :key="`${activeSection}-${remountTick}`" />
         </main>
       </div>
     </ion-content>
@@ -91,7 +91,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, defineAsyncComponent, ref } from 'vue'
+import { computed, defineAsyncComponent, provide, ref } from 'vue'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBackButton, IonIcon,
   onIonViewWillEnter,
@@ -104,6 +104,7 @@ import { usePlatform } from '@/composables/usePlatform'
 import { getCollectiveColor } from '@/utils/colors'
 import { syncAddressBar } from '@/utils/inPlaceNav'
 import { principalPageActions as pageActions } from '@/composables/usePrincipalPageActions'
+import { principalNavigateKey, principalReturnTo } from '@/composables/usePrincipalNavigate'
 import AppFab from '@/components/common/AppFab.vue'
 
 const principal = usePrincipalStore()
@@ -136,7 +137,21 @@ const PAGES: Record<string, PrincipalPageEntry> = {
 // vue-router навигация, значит window.location уже верный).
 const activeSection = ref(window.location.pathname)
 
-const currentPage = computed<PrincipalPageEntry | null>(() => PAGES[activeSection.value] ?? null)
+const MEMBER_PROFILE_PREFIX = '/principal/members/'
+const memberProfilePage: PrincipalPageEntry = {
+  component: defineAsyncComponent(() => import('@/views/principal/MemberProfilePage.vue')),
+}
+
+const profileMemberId = computed(() =>
+  activeSection.value.startsWith(MEMBER_PROFILE_PREFIX)
+    ? activeSection.value.slice(MEMBER_PROFILE_PREFIX.length)
+    : '',
+)
+const currentPage = computed<PrincipalPageEntry | null>(() =>
+  profileMemberId.value ? memberProfilePage : PAGES[activeSection.value] ?? null,
+)
+const pageProps = computed(() => (profileMemberId.value ? { memberId: profileMemberId.value } : {}))
+const activeTab = computed(() => (profileMemberId.value ? '/principal/members' : activeSection.value))
 const fullWidth = computed(() => !!currentPage.value?.fullWidth)
 
 const TABS = [
@@ -146,11 +161,15 @@ const TABS = [
   { path: '/principal/events', label: 'Мероприятия', icon: calendarOutline },
 ]
 
-function goTab(path: string) {
+function navigate(path: string) {
   if (activeSection.value === path) return
+  if (path.startsWith(MEMBER_PROFILE_PREFIX) && !profileMemberId.value) principalReturnTo.value = activeSection.value
   activeSection.value = path
   syncAddressBar(path)
 }
+provide(principalNavigateKey, navigate)
+
+const goTab = navigate
 
 // PrincipalLayout монтируется один раз на весь /principal/* (см. коммент выше),
 // а ion-router-outlet по умолчанию кэширует уже посещённые страницы и не

@@ -134,7 +134,14 @@
                     class="attendance-row"
                     :class="{ 'attendance-row--highlight': highlightedAttendanceId === a.id }"
                   >
-                    <span class="attendance-member">{{ memberLabel(a.member_id) }}</span>
+                    <button
+                      type="button"
+                      class="attendance-member attendance-member--link"
+                      title="Профиль и посещаемость"
+                      @click="openMember(a.member_id)"
+                    >
+                      {{ memberLabel(a.member_id) }}
+                    </button>
                     <div class="attendance-row-chips">
                       <EventAttendanceChip
                         :is-attended="a.is_attended"
@@ -366,7 +373,7 @@
 
 <script setup lang="ts">
 import { ref, computed, reactive, nextTick } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import {
   IonPage, IonHeader, IonToolbar, IonButtons, IonBackButton, IonTitle, IonContent,
   IonButton, IonIcon, IonModal, IonSelectOption, onIonViewWillEnter,
@@ -420,6 +427,7 @@ import type {
 } from '@/api/generated/almaEventFlow'
 
 const route = useRoute()
+const router = useRouter()
 const principal = usePrincipalStore()
 const settings = useSettingsStore()
 const { isDesktop } = usePlatform()
@@ -697,6 +705,10 @@ async function submitJoin() {
   } finally {
     joining.value = false
   }
+}
+
+function openMember(memberId: string) {
+  router.push(`/member/${memberId}`)
 }
 
 // Дашборд руководителя переходит сюда с ?member=&collective= для конкретной
@@ -1199,6 +1211,20 @@ onIonViewWillEnter(async () => {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.attendance-member--link {
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.attendance-member--link:hover,
+.attendance-member--link:focus-visible {
+  outline: none;
+  color: var(--ion-color-primary);
 }
 
 .attendance-row-chips {
