@@ -25,7 +25,7 @@
           fit
           :markers="mapMarkers"
           :picked-point="pendingPoint"
-          :center="selectedPoint"
+          :center="focusPoint"
           @pick="onPick"
           @marker-click="onMarkerClick"
           @marker-create="onMarkerCreate"
@@ -90,6 +90,15 @@
               Создать локацию
             </button>
           </div>
+          <div v-else-if="pickedAddress" class="pm-card pm-card--address">
+            <AddressActionCard
+              :address="pickedAddress"
+              :busy="resolving"
+              @use="useAddress"
+              @create="startCreate({ address: pickedAddress })"
+              @cancel="pickedAddress = null"
+            />
+          </div>
           <p v-else-if="results.length === 0 && !searching" class="pm-hint">
             Найдите место или кликните по карте, чтобы отметить новое
           </p>
@@ -115,12 +124,19 @@ import {
 } from 'ionicons/icons'
 import GeoMap from './GeoMap.vue'
 import type { GeoPoint, MapMarker } from './GeoMap.vue'
+import AddressActionCard from './AddressActionCard.vue'
 import GeoResultList from './GeoResultList.vue'
 import LocationCreateForm from './LocationCreateForm.vue'
-import type { LocationRead } from '@/api/generated/almaEventFlow'
+import type { AddressRead, LocationRead } from '@/api/generated/almaEventFlow'
 import { useComboNav } from '@/composables/useComboNav'
 import { useLocationResolver } from '@/composables/useLocationResolver'
-import { canOfferCreate, geoOptionId, locationMarker, useGeoSearch } from '@/composables/useGeoSearch'
+import {
+  addressLocality,
+  canOfferCreate,
+  geoOptionId,
+  locationMarker,
+  useGeoSearch,
+} from '@/composables/useGeoSearch'
 import type { GeoResult, LocationDraft } from '@/composables/useGeoSearch'
 
 const props = defineProps<{
@@ -138,6 +154,7 @@ const view = ref<'browse' | 'create'>('browse')
 const createDraft = ref<LocationDraft>({})
 const cameFromBrowse = ref(false)
 const pendingPoint = ref<GeoPoint | null>(null)
+const pickedAddress = ref<AddressRead | null>(null)
 const panelCollapsed = ref(false)
 const geoMapRef = ref<InstanceType<typeof GeoMap>>()
 const searchInput = ref<HTMLInputElement>()
@@ -150,10 +167,26 @@ const selectedMarker = computed(() => (props.selected ? locationMarker(props.sel
 const selectedPoint = computed<GeoPoint | undefined>(() =>
   selectedMarker.value ? { lat: selectedMarker.value.lat, lon: selectedMarker.value.lon } : undefined,
 )
+const focusPoint = computed<GeoPoint | undefined>(() => {
+  const spot = pickedAddress.value?.spot
+  return spot ? { lat: spot.lat, lon: spot.lon } : selectedPoint.value
+})
 const mapMarkers = computed<MapMarker[]>(() => {
+  const extra: MapMarker[] = []
   const selected = selectedMarker.value
-  if (!selected || markers.value.some((m) => m.kind === 'location' && m.id === selected.id)) return markers.value
-  return [...markers.value, selected]
+  if (selected && !markers.value.some((m) => m.kind === 'location' && m.id === selected.id)) extra.push(selected)
+  const address = pickedAddress.value
+  if (address?.spot && !markers.value.some((m) => m.kind === 'address' && m.id === address.id)) {
+    extra.push({
+      id: address.id,
+      kind: 'address',
+      lat: address.spot.lat,
+      lon: address.spot.lon,
+      label: address.name,
+      sublabel: addressLocality(address) || undefined,
+    })
+  }
+  return extra.length ? [...markers.value, ...extra] : markers.value
 })
 
 watch(
@@ -161,6 +194,7 @@ watch(
   (isOpen) => {
     if (!isOpen) return
     pendingPoint.value = null
+    pickedAddress.value = null
     near.value = null
     cameFromBrowse.value = false
     panelCollapsed.value = false
@@ -187,6 +221,7 @@ function close() {
   clear()
   reset()
   pendingPoint.value = null
+  pickedAddress.value = null
 }
 
 function finish(location: LocationRead) {
@@ -194,13 +229,26 @@ function finish(location: LocationRead) {
   close()
 }
 
-async function pick(result: GeoResult) {
-  const location = await resolve(result)
+function pick(result: GeoResult) {
+  if (result.kind === 'location') {
+    finish(result.item)
+    return
+  }
+  pickedAddress.value = result.item
+  pendingPoint.value = null
+  panelCollapsed.value = true
+}
+
+async function useAddress() {
+  const address = pickedAddress.value
+  if (!address) return
+  const location = await resolve({ kind: 'address', item: address })
   if (location) finish(location)
 }
 
 function onPick(point: GeoPoint) {
   pendingPoint.value = point
+  pickedAddress.value = null
   near.value = point
 }
 
@@ -213,6 +261,7 @@ function startCreate(draft: LocationDraft) {
   createDraft.value = draft
   cameFromBrowse.value = true
   pendingPoint.value = null
+  pickedAddress.value = null
   near.value = null
   view.value = 'create'
 }
@@ -415,6 +464,11 @@ ion-modal.loc-modal {
   border-radius: 18px;
   background: var(--ion-card-background);
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.22);
+}
+
+.pm-card--address {
+  display: block;
+  padding: 0;
 }
 
 .pm-card-text {

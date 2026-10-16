@@ -1,0 +1,201 @@
+import { flushPromises, mount } from '@vue/test-utils'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
+import { defineComponent, h } from 'vue'
+import LocationField from '@/components/geo/LocationField.vue'
+import { stubBackend } from './helpers/axiosStub'
+
+const ModalStub = defineComponent({
+  name: 'LocationPickerModal',
+  props: { open: Boolean, selected: Object, seedQuery: String, draft: Object },
+  setup: (props) => () =>
+    h('div', {
+      class: 'modal-stub',
+      'data-open': String(props.open),
+      'data-draft': JSON.stringify(props.draft ?? null),
+    }),
+})
+
+const ADDRESS = {
+  id: 'a1',
+  city_id: 1,
+  name: 'Тверская улица, 7',
+  locality: 'Москва, Россия',
+  spot: { lat: 55.7583, lon: 37.6116 },
+}
+const NAMED = {
+  id: 'l1',
+  name: 'Актовый зал',
+  address_id: 'a1',
+  address: ADDRESS,
+  display_name: 'Актовый зал',
+}
+const PROXY = { id: 'l2', name: null, address_id: 'a1', address: ADDRESS, display_name: 'Тверская улица, 7' }
+
+let backend: ReturnType<typeof stubBackend>
+const mounted: ReturnType<typeof mount>[] = []
+
+function field() {
+  const wrapper = mount(LocationField, {
+    props: { modelValue: null },
+    attachTo: document.body,
+    global: { stubs: { IonIcon: true, IonSpinner: true, LocationPickerModal: ModalStub, MapLinkMenu: true } },
+  })
+  mounted.push(wrapper)
+  return wrapper
+}
+
+const posts = () => backend.calls.filter((call) => call.method === 'post')
+
+async function search(wrapper: ReturnType<typeof field>, text = 'тверская 7') {
+  await wrapper.get('input').trigger('focus')
+  await wrapper.get('input').setValue(text)
+  await vi.advanceTimersByTimeAsync(300)
+  await flushPromises()
+}
+
+async function chooseAddress(wrapper: ReturnType<typeof field>) {
+  await search(wrapper)
+  await wrapper.findAll('.grl-item')[1]!.trigger('click')
+}
+
+function leaveFocusTo(wrapper: ReturnType<typeof field>, next: Element | null) {
+  wrapper
+    .get('input')
+    .element.dispatchEvent(new FocusEvent('focusout', { bubbles: true, relatedTarget: next }))
+}
+
+beforeEach(() => {
+  vi.useFakeTimers()
+  backend = stubBackend((config) => {
+    if (config.url === '/geo/v2/search') {
+      return {
+        status: 200,
+        data: {
+          items: [
+            { kind: 'location', origin: 'local', score: 2, location: NAMED },
+            { kind: 'address', origin: 'external', score: null, address: ADDRESS },
+          ],
+          external: { state: 'ok', provider: 'photon' },
+        },
+      }
+    }
+    if (config.url === '/geo/v1/locations/from-address') return { status: 201, data: PROXY }
+    return { status: 200, data: { items: [] } }
+  })
+})
+
+afterEach(() => {
+  backend.restore()
+  vi.useRealTimers()
+  mounted.splice(0).forEach((wrapper) => wrapper.unmount())
+})
+
+describe('LocationField suggestions', () => {
+  test('an address names its city under the title', async () => {
+    const wrapper = field()
+    await search(wrapper)
+
+    const subs = wrapper.findAll('.grl-item:not(.grl-item--create) .grl-sub').map((sub) => sub.text())
+    expect(subs).toEqual(['Тверская улица, 7 · Москва, Россия', 'Адрес · Москва, Россия'])
+  })
+
+  test('clicking an address only selects it: nothing is created or chosen', async () => {
+    const wrapper = field()
+    await chooseAddress(wrapper)
+    await flushPromises()
+
+    expect(wrapper.find('.aac').exists()).toBe(true)
+    expect(wrapper.get('.aac-title').text()).toBe('Тверская улица, 7')
+    expect(wrapper.get('.aac-sub').text()).toBe('Москва, Россия')
+    expect(wrapper.find('.grl').exists()).toBe(false)
+    expect(posts()).toHaveLength(0)
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+
+  test('"Выбрать адрес" turns the address into the location, once', async () => {
+    const wrapper = field()
+    await chooseAddress(wrapper)
+
+    await wrapper.findAll('.aac-actions button')[1]!.trigger('click')
+    await flushPromises()
+
+    const [call] = backend.to('/geo/v1/locations/from-address')
+    expect(posts()).toHaveLength(1)
+    expect(JSON.parse(call!.data)).toEqual({ address_id: 'a1', name: null })
+    expect(wrapper.emitted('update:modelValue')).toEqual([[PROXY]])
+  })
+
+  test('"Создать локацию" opens the form on that address and creates nothing', async () => {
+    const wrapper = field()
+    await chooseAddress(wrapper)
+
+    await wrapper.findAll('.aac-actions button')[0]!.trigger('click')
+
+    const modal = wrapper.get('.modal-stub')
+    expect(modal.attributes('data-open')).toBe('true')
+    expect(JSON.parse(modal.attributes('data-draft')!).address.id).toBe('a1')
+    expect(posts()).toHaveLength(0)
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+
+  test('cancelling the address brings the suggestions back', async () => {
+    const wrapper = field()
+    await chooseAddress(wrapper)
+
+    await wrapper.get('button[aria-label="Отменить выбор адреса"]').trigger('click')
+
+    expect(wrapper.find('.aac').exists()).toBe(false)
+    expect(wrapper.findAll('.grl-item:not(.grl-item--create)')).toHaveLength(2)
+  })
+
+  test('typing again drops the chosen address', async () => {
+    const wrapper = field()
+    await chooseAddress(wrapper)
+
+    await wrapper.get('input').setValue('тверская 9')
+
+    expect(wrapper.find('.aac').exists()).toBe(false)
+  })
+
+  test('Enter does not turn a chosen address into a location', async () => {
+    const wrapper = field()
+    await chooseAddress(wrapper)
+
+    await wrapper.get('input').trigger('keydown', { key: 'Enter' })
+    await flushPromises()
+
+    expect(posts()).toHaveLength(0)
+    expect(wrapper.emitted('update:modelValue')).toBeUndefined()
+  })
+
+  test('a named location is still chosen by one click', async () => {
+    const wrapper = field()
+    await search(wrapper)
+
+    await wrapper.findAll('.grl-item')[0]!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.emitted('update:modelValue')).toEqual([[NAMED]])
+    expect(posts()).toHaveLength(0)
+  })
+
+  test('the card stays while focus moves between its buttons', async () => {
+    const wrapper = field()
+    await chooseAddress(wrapper)
+
+    leaveFocusTo(wrapper, wrapper.findAll('.aac-actions button')[0]!.element)
+    await vi.advanceTimersByTimeAsync(300)
+
+    expect(wrapper.find('.aac').exists()).toBe(true)
+  })
+
+  test('the card goes when focus leaves the field', async () => {
+    const wrapper = field()
+    await chooseAddress(wrapper)
+
+    leaveFocusTo(wrapper, document.body)
+    await vi.advanceTimersByTimeAsync(300)
+
+    expect(wrapper.find('.aac').exists()).toBe(false)
+  })
+})

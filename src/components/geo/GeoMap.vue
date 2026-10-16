@@ -16,6 +16,8 @@ export interface MapMarker extends GeoPoint {
   id: string
   kind: 'address' | 'location'
   label?: string
+  /** A second line under the label: the city of an address. */
+  sublabel?: string
 }
 
 export interface MapBBox {
@@ -109,6 +111,12 @@ function buildAddressPopup(marker: L.Marker, m: MapMarker): HTMLElement {
     title.className = 'geo-marker-popup-title'
     title.textContent = m.label
     root.appendChild(title)
+  }
+  if (m.sublabel) {
+    const sub = document.createElement('div')
+    sub.className = 'geo-marker-popup-sub'
+    sub.textContent = m.sublabel
+    root.appendChild(sub)
   }
   const actions = document.createElement('div')
   actions.className = 'geo-marker-popup-actions'
@@ -298,6 +306,15 @@ defineExpose({
   font-weight: var(--fw-semibold);
   line-height: 1.3;
   color: var(--ion-text-color);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:deep(.geo-marker-popup-sub) {
+  overflow: hidden;
+  font-size: var(--fs-xs);
+  line-height: 1.3;
+  color: var(--ion-color-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
 }

@@ -8,7 +8,7 @@
 
       <span v-if="modelValue" class="ass-text">
         <span class="ass-title">{{ modelValue.name }}</span>
-        <span class="ass-sub">Адрес</span>
+        <span class="ass-sub">{{ addressLocality(modelValue) || 'Адрес' }}</span>
       </span>
       <input
         v-else
@@ -52,12 +52,12 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { IonIcon, IonSpinner } from '@ionic/vue'
 import { closeOutline, locationOutline, searchOutline } from 'ionicons/icons'
-import { getAddressesGeoV1AddressesGet } from '@/api/generated/almaEventFlow'
+import { searchGeoV2SearchGet } from '@/api/generated/almaEventFlow'
 import type { AddressRead } from '@/api/generated/almaEventFlow'
 import UiField from '@/components/common/UiField.vue'
 import GeoResultList from './GeoResultList.vue'
 import { useComboNav } from '@/composables/useComboNav'
-import { geoOptionId } from '@/composables/useGeoSearch'
+import { addressLocality, geoOptionId } from '@/composables/useGeoSearch'
 import type { GeoResult } from '@/composables/useGeoSearch'
 
 withDefaults(
@@ -87,8 +87,13 @@ async function run() {
   }
   searching.value = true
   try {
-    const res = await getAddressesGeoV1AddressesGet({ search: q, limit: 8 })
-    if (id === requestId) addresses.value = res.data.items
+    const res = await searchGeoV2SearchGet(
+      { q, limit: 8, kinds: ['address'] },
+      { paramsSerializer: { indexes: null } },
+    )
+    if (id === requestId) {
+      addresses.value = res.data.items.flatMap((hit) => (hit.kind === 'address' ? [hit.address] : []))
+    }
   } catch {
     if (id === requestId) addresses.value = []
   } finally {

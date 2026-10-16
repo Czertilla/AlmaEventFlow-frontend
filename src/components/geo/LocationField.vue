@@ -1,5 +1,5 @@
 <template>
-  <div class="lf">
+  <div ref="root" class="lf" @focusout="onFocusOut">
     <UiField :label="label" :float="!!modelValue" :filled="!!query">
       <template #prefix>
         <span v-if="modelValue" class="lf-tile"><ion-icon :icon="locationOutline" /></span>
@@ -23,7 +23,6 @@
         :aria-controls="listId"
         :aria-activedescendant="active >= 0 ? geoOptionId(listId, active) : undefined"
         @focus="onFocus"
-        @blur="closeSoon"
         @keydown="onKeydown"
       />
 
@@ -67,7 +66,16 @@
     </UiField>
 
     <div v-if="showDropdown" class="lf-popover">
+      <AddressActionCard
+        v-if="pickedAddress"
+        :address="pickedAddress"
+        :busy="resolving"
+        @use="useAddress"
+        @create="openModal({ address: pickedAddress })"
+        @cancel="pickedAddress = null"
+      />
       <GeoResultList
+        v-else
         :id="listId"
         :results="results"
         :query="query"
@@ -91,15 +99,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { IonIcon, IonSpinner } from '@ionic/vue'
 import { addOutline, closeOutline, locationOutline, mapOutline, openOutline, searchOutline } from 'ionicons/icons'
 import UiField from '@/components/common/UiField.vue'
+import AddressActionCard from './AddressActionCard.vue'
 import GeoResultList from './GeoResultList.vue'
 import LocationPickerModal from './LocationPickerModal.vue'
 import MapLinkMenu from './MapLinkMenu.vue'
 import type { GeoPoint } from './GeoMap.vue'
-import type { LocationRead } from '@/api/generated/almaEventFlow'
+import type { AddressRead, LocationRead } from '@/api/generated/almaEventFlow'
 import { useComboNav } from '@/composables/useComboNav'
 import { useLocationResolver } from '@/composables/useLocationResolver'
 import { canOfferCreate, geoOptionId, locationLabel, mapLinkLabel, useGeoSearch } from '@/composables/useGeoSearch'
@@ -115,7 +124,9 @@ const listId = `lf-${Math.random().toString(36).slice(2, 8)}`
 const { query, results, searching, clear, refresh } = useGeoSearch({ limit: 8 })
 const { resolving, resolve } = useLocationResolver()
 
+const root = ref<HTMLElement>()
 const dropdownOpen = ref(false)
+const pickedAddress = ref<AddressRead | null>(null)
 const modalOpen = ref(false)
 const modalDraft = ref<LocationDraft | null>(null)
 const modalSeed = ref('')
@@ -125,7 +136,10 @@ const optionCount = computed(() => results.value.length + (canCreate.value ? 1 :
 const { active, next, prev, reset } = useComboNav(optionCount)
 
 const showDropdown = computed(
-  () => !props.modelValue && dropdownOpen.value && (!!query.value.trim() || results.value.length > 0 || searching.value),
+  () =>
+    !props.modelValue &&
+    dropdownOpen.value &&
+    (!!pickedAddress.value || !!query.value.trim() || results.value.length > 0 || searching.value),
 )
 const selectedPoint = computed<GeoPoint | null>(() => {
   const point = props.modelValue?.spot ?? props.modelValue?.address?.spot
@@ -143,21 +157,45 @@ function onFocus() {
   if (!query.value.trim()) refresh()
 }
 
+watch(query, () => {
+  pickedAddress.value = null
+})
+
 function closeSoon() {
   setTimeout(() => {
     dropdownOpen.value = false
+    pickedAddress.value = null
     reset()
   }, 150)
 }
 
+function onFocusOut(event: FocusEvent) {
+  const next = event.relatedTarget
+  if (next instanceof Node && root.value?.contains(next)) return
+  closeSoon()
+}
+
 function resetSearch() {
   dropdownOpen.value = false
+  pickedAddress.value = null
   clear()
   reset()
 }
 
-async function pick(result: GeoResult) {
-  const location = await resolve(result)
+function pick(result: GeoResult) {
+  if (result.kind === 'address') {
+    pickedAddress.value = result.item
+    dropdownOpen.value = true
+    return
+  }
+  resetSearch()
+  emit('update:modelValue', result.item)
+}
+
+async function useAddress() {
+  const address = pickedAddress.value
+  if (!address) return
+  const location = await resolve({ kind: 'address', item: address })
   if (!location) return
   resetSearch()
   emit('update:modelValue', location)
@@ -172,6 +210,7 @@ function openModal(draft: LocationDraft | null = null) {
   modalDraft.value = draft
   modalSeed.value = draft ? '' : query.value
   dropdownOpen.value = false
+  pickedAddress.value = null
   modalOpen.value = true
 }
 
@@ -196,11 +235,15 @@ function onKeydown(event: KeyboardEvent) {
     prev()
   } else if (event.key === 'Enter') {
     event.preventDefault()
-    if (!showDropdown.value) return
+    if (!showDropdown.value || pickedAddress.value) return
     const index = active.value >= 0 ? active.value : 0
     if (index < results.value.length) pick(results.value[index])
     else if (canCreate.value) openModal({ name: query.value.trim() })
   } else if (event.key === 'Escape') {
+    if (pickedAddress.value) {
+      pickedAddress.value = null
+      return
+    }
     dropdownOpen.value = false
     reset()
   }

@@ -21,7 +21,7 @@
       </span>
       <span class="grl-text">
         <span class="grl-title">{{ resultLabel(r) }}</span>
-        <span class="grl-sub">{{ subtitle(r) }}</span>
+        <span class="grl-sub">{{ resultSubtitle(r) }}</span>
       </span>
       <button
         v-if="r.kind === 'address' && addressActions"
@@ -65,7 +65,7 @@
 import { IonIcon, IonSpinner } from '@ionic/vue'
 import { addOutline, locationOutline, starOutline } from 'ionicons/icons'
 import type { AddressRead } from '@/api/generated/almaEventFlow'
-import { geoOptionId, resultLabel } from '@/composables/useGeoSearch'
+import { geoOptionId, resultLabel, resultSubtitle } from '@/composables/useGeoSearch'
 import type { GeoResult } from '@/composables/useGeoSearch'
 
 withDefaults(
@@ -87,11 +87,6 @@ const emit = defineEmits<{
   'create-named': [name: string]
 }>()
 
-function subtitle(r: GeoResult): string {
-  if (r.kind === 'address') return 'Адрес'
-  if (r.item.name && r.item.address) return r.item.address.name
-  return r.item.address ? 'Адрес' : 'Точка на карте'
-}
 </script>
 
 <style scoped>
