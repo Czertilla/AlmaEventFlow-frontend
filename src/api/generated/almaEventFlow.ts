@@ -54,6 +54,39 @@ export interface AddressCreate {
   parsed?: AddressFields | null;
 }
 
+export type AddressHitOrigin = typeof AddressHitOrigin[keyof typeof AddressHitOrigin];
+
+
+export const AddressHitOrigin = {
+  local: 'local',
+  external: 'external',
+} as const;
+
+export interface AddressReadV2 {
+  created_at: string;
+  edited_at: string | null;
+  id: string;
+  city_id: number;
+  /** The address itself: street, house, ... */
+  name: string;
+  /** City, and region and country when they add something, as one string: "Москва, Россия". */
+  locality: string;
+  spot?: Point | null;
+  parsed?: AddressFields | null;
+  source?: string | null;
+  readonly full_name: string;
+  /** RFC 5870 ``geo:`` URI. */
+  readonly map_uri: string | null;
+}
+
+export interface AddressHit {
+  kind: 'address';
+  origin: AddressHitOrigin;
+  /** Relevance, higher is better; null when ranked by distance only. */
+  score: number | null;
+  address: AddressReadV2;
+}
+
 export interface AddressPatchData {
   name?: string | null;
   city_id?: number | null;
@@ -275,6 +308,39 @@ export interface ClientRead {
   created_at: string;
 }
 
+export interface PointGeometry {
+  type?: 'Point';
+  /**
+     * [longitude, latitude], the RFC 7946 order.
+     * @minItems 2
+     * @maxItems 2
+     */
+  coordinates: [number, number];
+}
+
+export interface KindCounts {
+  address: number;
+  location: number;
+}
+
+export interface ClusterProperties {
+  cluster?: true;
+  point_count: number;
+  counts: KindCounts;
+  /**
+     * [west, south, east, north] of the clustered places; fit the map to it to open the cluster.
+     * @minItems 4
+     * @maxItems 4
+     */
+  bbox: [number, number, number, number];
+}
+
+export interface ClusterFeature {
+  type?: 'Feature';
+  geometry: PointGeometry;
+  properties: ClusterProperties;
+}
+
 export interface CollectiveCreate {
   /** @maxLength 128 */
   name: string;
@@ -404,6 +470,28 @@ export interface DietRead {
   description?: string | null;
 }
 
+export type EntityPropertiesKind = typeof EntityPropertiesKind[keyof typeof EntityPropertiesKind];
+
+
+export const EntityPropertiesKind = {
+  address: 'address',
+  location: 'location',
+} as const;
+
+export interface EntityProperties {
+  cluster?: false;
+  kind: EntityPropertiesKind;
+  name: string;
+  locality: string;
+}
+
+export interface EntityFeature {
+  type?: 'Feature';
+  id: string;
+  geometry: PointGeometry;
+  properties: EntityProperties;
+}
+
 export type ErrorModelDetail = string | {[key: string]: string};
 
 export interface ErrorModel {
@@ -510,6 +598,27 @@ export interface EventRead {
   level?: EventLevelEnumV1 | null;
   type?: EventTypeEnumV1 | null;
   format?: EventFormatEnumV1;
+}
+
+/**
+ * `skipped`: the local answer was enough, or the request opted out. `ok` / `cached`: the external geocoder was asked. `timeout`, `error`, `unavailable`: it could not be, the answer is local only.
+ */
+export type ExternalStatusState = typeof ExternalStatusState[keyof typeof ExternalStatusState];
+
+
+export const ExternalStatusState = {
+  skipped: 'skipped',
+  ok: 'ok',
+  cached: 'cached',
+  timeout: 'timeout',
+  error: 'error',
+  unavailable: 'unavailable',
+} as const;
+
+export interface ExternalStatus {
+  /** `skipped`: the local answer was enough, or the request opted out. `ok` / `cached`: the external geocoder was asked. `timeout`, `error`, `unavailable`: it could not be, the answer is local only. */
+  state: ExternalStatusState;
+  provider?: string | null;
 }
 
 export interface FacultyCreate {
@@ -630,6 +739,35 @@ export interface LocationFromAddressCreate {
   name?: string | null;
 }
 
+export type LocationHitOrigin = typeof LocationHitOrigin[keyof typeof LocationHitOrigin];
+
+
+export const LocationHitOrigin = {
+  local: 'local',
+  external: 'external',
+} as const;
+
+export interface LocationReadV2 {
+  created_at: string;
+  edited_at: string | null;
+  id: string;
+  name?: string | null;
+  address_id?: string | null;
+  spot?: Point | null;
+  address?: AddressReadV2 | null;
+  readonly display_name: string | null;
+  readonly locality: string | null;
+  readonly map_uri: string | null;
+}
+
+export interface LocationHit {
+  kind: 'location';
+  origin: LocationHitOrigin;
+  /** Relevance, higher is better; null when ranked by distance only. */
+  score: number | null;
+  location: LocationReadV2;
+}
+
 export interface LocationPatchData {
   name?: string | null;
   address_id?: string | null;
@@ -658,6 +796,21 @@ export interface LocationRead {
      * frontend, e.g. ``useGeoSearch.ts``).
      */
   readonly display_name: string | null;
+}
+
+/**
+ * RFC 7946 FeatureCollection; `number_matched` and `number_returned`
+ * follow OGC API - Features.
+ */
+export interface MapResponse {
+  type?: 'FeatureCollection';
+  features: (EntityFeature | ClusterFeature)[];
+  /** Places in the window, clustered or not. */
+  number_matched: number;
+  /** Features in this response. */
+  number_returned: number;
+  /** More features than `limit` were left out, smallest clusters first. */
+  truncated: boolean;
 }
 
 export interface PaginationV1 {
@@ -1318,6 +1471,11 @@ export interface RolePutData {
   name: string;
 }
 
+export interface SearchResponse {
+  items: (AddressHit | LocationHit)[];
+  external: ExternalStatus;
+}
+
 /**
  * A single authenticated session of the current user, as surfaced by the
  * self-service session manager. ``is_current`` marks the session bound to the
@@ -1948,6 +2106,72 @@ page?: number;
  */
 limit?: number;
 };
+
+export type GetMapGeoV2MapGetParams = {
+/**
+ * west,south,east,north in degrees (RFC 7946 order). West greater than east means a window across the antimeridian.
+ */
+bbox: string;
+/**
+ * The map's zoom level, fractions allowed.
+ * @minimum 0
+ * @maximum 22
+ */
+zoom: number;
+/**
+ * Screen pixels one marker (or cluster) takes.
+ * @minimum 24
+ * @maximum 256
+ */
+radius_px?: number;
+/**
+ * What to draw; both by default.
+ */
+kinds?: ('address' | 'location')[] | null;
+/**
+ * @minimum 1
+ * @maximum 5000
+ */
+limit?: number;
+};
+
+export type SearchGeoV2SearchGetParams = {
+/**
+ * Free text: street, house, place, city.
+ */
+q?: string | null;
+/**
+ * Latitude of the map centre or the user.
+ */
+lat?: number | null;
+lon?: number | null;
+/**
+ * @minimum 1
+ * @maximum 50
+ */
+limit?: number;
+/**
+ * What to search; both by default.
+ */
+kinds?: ('address' | 'location')[] | null;
+city_id?: number | null;
+/**
+ * Skip the unnamed locations that only stand for an address (the address itself is already a result).
+ */
+named_locations_only?: boolean;
+/**
+ * `auto` asks the external geocoder when the local answer is short; `off` never does.
+ */
+external?: SearchGeoV2SearchGetExternal;
+};
+
+export type SearchGeoV2SearchGetExternal = typeof SearchGeoV2SearchGetExternal[keyof typeof SearchGeoV2SearchGetExternal];
+
+
+export const SearchGeoV2SearchGetExternal = {
+  auto: 'auto',
+  off: 'off',
+} as const;
 
 export type SendTestNotificationNotifyV1TestPost200 = {[key: string]: string};
 
@@ -3664,6 +3888,68 @@ export const getMapGeoV1MapGet = (
  ): Promise<AxiosResponse<MapResult>> => {
     return axios.get(
       `/geo/v1/map`,{
+    ...options,
+        params: {...params, ...options?.params},}
+    );
+  }
+
+/**
+ * @summary Get Address
+ */
+export const getAddressGeoV2AddressesAddressIdGet = (
+    addressId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<AddressReadV2>> => {
+    return axios.get(
+      `/geo/v2/addresses/${addressId}`,options
+    );
+  }
+
+/**
+ * @summary Get Location
+ */
+export const getLocationGeoV2LocationsLocationIdGet = (
+    locationId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<LocationReadV2>> => {
+    return axios.get(
+      `/geo/v2/locations/${locationId}`,options
+    );
+  }
+
+/**
+ * Places in a map window, clustered for the zoom.
+ *
+ * The window is cut into cells of `radius_px` screen pixels (Web Mercator,
+ * so a cell is the same size on screen everywhere) and every cell becomes
+ * one feature: the place itself when it is alone, a cluster otherwise.
+ * The answer is bounded by the cells that fit the window, not by how
+ * dense the data is, so a crowded district cannot push the rest out.
+ * From zoom 17 on nothing is clustered.
+ * @summary Get Map
+ */
+export const getMapGeoV2MapGet = (
+    params: GetMapGeoV2MapGetParams, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<MapResponse>> => {
+    return axios.get(
+      `/geo/v2/map`,{
+    ...options,
+        params: {...params, ...options?.params},}
+    );
+  }
+
+/**
+ * Typeahead over addresses and named locations, ranked together.
+ *
+ * The city counts: "тверская москва" narrows to Moscow. With a point the
+ * nearer of equal matches comes first; with a point and no text the
+ * nearest places are listed. Addresses the external geocoder finds are
+ * stored, so every result has an id usable as `address_id`.
+ * @summary Search
+ */
+export const searchGeoV2SearchGet = (
+    params?: SearchGeoV2SearchGetParams, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<SearchResponse>> => {
+    return axios.get(
+      `/geo/v2/search`,{
     ...options,
         params: {...params, ...options?.params},}
     );
@@ -5441,6 +5727,10 @@ export type PatchLocationGeoV1LocationsLocationIdPatchResult = AxiosResponse<Loc
 export type DeleteLocationGeoV1LocationsLocationIdDeleteResult = AxiosResponse<unknown>
 export type CreateLocationFromAddressGeoV1LocationsFromAddressPostResult = AxiosResponse<LocationRead>
 export type GetMapGeoV1MapGetResult = AxiosResponse<MapResult>
+export type GetAddressGeoV2AddressesAddressIdGetResult = AxiosResponse<AddressReadV2>
+export type GetLocationGeoV2LocationsLocationIdGetResult = AxiosResponse<LocationReadV2>
+export type GetMapGeoV2MapGetResult = AxiosResponse<MapResponse>
+export type SearchGeoV2SearchGetResult = AxiosResponse<SearchResponse>
 export type HealthMailV1HealthGetResult = AxiosResponse<HealthV1>
 export type ListMyClientsNotifyV1ClientsMyGetResult = AxiosResponse<ClientRead[]>
 export type RegisterMyClientNotifyV1ClientsMyPostResult = AxiosResponse<ClientRead>
