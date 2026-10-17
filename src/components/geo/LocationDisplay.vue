@@ -1,5 +1,5 @@
 <template>
-  <MapLinkMenu v-if="point" :point="point" :label="mapLabel" v-slot="{ toggle }">
+  <MapLinkMenu v-if="point || searchText" :point="point" :search="searchText" :label="mapLabel" v-slot="{ toggle }">
     <a href="#" class="location-display location-display--link" @click.prevent="toggle">
       <ion-icon :icon="locationOutline" />
       <span>{{ text }}</span>
@@ -19,7 +19,7 @@ import { locationOutline, openOutline } from 'ionicons/icons'
 import MapLinkMenu from './MapLinkMenu.vue'
 import type { GeoPoint } from './GeoMap.vue'
 import type { LocationRead } from '@/api/generated/almaEventFlow'
-import { mapLinkLabel } from '@/composables/useGeoSearch'
+import { locationSearchText, mapLinkLabel } from '@/composables/useGeoSearch'
 
 const props = defineProps<{ location: LocationRead }>()
 
@@ -31,6 +31,7 @@ const point = computed<GeoPoint | null>(() => {
   const p = props.location.spot ?? props.location.address?.spot
   return p ? { lat: p.lat, lon: p.lon } : null
 })
+const searchText = computed(() => locationSearchText(props.location))
 </script>
 
 <style scoped>

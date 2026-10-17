@@ -62,9 +62,16 @@ describe('what a suggestion says under its title', () => {
   })
 
   test('a location without an address is a point', () => {
-    expect(resultSubtitle({ kind: 'location', item: location({ address: null, address_id: null }) })).toBe(
-      'Точка на карте',
-    )
+    const item = location({ address: null, address_id: null, spot: { lat: 55.7, lon: 37.6 } })
+
+    expect(resultSubtitle({ kind: 'location', item })).toBe('Точка на карте')
+  })
+
+  test('a location with neither an address nor a point is an address written as text', () => {
+    const item = location({ address: null, address_id: null })
+
+    expect(resultSubtitle({ kind: 'location', item })).toBe('Адрес текстом')
+    expect(resultMarker({ kind: 'location', item })).toBeNull()
   })
 
   test('the locality is read from whatever carries it', () => {
@@ -160,6 +167,39 @@ describe('useGeoSearch', () => {
     expect(backend.calls.map((call) => call.url)).toEqual(['/geo/v2/search'])
     expect(backend.calls[0]!.params).toMatchObject({ lat: 55.75, lon: 37.6 })
     expect(backend.calls[0]!.params.q).toBeUndefined()
+    wrapper.unmount()
+  })
+
+  test('a point alone is only looked up in the stored places, the outside geocoder is not asked', async () => {
+    backend = stubBackend(() => ({ status: 200, data: { items: [], external: { state: 'skipped' } } }))
+    const { api, wrapper } = host()
+
+    api.near.value = { lat: 55.75, lon: 37.6 }
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(300)
+
+    expect(backend.calls[0]!.params.external).toBe('off')
+    wrapper.unmount()
+  })
+
+  test('a point the user marked, and any typed text, may be completed from outside', async () => {
+    backend = stubBackend(() => ({ status: 200, data: { items: [], external: { state: 'skipped' } } }))
+    const { api, wrapper } = host()
+
+    api.marked.value = true
+    api.near.value = { lat: 55.75, lon: 37.6 }
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(300)
+    api.clear()
+    api.near.value = { lat: 55.76, lon: 37.6 }
+    api.query.value = 'тверская'
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(300)
+    api.query.value = ''
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(300)
+
+    expect(backend.calls.map((call) => call.params.external)).toEqual([undefined, undefined, 'off'])
     wrapper.unmount()
   })
 

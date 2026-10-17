@@ -1,6 +1,6 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { getLocationsGeoV1LocationsGet, searchGeoV2SearchGet } from '@/api/generated/almaEventFlow'
-import type { AddressHit, AddressRead, LocationHit, LocationRead } from '@/api/generated/almaEventFlow'
+import type { AddressHit, AddressRead, LocationHit, LocationRead, Place } from '@/api/generated/almaEventFlow'
 import type { GeoPoint, MapMarker } from '@/components/geo/GeoMap.vue'
 
 export type GeoResult =
@@ -31,6 +31,14 @@ export function mapLinkLabel(location: LocationRead): string | undefined {
   return location.address?.name || location.name || undefined
 }
 
+/** What to look up in a map service for a location with no coordinates: its address, or the text it is. */
+export function locationSearchText(location: LocationRead): string | null {
+  if (location.spot || location.address?.spot) return null
+  const address = location.address
+  if (address) return [address.name, addressLocality(address)].filter(Boolean).join(', ')
+  return location.name?.trim() || null
+}
+
 export function resultLabel(result: GeoResult): string {
   return result.kind === 'location' ? locationLabel(result.item) : result.item.name
 }
@@ -48,8 +56,8 @@ function withCity(text: string, address: AddressRead | null | undefined): string
 
 export function resultSubtitle(result: GeoResult): string {
   if (result.kind === 'address') return withCity('Адрес', result.item)
-  const { name, address } = result.item
-  if (!address) return 'Точка на карте'
+  const { name, address, spot } = result.item
+  if (!address) return spot ? 'Точка на карте' : 'Адрес текстом'
   return withCity(name ? address.name : 'Адрес', address)
 }
 
@@ -92,7 +100,10 @@ export function resultMarker(result: GeoResult): MapMarker | null {
 export function useGeoSearch({ limit = 20, namedLocationsOnly = true, debounceMs = 300 }: Options = {}) {
   const query = ref('')
   const near = ref<GeoPoint | null>(null)
+  /** The point was put on the map by the user: only then may a point alone be completed from the outside geocoder. */
+  const marked = ref(false)
   const results = ref<GeoResult[]>([])
+  const place = ref<Place | null>(null)
   const searching = ref(false)
 
   let timer: ReturnType<typeof setTimeout> | null = null
@@ -116,6 +127,7 @@ export function useGeoSearch({ limit = 20, namedLocationsOnly = true, debounceMs
         })
         if (id !== requestId) return
         results.value = locations.data.items.map((item) => ({ kind: 'location' as const, item }))
+        place.value = null
         return
       }
       const found = await searchGeoV2SearchGet({
@@ -124,11 +136,16 @@ export function useGeoSearch({ limit = 20, namedLocationsOnly = true, debounceMs
         lon: point?.lon,
         limit,
         named_locations_only: namedLocationsOnly,
+        ...(q || marked.value ? {} : { external: 'off' as const }),
       })
       if (id !== requestId) return
       results.value = found.data.items.map(toGeoResult)
+      place.value = found.data.place ?? null
     } catch {
-      if (id === requestId) results.value = []
+      if (id === requestId) {
+        results.value = []
+        place.value = null
+      }
     } finally {
       if (id === requestId) searching.value = false
     }
@@ -139,7 +156,7 @@ export function useGeoSearch({ limit = 20, namedLocationsOnly = true, debounceMs
     run()
   }
 
-  watch([query, near], () => {
+  watch([query, near, marked], () => {
     if (timer) clearTimeout(timer)
     timer = setTimeout(run, debounceMs)
   })
@@ -158,9 +175,11 @@ export function useGeoSearch({ limit = 20, namedLocationsOnly = true, debounceMs
     requestId++
     query.value = ''
     near.value = null
+    marked.value = false
     results.value = []
+    place.value = null
     searching.value = false
   }
 
-  return { query, near, results, searching, markers, clear, refresh }
+  return { query, near, marked, results, place, searching, markers, clear, refresh }
 }

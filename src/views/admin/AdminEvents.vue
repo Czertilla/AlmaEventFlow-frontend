@@ -106,7 +106,7 @@ const formFields: FormField[] = [
     label: 'Место проведения',
     type: 'search',
     fetchOptions: async (search) => {
-      const res = await getLocationsGeoV1LocationsGet({ search, limit: 20 })
+      const res = await getLocationsGeoV1LocationsGet({ search, limit: 20, name__isnull: false })
       return res.data.items
     },
     displayField: 'name',

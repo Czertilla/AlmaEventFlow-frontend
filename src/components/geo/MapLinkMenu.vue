@@ -2,6 +2,9 @@
   <div ref="rootEl" class="mlm">
     <slot :toggle="toggle" :open="open" />
     <div v-if="open" class="mlm-menu" role="menu">
+      <button v-if="search" type="button" class="mlm-item mlm-copy" role="menuitem" @click="copy">
+        {{ copied ? 'Скопировано' : 'Скопировать адрес' }}
+      </button>
       <a
         v-for="provider in providers"
         :key="provider.name"
@@ -21,16 +24,31 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { GeoPoint } from './GeoMap.vue'
-import { buildMapProviders } from '@/composables/useMapLinks'
+import { buildMapProviders, buildSearchProviders } from '@/composables/useMapLinks'
 
-const props = defineProps<{ point: GeoPoint | null; label?: string }>()
+const props = defineProps<{ point: GeoPoint | null; label?: string; search?: string | null }>()
 
 const open = ref(false)
+const copied = ref(false)
 const rootEl = ref<HTMLElement>()
 
-const providers = computed(() =>
-  props.point ? buildMapProviders(props.point.lat, props.point.lon, props.label) : [],
-)
+const providers = computed(() => {
+  if (props.point) return buildMapProviders(props.point.lat, props.point.lon, props.label)
+  return props.search ? buildSearchProviders(props.search) : []
+})
+
+async function copy() {
+  try {
+    await navigator.clipboard.writeText(props.search ?? '')
+    copied.value = true
+    setTimeout(() => {
+      copied.value = false
+      close()
+    }, 900)
+  } catch {
+    close()
+  }
+}
 
 function toggle() {
   open.value = !open.value
@@ -92,7 +110,14 @@ onBeforeUnmount(() => {
   font-size: var(--fs-md);
   font-weight: var(--fw-medium);
   text-decoration: none;
+  white-space: nowrap;
   cursor: pointer;
+}
+
+.mlm-copy {
+  border: none;
+  background: transparent;
+  text-align: left;
 }
 
 .mlm-item:hover,

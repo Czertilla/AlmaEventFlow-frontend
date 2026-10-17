@@ -96,6 +96,7 @@ import ResourceFormModal from '@/components/admin/ResourceFormModal.vue'
 import GeoMap from '@/components/geo/GeoMap.vue'
 import type { GeoPoint, MapMarker, MapBBox } from '@/components/geo/GeoMap.vue'
 import { locationMarker, useGeoSearch } from '@/composables/useGeoSearch'
+import { isAddressOnly, locationKindParams } from '@/utils/geo'
 import {
   getAddressesGeoV1AddressesGet, createAddressGeoV1AddressesPost,
   patchAddressGeoV1AddressesAddressIdPatch, deleteAddressGeoV1AddressesAddressIdDelete,
@@ -124,7 +125,17 @@ const spotFilter: FilterDef = {
   options: [{ value: 'false', label: 'Указаны' }, { value: 'true', label: 'Не указаны' }],
 }
 const addressFilters: FilterDef[] = [spotFilter, ...TIMESTAMP_FILTERS]
-const locationFilters: FilterDef[] = [spotFilter, ...TIMESTAMP_FILTERS]
+const kindFilter: FilterDef = {
+  key: 'kind',
+  label: 'Вид',
+  type: 'select',
+  options: [
+    { value: 'named', label: 'Только с названием' },
+    { value: 'address', label: 'Адреса без названия' },
+    { value: 'all', label: 'Все' },
+  ],
+}
+const locationFilters: FilterDef[] = [kindFilter, spotFilter, ...TIMESTAMP_FILTERS]
 
 // Addresses
 const addressColumns: ColumnDef[] = [
@@ -234,7 +245,8 @@ const editingLocation = ref<any>(null)
 const isLocationCreating = ref(false)
 
 async function fetchLocations(params: Record<string, any>) {
-  return getLocationsGeoV1LocationsGet(params as any)
+  const { kind, ...rest } = params
+  return getLocationsGeoV1LocationsGet({ ...rest, ...locationKindParams(kind) } as any)
 }
 
 function openLocationEdit(item: any) {
@@ -274,10 +286,7 @@ const bboxMarkers = ref<MapMarker[]>([])
 const mapAddressById = new Map<string, AddressRead>()
 const mapLocationById = new Map<string, LocationRead>()
 const pickedPoint = ref<GeoPoint | null>(null)
-const { query: mapQuery, results: mapResults, markers: searchMarkers } = useGeoSearch({
-  limit: 30,
-  namedLocationsOnly: false,
-})
+const { query: mapQuery, results: mapResults, markers: searchMarkers } = useGeoSearch({ limit: 30 })
 let lastBox: MapBBox | null = null
 
 const visibleMarkers = computed(() => (mapQuery.value.trim() ? searchMarkers.value : bboxMarkers.value))
@@ -299,6 +308,7 @@ async function onMapBbox(box: MapBBox) {
       markers.push({ id: a.id, kind: 'address', lat: a.spot.lat, lon: a.spot.lon, label: a.name })
     }
     for (const l of res.data.locations.items) {
+      if (isAddressOnly(l)) continue
       const marker = locationMarker(l)
       if (!marker) continue
       mapLocationById.set(l.id, l)

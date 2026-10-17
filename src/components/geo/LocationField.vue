@@ -2,7 +2,7 @@
   <div ref="root" class="lf" @focusout="onFocusOut">
     <UiField :label="label" :float="!!modelValue" :filled="!!query">
       <template #prefix>
-        <span v-if="modelValue" class="lf-tile"><ion-icon :icon="locationOutline" /></span>
+        <span v-if="modelValue" class="lf-tile"><ion-icon :icon="valueIcon" /></span>
         <ion-icon v-else :icon="searchOutline" />
       </template>
 
@@ -39,6 +39,11 @@
           </button>
           <MapLinkMenu v-if="selectedPoint" :point="selectedPoint" :label="mapLinkLabel(modelValue)" v-slot="{ toggle }">
             <button type="button" class="ui-icon-btn" aria-label="Открыть на карте" @click="toggle">
+              <ion-icon :icon="openOutline" />
+            </button>
+          </MapLinkMenu>
+          <MapLinkMenu v-else-if="searchText" :point="null" :search="searchText" v-slot="{ toggle }">
+            <button type="button" class="ui-icon-btn" aria-label="Скопировать адрес или найти его в картах" @click="toggle">
               <ion-icon :icon="openOutline" />
             </button>
           </MapLinkMenu>
@@ -85,6 +90,7 @@
         @pick="pick"
         @create-from-address="openModal({ address: $event })"
         @create-named="openModal({ name: $event })"
+        @use-text="useText"
       />
     </div>
 
@@ -101,7 +107,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { IonIcon, IonSpinner } from '@ionic/vue'
-import { addOutline, closeOutline, locationOutline, mapOutline, openOutline, searchOutline } from 'ionicons/icons'
+import { addOutline, closeOutline, homeOutline, locationOutline, mapOutline, openOutline, searchOutline } from 'ionicons/icons'
 import UiField from '@/components/common/UiField.vue'
 import AddressActionCard from './AddressActionCard.vue'
 import GeoResultList from './GeoResultList.vue'
@@ -111,7 +117,16 @@ import type { GeoPoint } from './GeoMap.vue'
 import type { AddressRead, LocationRead } from '@/api/generated/almaEventFlow'
 import { useComboNav } from '@/composables/useComboNav'
 import { useLocationResolver } from '@/composables/useLocationResolver'
-import { canOfferCreate, geoOptionId, locationLabel, mapLinkLabel, useGeoSearch } from '@/composables/useGeoSearch'
+import { isAddressOnly, isTextOnly } from '@/utils/geo'
+import {
+  addressLocality,
+  canOfferCreate,
+  geoOptionId,
+  locationLabel,
+  locationSearchText,
+  mapLinkLabel,
+  useGeoSearch,
+} from '@/composables/useGeoSearch'
 import type { GeoResult, LocationDraft } from '@/composables/useGeoSearch'
 
 const props = withDefaults(
@@ -122,7 +137,7 @@ const emit = defineEmits<{ 'update:modelValue': [value: LocationRead | null] }>(
 
 const listId = `lf-${Math.random().toString(36).slice(2, 8)}`
 const { query, results, searching, clear, refresh } = useGeoSearch({ limit: 8 })
-const { resolving, resolve } = useLocationResolver()
+const { resolving, resolve, resolveText } = useLocationResolver()
 
 const root = ref<HTMLElement>()
 const dropdownOpen = ref(false)
@@ -132,7 +147,7 @@ const modalDraft = ref<LocationDraft | null>(null)
 const modalSeed = ref('')
 
 const canCreate = computed(() => canOfferCreate(results.value, query.value))
-const optionCount = computed(() => results.value.length + (canCreate.value ? 1 : 0))
+const optionCount = computed(() => results.value.length + (canCreate.value ? 2 : 0))
 const { active, next, prev, reset } = useComboNav(optionCount)
 
 const showDropdown = computed(
@@ -145,11 +160,17 @@ const selectedPoint = computed<GeoPoint | null>(() => {
   const point = props.modelValue?.spot ?? props.modelValue?.address?.spot
   return point ? { lat: point.lat, lon: point.lon } : null
 })
+const addressOnly = computed(() => !!props.modelValue && isAddressOnly(props.modelValue))
+const textOnly = computed(() => !!props.modelValue && isTextOnly(props.modelValue))
+const searchText = computed(() => (props.modelValue ? locationSearchText(props.modelValue) : null))
+const valueIcon = computed(() => (addressOnly.value ? homeOutline : locationOutline))
 const subtitle = computed(() => {
   const location = props.modelValue
   if (!location) return ''
+  if (textOnly.value) return 'Адрес текстом, без карты'
+  if (addressOnly.value) return addressLocality(location.address) || 'Адрес'
   if (location.name && location.address) return location.address.name
-  return location.address ? '' : 'Точка на карте'
+  return 'Точка на карте'
 })
 
 function onFocus() {
@@ -201,6 +222,13 @@ async function useAddress() {
   emit('update:modelValue', location)
 }
 
+async function useText(text: string) {
+  const location = await resolveText(text)
+  if (!location) return
+  resetSearch()
+  emit('update:modelValue', location)
+}
+
 function select(location: LocationRead) {
   resetSearch()
   emit('update:modelValue', location)
@@ -238,6 +266,7 @@ function onKeydown(event: KeyboardEvent) {
     if (!showDropdown.value || pickedAddress.value) return
     const index = active.value >= 0 ? active.value : 0
     if (index < results.value.length) pick(results.value[index])
+    else if (canCreate.value && index === results.value.length + 1) useText(query.value)
     else if (canCreate.value) openModal({ name: query.value.trim() })
   } else if (event.key === 'Escape') {
     if (pickedAddress.value) {

@@ -7,6 +7,19 @@ function isApplePlatform(): boolean {
   return /iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)
 }
 
+/** Links that open a map service with the address as a search query, for a place with no coordinates. */
+export function buildSearchProviders(text: string): MapProvider[] {
+  const q = encodeURIComponent(text)
+  const providers: MapProvider[] = [
+    { name: 'Яндекс Карты', url: `https://yandex.ru/maps/?text=${q}` },
+    { name: '2ГИС', url: `https://2gis.ru/search/${q}` },
+    { name: 'Google Карты', url: `https://www.google.com/maps/search/?api=1&query=${q}` },
+    { name: 'OpenStreetMap', url: `https://www.openstreetmap.org/search?query=${q}` },
+  ]
+  if (isApplePlatform()) providers.push({ name: 'Apple Карты', url: `https://maps.apple.com/?q=${q}` })
+  return providers
+}
+
 export function buildMapProviders(lat: number, lon: number, label?: string): MapProvider[] {
   const q = label ? encodeURIComponent(label) : ''
   const providers: MapProvider[] = [

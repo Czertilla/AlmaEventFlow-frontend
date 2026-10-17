@@ -23,6 +23,7 @@
         <span class="grl-title">{{ resultLabel(r) }}</span>
         <span class="grl-sub">{{ resultSubtitle(r) }}</span>
       </span>
+      <span v-if="distanceOf(r)" class="grl-dist">{{ distanceOf(r) }}</span>
       <button
         v-if="r.kind === 'address' && addressActions"
         type="button"
@@ -58,17 +59,38 @@
         <span class="grl-sub">Указать адрес или точку на карте</span>
       </span>
     </li>
+
+    <li
+      v-if="showCreate && showText"
+      :id="geoOptionId(id, results.length + 1)"
+      class="grl-item grl-item--text"
+      :class="{ 'grl-item--active': results.length + 1 === activeIndex }"
+      role="option"
+      :aria-selected="results.length + 1 === activeIndex"
+      @mousedown.prevent
+      @click="emit('use-text', query.trim())"
+    >
+      <span class="grl-tile grl-tile--address">
+        <ion-icon :icon="textOutline" />
+      </span>
+      <span class="grl-text">
+        <span class="grl-title">Только текстом «{{ query.trim() }}»</span>
+        <span class="grl-sub">Без карты: адрес можно скопировать или найти в картах</span>
+      </span>
+    </li>
   </ul>
 </template>
 
 <script setup lang="ts">
 import { IonIcon, IonSpinner } from '@ionic/vue'
-import { addOutline, locationOutline, starOutline } from 'ionicons/icons'
+import { addOutline, locationOutline, starOutline, textOutline } from 'ionicons/icons'
 import type { AddressRead } from '@/api/generated/almaEventFlow'
-import { geoOptionId, resultLabel, resultSubtitle } from '@/composables/useGeoSearch'
+import { geoOptionId, resultLabel, resultPoint, resultSubtitle } from '@/composables/useGeoSearch'
 import type { GeoResult } from '@/composables/useGeoSearch'
+import type { GeoPoint } from './GeoMap.vue'
+import { distanceMeters, formatDistance } from '@/utils/geo'
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     id: string
     results: GeoResult[]
@@ -76,16 +98,26 @@ withDefaults(
     searching: boolean
     activeIndex: number
     showCreate?: boolean
+    /** Offer to keep the typed text itself as the location, when nothing on the map fits. */
+    showText?: boolean
     addressActions?: boolean
+    /** Where the distances are counted from: the map centre or a marked point. */
+    from?: GeoPoint | null
   }>(),
-  { showCreate: false, addressActions: true },
+  { showCreate: false, showText: true, addressActions: true, from: null },
 )
 
 const emit = defineEmits<{
   pick: [result: GeoResult]
   'create-from-address': [address: AddressRead]
   'create-named': [name: string]
+  'use-text': [text: string]
 }>()
+
+function distanceOf(result: GeoResult): string {
+  const point = resultPoint(result)
+  return props.from && point ? formatDistance(distanceMeters(props.from, point)) : ''
+}
 
 </script>
 
@@ -170,6 +202,13 @@ const emit = defineEmits<{
   color: var(--ion-color-medium);
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.grl-dist {
+  flex-shrink: 0;
+  font-size: var(--fs-xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--ion-color-medium);
 }
 
 .grl-action {

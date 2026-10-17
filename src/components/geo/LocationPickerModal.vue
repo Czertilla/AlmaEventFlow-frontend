@@ -22,7 +22,7 @@
           ref="geoMapRef"
           class="pm-map"
           pickable
-          fit
+          :fit="fitResults"
           :markers="mapMarkers"
           :picked-point="pendingPoint"
           :center="focusPoint"
@@ -30,6 +30,7 @@
           @marker-click="onMarkerClick"
           @marker-create="onMarkerCreate"
           @interact="panelCollapsed = true"
+          @bbox="onBbox"
         />
 
         <div class="pm-top">
@@ -64,17 +65,19 @@
             </button>
           </div>
 
-          <div v-if="results.length > 0 && !panelCollapsed" class="pm-panel">
+          <div v-if="showPanel" class="pm-panel">
             <GeoResultList
               id="pm-list"
               :results="results"
               :query="query"
               :searching="searching"
               :active-index="active"
+              :from="query.trim() ? null : near"
               :show-create="canCreate"
               @pick="pick"
               @create-from-address="startCreate({ address: $event })"
               @create-named="startCreate({ name: $event })"
+              @use-text="useText"
             />
           </div>
         </div>
@@ -96,11 +99,11 @@
               :busy="resolving"
               @use="useAddress"
               @create="startCreate({ address: pickedAddress })"
-              @cancel="pickedAddress = null"
+              @cancel="cancelAddress"
             />
           </div>
-          <p v-else-if="results.length === 0 && !searching" class="pm-hint">
-            Найдите место или кликните по карте, чтобы отметить новое
+          <p v-else-if="results.length === 0 && !searching && !query.trim()" class="pm-hint">
+            Введите адрес или поставьте метку на карте: ближайшие адреса подгрузятся
           </p>
         </div>
       </div>
@@ -123,7 +126,7 @@ import {
   searchOutline,
 } from 'ionicons/icons'
 import GeoMap from './GeoMap.vue'
-import type { GeoPoint, MapMarker } from './GeoMap.vue'
+import type { GeoPoint, MapBBox, MapMarker } from './GeoMap.vue'
 import AddressActionCard from './AddressActionCard.vue'
 import GeoResultList from './GeoResultList.vue'
 import LocationCreateForm from './LocationCreateForm.vue'
@@ -138,6 +141,10 @@ import {
   useGeoSearch,
 } from '@/composables/useGeoSearch'
 import type { GeoResult, LocationDraft } from '@/composables/useGeoSearch'
+import { distanceMeters } from '@/utils/geo'
+
+/** A pan shorter than this does not ask for the places around the new centre again. */
+const FOLLOW_THRESHOLD_M = 150
 
 const props = defineProps<{
   open: boolean
@@ -147,29 +154,40 @@ const props = defineProps<{
 }>()
 const emit = defineEmits<{ 'update:open': [value: boolean]; select: [location: LocationRead] }>()
 
-const { query, near, results, searching, markers, clear, refresh } = useGeoSearch({ limit: 30 })
-const { resolving, resolve } = useLocationResolver()
+const { query, near, marked, results, place, searching, markers, clear, refresh } = useGeoSearch({ limit: 30 })
+const { resolving, resolve, resolveText } = useLocationResolver()
 
 const view = ref<'browse' | 'create'>('browse')
 const createDraft = ref<LocationDraft>({})
 const cameFromBrowse = ref(false)
 const pendingPoint = ref<GeoPoint | null>(null)
 const pickedAddress = ref<AddressRead | null>(null)
+const mapCenter = ref<GeoPoint | null>(null)
 const panelCollapsed = ref(false)
 const geoMapRef = ref<InstanceType<typeof GeoMap>>()
 const searchInput = ref<HTMLInputElement>()
 
 const canCreate = computed(() => canOfferCreate(results.value, query.value))
-const optionCount = computed(() => results.value.length + (canCreate.value ? 1 : 0))
+const optionCount = computed(() => results.value.length + (canCreate.value ? 2 : 0))
+const showPanel = computed(
+  () => !panelCollapsed.value && (results.value.length > 0 || (canCreate.value && !searching.value)),
+)
 const { active, next, prev, reset } = useComboNav(optionCount)
 
 const selectedMarker = computed(() => (props.selected ? locationMarker(props.selected) : null))
 const selectedPoint = computed<GeoPoint | undefined>(() =>
   selectedMarker.value ? { lat: selectedMarker.value.lat, lon: selectedMarker.value.lon } : undefined,
 )
+const fitResults = computed(() => !!query.value.trim())
+const placePoint = computed<GeoPoint | undefined>(() => {
+  const found = place.value
+  if (!found || !query.value.trim() || markers.value.length > 0) return undefined
+  return { lat: found.lat, lon: found.lon }
+})
 const focusPoint = computed<GeoPoint | undefined>(() => {
   const spot = pickedAddress.value?.spot
-  return spot ? { lat: spot.lat, lon: spot.lon } : selectedPoint.value
+  if (spot) return { lat: spot.lat, lon: spot.lon }
+  return placePoint.value ?? selectedPoint.value
 })
 const mapMarkers = computed<MapMarker[]>(() => {
   const extra: MapMarker[] = []
@@ -195,7 +213,9 @@ watch(
     if (!isOpen) return
     pendingPoint.value = null
     pickedAddress.value = null
+    mapCenter.value = null
     near.value = null
+    marked.value = false
     cameFromBrowse.value = false
     panelCollapsed.value = false
     createDraft.value = props.draft ?? {}
@@ -205,9 +225,27 @@ watch(
   },
 )
 
-watch(query, () => {
+watch(query, (text) => {
   panelCollapsed.value = false
+  if (!text.trim()) followMap()
 })
+
+function followMap() {
+  const centre = mapCenter.value
+  if (!centre || query.value.trim() || pendingPoint.value || pickedAddress.value) return
+  if (near.value && distanceMeters(near.value, centre) < FOLLOW_THRESHOLD_M) return
+  near.value = centre
+}
+
+function onBbox(box: MapBBox) {
+  mapCenter.value = { lat: (box.minLat + box.maxLat) / 2, lon: (box.minLon + box.maxLon) / 2 }
+  followMap()
+}
+
+function cancelAddress() {
+  pickedAddress.value = null
+  followMap()
+}
 
 async function onPresented() {
   await nextTick()
@@ -236,7 +274,10 @@ function pick(result: GeoResult) {
   }
   pickedAddress.value = result.item
   pendingPoint.value = null
+  marked.value = false
   panelCollapsed.value = true
+  const spot = result.item.spot
+  if (!query.value.trim() && spot) near.value = { lat: spot.lat, lon: spot.lon }
 }
 
 async function useAddress() {
@@ -249,12 +290,20 @@ async function useAddress() {
 function onPick(point: GeoPoint) {
   pendingPoint.value = point
   pickedAddress.value = null
+  marked.value = true
   near.value = point
 }
 
 function cancelPending() {
   pendingPoint.value = null
+  marked.value = false
   near.value = null
+  followMap()
+}
+
+async function useText(text: string) {
+  const location = await resolveText(text)
+  if (location) finish(location)
 }
 
 function startCreate(draft: LocationDraft) {
@@ -262,6 +311,7 @@ function startCreate(draft: LocationDraft) {
   cameFromBrowse.value = true
   pendingPoint.value = null
   pickedAddress.value = null
+  marked.value = false
   near.value = null
   view.value = 'create'
 }
@@ -278,6 +328,7 @@ function cancelCreate() {
 function clearQuery() {
   clear()
   reset()
+  followMap()
   refresh()
   searchInput.value?.focus()
 }
@@ -313,6 +364,7 @@ function onKeydown(event: KeyboardEvent) {
     event.preventDefault()
     const index = active.value >= 0 ? active.value : 0
     if (index < results.value.length) pick(results.value[index])
+    else if (canCreate.value && index === results.value.length + 1) useText(query.value)
     else if (canCreate.value) startCreate({ name: query.value.trim() })
   } else if (event.key === 'Escape' && query.value) {
     clearQuery()
