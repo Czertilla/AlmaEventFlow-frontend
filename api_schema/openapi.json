@@ -13632,6 +13632,95 @@
                 }
             }
         },
+        "/geo/v2/locations": {
+            "post": {
+                "tags": [
+                    "location"
+                ],
+                "summary": "Create Location",
+                "description": "Same as the v1 create, plus a `name` alone: a location that is only an\naddress written as text, for when nothing about the place is on the map.\nPosting the same name again returns the location that exists.",
+                "operationId": "create_location_geo_v2_locations_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/LocationCreateV2"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/LocationReadV2"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
         "/geo/v2/map": {
             "get": {
                 "tags": [
@@ -13801,7 +13890,7 @@
                     "search"
                 ],
                 "summary": "Search",
-                "description": "Typeahead over addresses and named locations, ranked together.\n\nThe city counts: \"тверская москва\" narrows to Moscow. With a point the\nnearer of equal matches comes first; with a point and no text the\nnearest places are listed. Addresses the external geocoder finds are\nstored, so every result has an id usable as `address_id`.",
+                "description": "Typeahead over addresses and named locations, ranked together.\n\nThe city counts: \"тверская москва\" narrows to Moscow. With a point the\nnearer of equal matches comes first; with a point and no text the\nnearest places are listed, the houses around the point included when too\nfew are stored. A text that names a settlement (\"суздаль\") lists the\naddresses nearest to its centre and says where it is in `place`.\nAddresses the external geocoder finds are stored, so every result has an\nid usable as `address_id`.",
                 "operationId": "search_geo_v2_search_get",
                 "security": [
                     {
@@ -32116,10 +32205,11 @@
                             "cached",
                             "timeout",
                             "error",
-                            "unavailable"
+                            "unavailable",
+                            "throttled"
                         ],
                         "title": "State",
-                        "description": "`skipped`: the local answer was enough, or the request opted out. `ok` / `cached`: the external geocoder was asked. `timeout`, `error`, `unavailable`: it could not be, the answer is local only."
+                        "description": "`skipped`: the local answer was enough, or the request opted out. `ok` / `cached`: the external geocoder was asked. `timeout`, `error`, `unavailable`: it could not be, the answer is local only. `throttled`: the request budget towards the geocoder is spent, or it asked to slow down; the answer is local only."
                     },
                     "provider": {
                         "anyOf": [
@@ -32759,6 +32849,47 @@
                 },
                 "type": "object",
                 "title": "LocationCreate"
+            },
+            "LocationCreateV2": {
+                "properties": {
+                    "name": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 512
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Name"
+                    },
+                    "address_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Address Id"
+                    },
+                    "spot": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/Point"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    }
+                },
+                "type": "object",
+                "title": "LocationCreateV2",
+                "description": "Anchor the location to an address or a point, or give only a `name`:\nthen it is an address written as plain text, for a place nothing is known\nabout."
             },
             "LocationFromAddressCreate": {
                 "properties": {
@@ -35457,6 +35588,68 @@
                 ],
                 "title": "PersonRead"
             },
+            "Place": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "region": {
+                        "type": "string",
+                        "title": "Region",
+                        "description": "Region or state; empty when unknown."
+                    },
+                    "country": {
+                        "type": "string",
+                        "title": "Country"
+                    },
+                    "lat": {
+                        "type": "number",
+                        "title": "Lat"
+                    },
+                    "lon": {
+                        "type": "number",
+                        "title": "Lon"
+                    },
+                    "bbox": {
+                        "anyOf": [
+                            {
+                                "prefixItems": [
+                                    {
+                                        "type": "number"
+                                    },
+                                    {
+                                        "type": "number"
+                                    },
+                                    {
+                                        "type": "number"
+                                    },
+                                    {
+                                        "type": "number"
+                                    }
+                                ],
+                                "type": "array",
+                                "maxItems": 4,
+                                "minItems": 4
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Bbox",
+                        "description": "West, south, east, north: what a map fits to show the place."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name",
+                    "region",
+                    "country",
+                    "lat",
+                    "lon"
+                ],
+                "title": "Place"
+            },
             "Point": {
                 "properties": {
                     "lat": {
@@ -36025,6 +36218,17 @@
                     },
                     "external": {
                         "$ref": "#/components/schemas/ExternalStatus"
+                    },
+                    "place": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/Place"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "The settlement the text names, when it is one: the addresses listed are the nearest to its centre, and a map can move there."
                     }
                 },
                 "type": "object",

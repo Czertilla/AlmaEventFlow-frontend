@@ -601,7 +601,7 @@ export interface EventRead {
 }
 
 /**
- * `skipped`: the local answer was enough, or the request opted out. `ok` / `cached`: the external geocoder was asked. `timeout`, `error`, `unavailable`: it could not be, the answer is local only.
+ * `skipped`: the local answer was enough, or the request opted out. `ok` / `cached`: the external geocoder was asked. `timeout`, `error`, `unavailable`: it could not be, the answer is local only. `throttled`: the request budget towards the geocoder is spent, or it asked to slow down; the answer is local only.
  */
 export type ExternalStatusState = typeof ExternalStatusState[keyof typeof ExternalStatusState];
 
@@ -613,10 +613,11 @@ export const ExternalStatusState = {
   timeout: 'timeout',
   error: 'error',
   unavailable: 'unavailable',
+  throttled: 'throttled',
 } as const;
 
 export interface ExternalStatus {
-  /** `skipped`: the local answer was enough, or the request opted out. `ok` / `cached`: the external geocoder was asked. `timeout`, `error`, `unavailable`: it could not be, the answer is local only. */
+  /** `skipped`: the local answer was enough, or the request opted out. `ok` / `cached`: the external geocoder was asked. `timeout`, `error`, `unavailable`: it could not be, the answer is local only. `throttled`: the request budget towards the geocoder is spent, or it asked to slow down; the answer is local only. */
   state: ExternalStatusState;
   provider?: string | null;
 }
@@ -724,6 +725,17 @@ export interface LinkRead {
 }
 
 export interface LocationCreate {
+  name?: string | null;
+  address_id?: string | null;
+  spot?: Point | null;
+}
+
+/**
+ * Anchor the location to an address or a point, or give only a `name`:
+ * then it is an address written as plain text, for a place nothing is known
+ * about.
+ */
+export interface LocationCreateV2 {
   name?: string | null;
   address_id?: string | null;
   spot?: Point | null;
@@ -1420,6 +1432,17 @@ export interface PersonPutData {
   patronymic?: string | null;
 }
 
+export interface Place {
+  name: string;
+  /** Region or state; empty when unknown. */
+  region: string;
+  country: string;
+  lat: number;
+  lon: number;
+  /** West, south, east, north: what a map fits to show the place. */
+  bbox?: [number, number, number, number] | null;
+}
+
 export interface PreferenceItem {
   transport: TransportTypeEnum;
   is_enabled: boolean;
@@ -1474,6 +1497,8 @@ export interface RolePutData {
 export interface SearchResponse {
   items: (AddressHit | LocationHit)[];
   external: ExternalStatus;
+  /** The settlement the text names, when it is one: the addresses listed are the nearest to its centre, and a map can move there. */
+  place?: Place | null;
 }
 
 /**
@@ -3916,6 +3941,21 @@ export const getLocationGeoV2LocationsLocationIdGet = (
   }
 
 /**
+ * Same as the v1 create, plus a `name` alone: a location that is only an
+ * address written as text, for when nothing about the place is on the map.
+ * Posting the same name again returns the location that exists.
+ * @summary Create Location
+ */
+export const createLocationGeoV2LocationsPost = (
+    locationCreateV2: LocationCreateV2, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<LocationReadV2>> => {
+    return axios.post(
+      `/geo/v2/locations`,
+      locationCreateV2,options
+    );
+  }
+
+/**
  * Places in a map window, clustered for the zoom.
  *
  * The window is cut into cells of `radius_px` screen pixels (Web Mercator,
@@ -3941,8 +3981,11 @@ export const getMapGeoV2MapGet = (
  *
  * The city counts: "тверская москва" narrows to Moscow. With a point the
  * nearer of equal matches comes first; with a point and no text the
- * nearest places are listed. Addresses the external geocoder finds are
- * stored, so every result has an id usable as `address_id`.
+ * nearest places are listed, the houses around the point included when too
+ * few are stored. A text that names a settlement ("суздаль") lists the
+ * addresses nearest to its centre and says where it is in `place`.
+ * Addresses the external geocoder finds are stored, so every result has an
+ * id usable as `address_id`.
  * @summary Search
  */
 export const searchGeoV2SearchGet = (
@@ -5729,6 +5772,7 @@ export type CreateLocationFromAddressGeoV1LocationsFromAddressPostResult = Axios
 export type GetMapGeoV1MapGetResult = AxiosResponse<MapResult>
 export type GetAddressGeoV2AddressesAddressIdGetResult = AxiosResponse<AddressReadV2>
 export type GetLocationGeoV2LocationsLocationIdGetResult = AxiosResponse<LocationReadV2>
+export type CreateLocationGeoV2LocationsPostResult = AxiosResponse<LocationReadV2>
 export type GetMapGeoV2MapGetResult = AxiosResponse<MapResponse>
 export type SearchGeoV2SearchGetResult = AxiosResponse<SearchResponse>
 export type HealthMailV1HealthGetResult = AxiosResponse<HealthV1>
