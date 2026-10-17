@@ -35,6 +35,8 @@ const props = withDefaults(
     pickable?: boolean
     pickedPoint?: GeoPoint | null
     fit?: boolean
+    /** Off for a map inside a scrolling page, where the wheel should scroll the page. */
+    scrollZoom?: boolean
   }>(),
   {
     zoom: 15,
@@ -42,6 +44,7 @@ const props = withDefaults(
     pickable: false,
     pickedPoint: null,
     fit: false,
+    scrollZoom: true,
   },
 )
 
@@ -190,7 +193,7 @@ onMounted(() => {
   if (!mapEl.value) return
   mapEl.value.addEventListener('pointerdown', onPointerDown)
   const c = props.center || props.pickedPoint || DEFAULT_CENTER
-  map = L.map(mapEl.value).setView([c.lat, c.lon], props.zoom)
+  map = L.map(mapEl.value, { scrollWheelZoom: props.scrollZoom }).setView([c.lat, c.lon], props.zoom)
   L.tileLayer(TILE_URL, {
     attribution:
       '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',

@@ -18,6 +18,12 @@ export function distanceMeters(from: Coordinates, to: Coordinates): number {
 
 type Anchors = Pick<LocationRead, 'name' | 'spot' | 'address_id' | 'address'>
 
+/** Where a location is on a map: its own point, else its address's. */
+export function locationPoint(location: Pick<LocationRead, 'spot' | 'address'>): Coordinates | null {
+  const point = location.spot ?? location.address?.spot
+  return point ? { lat: point.lat, lon: point.lon } : null
+}
+
 /** Made only to attach an address to an event: it has no name, the address is all it says. */
 export function isAddressOnly(location: Anchors): boolean {
   return !location.name && !!(location.address_id || location.address)

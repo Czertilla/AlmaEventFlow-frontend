@@ -45,6 +45,11 @@
               <TimestampsMeta :created-at="event.created_at" :edited-at="event.edited_at" />
             </div>
 
+            <div v-if="mappedLocation" class="info-card">
+              <h3 class="card-title">Место проведения</h3>
+              <EventLocationMap :location="mappedLocation" />
+            </div>
+
             <div class="info-card">
               <div class="card-head">
                 <h3 class="card-title">Этапы</h3>
@@ -390,6 +395,7 @@ import { useToast } from '@/composables/useToast'
 import { useEventParticipations } from '@/composables/useEventParticipations'
 import { confirmAction } from '@/utils/confirm'
 import { formatDate, formatTime } from '@/utils/date'
+import { locationPoint } from '@/utils/geo'
 import { getCollectiveColor } from '@/utils/colors'
 import {
   statusColor as statusColorOf, statusLabel as statusLabelOf,
@@ -412,6 +418,7 @@ import TimestampsMeta from '@/components/common/TimestampsMeta.vue'
 import EventAttendanceChip from '@/components/event/EventAttendanceChip.vue'
 import EventCommentChip from '@/components/event/EventCommentChip.vue'
 import LocationField from '@/components/geo/LocationField.vue'
+import EventLocationMap from '@/components/geo/EventLocationMap.vue'
 import LocationDisplay from '@/components/geo/LocationDisplay.vue'
 import DateTimeField from '@/components/common/DateTimeField.vue'
 import EntityPickerField from '@/components/common/EntityPickerField.vue'
@@ -438,6 +445,9 @@ const event = ref<EventRead | null>(null)
 const stages = ref<StageRead[]>([])
 const loading = ref(true)
 const displayLocation = ref<LocationRead | null>(null)
+const mappedLocation = computed(() =>
+  displayLocation.value && locationPoint(displayLocation.value) ? displayLocation.value : null,
+)
 
 async function loadDisplayLocation(locationId: string | null | undefined) {
   if (!locationId) {
