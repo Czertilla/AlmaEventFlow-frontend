@@ -2,15 +2,25 @@
   <ion-page>
     <ion-header v-if="!isDesktop">
       <ion-toolbar>
-        <ion-buttons slot="start">
+        <ion-buttons v-if="!afterUpdate" slot="start">
           <ion-back-button default-href="/settings" />
         </ion-buttons>
         <ion-title>Что нового</ion-title>
+        <ion-buttons v-if="afterUpdate" slot="end">
+          <ion-button aria-label="Закрыть" @click="close">
+            <ion-icon slot="icon-only" :icon="closeOutline" />
+          </ion-button>
+        </ion-buttons>
       </ion-toolbar>
     </ion-header>
     <ion-content>
       <div class="changelog-page">
-        <h1 v-if="isDesktop" class="page-title">Что нового</h1>
+        <div v-if="isDesktop" class="page-head">
+          <h1 class="page-title">Что нового</h1>
+          <button v-if="afterUpdate" type="button" class="ui-icon-btn" aria-label="Закрыть" @click="close">
+            <ion-icon :icon="closeOutline" />
+          </button>
+        </div>
 
         <div v-if="loading" class="changelog-status">
           <ion-spinner name="crescent" />
@@ -34,10 +44,14 @@
             </div>
           </section>
 
-          <button v-if="hasMore" class="load-more-btn" :disabled="loadingMore" @click="loadMore">
+          <button v-if="hasMore" class="load-more-btn" :disabled="loadingMore" @click="loadMore()">
             <ion-spinner v-if="loadingMore" name="crescent" />
             <span v-else>Показать более ранние версии</span>
           </button>
+        </div>
+
+        <div v-if="afterUpdate && !loading" class="changelog-actions">
+          <button type="button" class="ui-btn ui-btn--primary" @click="close">Понятно</button>
         </div>
       </div>
     </ion-content>
@@ -46,12 +60,14 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonButtons, IonBackButton,
+  IonPage, IonHeader, IonToolbar, IonTitle, IonButtons, IonBackButton, IonButton,
   IonContent, IonIcon, IonSpinner,
 } from '@ionic/vue'
-import { alertCircleOutline } from 'ionicons/icons'
+import { alertCircleOutline, closeOutline } from 'ionicons/icons'
 import { usePlatform } from '@/composables/usePlatform'
+import { leaveChangelog } from '@/utils/changelogVersion'
 
 interface ReleaseGroup {
   title: string
@@ -77,6 +93,18 @@ interface ChangelogIndexEntry {
 const PAGE_SIZE = 5
 
 const { isDesktop } = usePlatform()
+const route = useRoute()
+const router = useRouter()
+// Открыта сама после обновления (см. App.vue): только последняя запись и
+// возврат на страницу, где человек был. Читаем один раз: пока страница уходит
+// с экрана, маршрут уже другой.
+const afterUpdate = route.query.new === '1'
+const from = route.query.from
+
+function close() {
+  leaveChangelog(router, from)
+}
+
 const loading = ref(true)
 const loadingMore = ref(false)
 const error = ref(false)
@@ -127,8 +155,8 @@ function parseChangelog(text: string): Release[] {
 // Тянет содержимое следующей порции релизов из манифеста (index) и
 // доразбирает их тем же мини-парсером -- каждый файл содержит ровно один
 // релиз, поэтому из результата parseChangelog берётся первый элемент.
-async function loadMore() {
-  const nextEntries = index.value.slice(loadedCount.value, loadedCount.value + PAGE_SIZE)
+async function loadMore(count = PAGE_SIZE) {
+  const nextEntries = index.value.slice(loadedCount.value, loadedCount.value + count)
   if (nextEntries.length === 0) return
   loadingMore.value = true
   try {
@@ -152,7 +180,7 @@ onMounted(async () => {
     const response = await fetch('/changelog/index.json')
     if (!response.ok) throw new Error(`status ${response.status}`)
     index.value = await response.json()
-    await loadMore()
+    await loadMore(afterUpdate ? 1 : PAGE_SIZE)
   } catch (e) {
     console.error('failed to load changelog index:', e)
     error.value = true
@@ -170,6 +198,13 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 20px;
+}
+
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .page-title {
@@ -196,6 +231,20 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.changelog-actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 0 -16px -16px;
+  padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid var(--ion-border-color);
+  background: var(--ion-background-color);
+}
+
+.changelog-actions .ui-btn {
+  width: 100%;
 }
 
 .load-more-btn {

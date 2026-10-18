@@ -29,7 +29,7 @@ import { usePrincipalStore } from '@/stores/principal'
 import { useEventCalendarStore } from '@/stores/eventCalendar'
 import { usePlatform } from '@/composables/usePlatform'
 import { isNavigating } from '@/composables/useNavigationProgress'
-import { checkForNewVersion } from '@/utils/changelogVersion'
+import { changelogAfterUpdate, checkForNewVersion } from '@/utils/changelogVersion'
 import BackendStatusBanner from '@/components/layout/BackendStatusBanner.vue'
 import DesktopHeader from '@/components/layout/DesktopHeader.vue'
 import ProfileMenu from '@/components/layout/ProfileMenu.vue'
@@ -53,8 +53,12 @@ watch(() => auth.jwtPayload?.sub ?? null, async (sub) => {
     await principal.fetchCollectives()
     // /changelog требует авторизации (см. router/index.ts), поэтому проверка
     // живёт здесь, а не сразу при запуске приложения -- один раз на новую
-    // версию, а не при каждом открытии (см. utils/changelogVersion.ts).
-    if (checkForNewVersion()) router.push('/changelog')
+    // версию, а не при каждом открытии (см. utils/changelogVersion.ts). Ждём
+    // первую навигацию, чтобы запомнить страницу, на которой человек был.
+    if (checkForNewVersion()) {
+      await router.isReady()
+      router.push(changelogAfterUpdate(router.currentRoute.value.fullPath))
+    }
   } else {
     principal.setCollectives([])
     calendar.reset()
