@@ -4,6 +4,7 @@ import { setAccessToken, getAccessToken, refreshAccessToken } from '@/api/client
 import { isSessionRejected } from '@/api/availability'
 import { decodeJwt, type JwtPayload } from '@/utils/jwt'
 import { useEventCalendarStore } from './eventCalendar'
+import { useMyProfileStore } from './myProfile'
 import {
   loginUserV1AuthJwtLoginPost,
   logoutUserV1AuthJwtLogoutPost,
@@ -54,6 +55,7 @@ export const useAuthStore = defineStore('auth', () => {
     // Сбрасываем данные предыдущего аккаунта ДО навигации на главную,
     // чтобы reset не стёр события, загруженные уже новым аккаунтом
     useEventCalendarStore().reset()
+    useMyProfileStore().reset()
     setAccess(data.access_token)
     await fetchUser()
   }
@@ -63,6 +65,7 @@ export const useAuthStore = defineStore('auth', () => {
     const data = response.data as { access_token: string }
     // Тот же порядок, что и в login(): сброс календаря ДО навигации.
     useEventCalendarStore().reset()
+    useMyProfileStore().reset()
     setAccess(data.access_token)
     await fetchUser()
   }
@@ -116,6 +119,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
     clearAuth()
     useEventCalendarStore().reset()
+    useMyProfileStore().reset()
   }
 
   return {

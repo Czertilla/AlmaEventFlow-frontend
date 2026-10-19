@@ -55,8 +55,8 @@
       <section v-show="activeTab === 'contacts'" class="card">
         <div v-for="c in contacts" :key="c.id" class="contact">
           <div class="contact-row">
-            <UiSelect v-model="c.type" class="contact-type" label="Тип" :options="CONTACT_TYPE_OPTIONS" />
-            <UiInput v-model="c.value" class="contact-value" label="Значение" />
+            <div class="contact-type"><UiSelect v-model="c.type" label="Тип" :options="CONTACT_TYPE_OPTIONS" /></div>
+            <div class="contact-value"><UiInput v-model="c.value" label="Значение" /></div>
             <button type="button" class="ui-icon-btn contact-btn" :class="{ 'ui-icon-btn--active': c.is_main }" title="Основной" aria-label="Основной" @click="c.is_main = !c.is_main">★</button>
             <button type="button" class="ui-icon-btn ui-icon-btn--primary contact-btn" title="Сохранить" aria-label="Сохранить" @click="saveContact(c)"><ion-icon :icon="checkmarkOutline" /></button>
             <button type="button" class="ui-icon-btn ui-icon-btn--danger contact-btn" title="Удалить" aria-label="Удалить" @click="removeContact(c)"><ion-icon :icon="trashOutline" /></button>
@@ -64,8 +64,8 @@
           <TimestampsMeta :created-at="c.created_at" :edited-at="c.edited_at" />
         </div>
         <div class="contact-row">
-          <UiSelect v-model="newContact.type" class="contact-type" label="Тип" placeholder="Выберите" :options="CONTACT_TYPE_OPTIONS" />
-          <UiInput v-model="newContact.value" class="contact-value" label="Новый контакт" />
+          <div class="contact-type"><UiSelect v-model="newContact.type" label="Тип" placeholder="Выберите" :options="CONTACT_TYPE_OPTIONS" /></div>
+          <div class="contact-value"><UiInput v-model="newContact.value" label="Новый контакт" /></div>
           <button type="button" class="ui-icon-btn ui-icon-btn--primary contact-btn" title="Добавить" aria-label="Добавить контакт" :disabled="!newContact.type || !newContact.value" @click="addContact">
             <ion-icon :icon="addOutline" />
           </button>
@@ -80,7 +80,8 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { IonButton, IonIcon, IonSpinner, IonToggle, toastController } from '@ionic/vue'
 import { trashOutline, addOutline, checkmarkOutline } from 'ionicons/icons'
 import SearchPicker from '@/components/admin/SearchPicker.vue'
-import { optionsFromPairs, withAny } from '@/utils/selectOptions'
+import { withAny } from '@/utils/selectOptions'
+import { CONTACT_TYPE_OPTIONS } from '@/utils/contactTypes'
 import TimestampsMeta from '@/components/common/TimestampsMeta.vue'
 import DateTimeField from '@/components/common/DateTimeField.vue'
 import UiInput from '@/components/common/UiInput.vue'
@@ -128,10 +129,6 @@ interface ContactRow extends Meta { id: string; type: string; value: string; is_
 const contacts = ref<ContactRow[]>([])
 const newContact = reactive({ type: '' as string, value: '', is_main: false })
 
-const contactTypeLabels: Record<string, string> = {
-  email: 'Email', phone: 'Телефон', tg: 'Telegram', vk: 'VK', address: 'Адрес',
-}
-const CONTACT_TYPE_OPTIONS = optionsFromPairs(Object.entries(contactTypeLabels) as [string, string][])
 const dietOptions = computed(() => withAny<number | null>(diets.value.map((d) => ({ value: d.id, label: d.name })), null, 'Не выбрано'))
 
 const savingPerson = ref(false)

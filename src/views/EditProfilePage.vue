@@ -5,12 +5,12 @@
         <ion-buttons slot="start">
           <ion-back-button default-href="/profile" />
         </ion-buttons>
-        <ion-title>Редактирование профиля</ion-title>
+        <ion-title>Аккаунт</ion-title>
       </ion-toolbar>
     </ion-header>
     <ion-content>
       <div class="edit-page">
-        <h1 v-if="isDesktop" class="page-title">Редактирование профиля</h1>
+        <h1 v-if="isDesktop" class="page-title">Аккаунт</h1>
 
         <div class="edit-section">
           <h3 class="edit-section-title">Основные данные</h3>

@@ -22,6 +22,58 @@
           <UuidBadge v-if="auth.user?.id" :id="auth.user.id" />
         </div>
 
+        <section class="ui-card">
+          <div class="ui-card-head">
+            <h3 class="ui-card-title">Мой профиль</h3>
+            <button
+              v-if="profile"
+              type="button"
+              class="ui-icon-btn"
+              title="Изменить"
+              aria-label="Изменить профиль"
+              @click="router.push('/profile/data')"
+            >
+              <ion-icon :icon="createOutline" />
+            </button>
+          </div>
+          <span v-if="!myProfile.loaded && !myProfile.failed" class="skeleton profile-skeleton" aria-hidden="true" />
+          <div v-else-if="myProfile.failed" class="profile-cta">
+            <p class="profile-hint">Не удалось загрузить профиль.</p>
+            <button type="button" class="ui-btn ui-btn--ghost ui-btn--sm" @click="loadAll">Повторить</button>
+          </div>
+          <dl v-else-if="profile" class="profile-lines">
+            <div class="profile-line">
+              <dt>ФИО</dt>
+              <dd>{{ fullName }}</dd>
+            </div>
+            <div v-if="birthdate" class="profile-line">
+              <dt>Дата рождения</dt>
+              <dd>{{ birthdate }}</dd>
+            </div>
+            <div v-if="studentLine" class="profile-line">
+              <dt>Учёба</dt>
+              <dd>{{ studentLine }}</dd>
+            </div>
+            <div v-if="profile.diet" class="profile-line">
+              <dt>Диета</dt>
+              <dd>{{ profile.diet.name }}</dd>
+            </div>
+            <div v-for="contact in profile.contacts" :key="contact.id" class="profile-line">
+              <dt>{{ contactTypeLabels[contact.type] ?? contact.type }}</dt>
+              <dd>{{ contact.value }}</dd>
+            </div>
+          </dl>
+          <div v-else class="profile-cta">
+            <p class="profile-hint">
+              Профиль ещё не заполнен. Укажите, как вас зовут, где вы учитесь и как с вами связаться:
+              так вас увидят руководители коллективов.
+            </p>
+            <button type="button" class="ui-btn ui-btn--primary ui-btn--sm" @click="router.push('/profile/data')">
+              Заполнить профиль
+            </button>
+          </div>
+        </section>
+
         <section v-if="collectiveRows.length" class="ui-card">
           <div class="ui-card-head">
             <h3 class="ui-card-title">Мои коллективы</h3>
@@ -52,17 +104,12 @@
         </section>
 
         <div class="profile-actions">
-          <router-link to="/profile/file" class="profile-action">
-            <ion-icon :icon="documentTextOutline" />
-            <span class="action-text">
-              Личное дело
-              <small class="action-sub">{{ personName || (hasPerson ? 'Данные о вас' : 'Ещё не создано — заполните данные о себе') }}</small>
-            </span>
-            <ion-icon :icon="chevronForwardOutline" class="action-arrow" />
-          </router-link>
           <router-link to="/profile/edit" class="profile-action">
             <ion-icon :icon="createOutline" />
-            <span>Редактировать профиль</span>
+            <span class="action-text">
+              Аккаунт
+              <small class="action-sub">Имя пользователя, почта, пароль, Telegram</small>
+            </span>
             <ion-icon :icon="chevronForwardOutline" class="action-arrow" />
           </router-link>
           <router-link to="/profile/sessions" class="profile-action">
@@ -90,6 +137,8 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePrincipalStore } from '@/stores/principal'
+import { useMyProfileStore } from '@/stores/myProfile'
+import { useSettingsStore } from '@/stores/settings'
 import { usePlatform } from '@/composables/usePlatform'
 import UuidBadge from '@/components/common/UuidBadge.vue'
 import TimestampsMeta from '@/components/common/TimestampsMeta.vue'
@@ -100,23 +149,35 @@ import {
 } from '@ionic/vue'
 import {
   settingsOutline, logOutOutline, chevronForwardOutline,
-  createOutline, shieldCheckmarkOutline, documentTextOutline,
+  createOutline, shieldCheckmarkOutline,
 } from 'ionicons/icons'
 import { getMyMembersEventV1MeMembersGet } from '@/api/generated/almaEventFlow'
 import type { MemberRead } from '@/api/generated/almaEventFlow'
 import { unwrapList } from '@/api/pagination'
 import { getCollectiveColor } from '@/utils/colors'
-import { resolvePersonName } from '@/utils/names'
+import { contactTypeLabels } from '@/utils/contactTypes'
+import { formatDate } from '@/utils/date'
+import { formatPersonName } from '@/utils/names'
 
 const auth = useAuthStore()
 const principal = usePrincipalStore()
 const router = useRouter()
 const { isDesktop } = usePlatform()
 
-const personName = ref<string | null>(null)
+const myProfile = useMyProfileStore()
+const settings = useSettingsStore()
 const memberships = ref<MemberRead[]>([])
 
-const hasPerson = computed(() => !!auth.user?.person_id)
+const profile = computed(() => myProfile.profile)
+const fullName = computed(() => (profile.value ? formatPersonName(profile.value) : ''))
+const birthdate = computed(() =>
+  profile.value?.birthdate ? formatDate(new Date(`${profile.value.birthdate}T00:00:00`), settings.dateFormat) : '',
+)
+const studentLine = computed(() => {
+  const student = profile.value?.student
+  if (!student) return ''
+  return ['Студент', student.group?.name, `билет ${student.student_id}`].filter(Boolean).join(' · ')
+})
 
 interface CollectiveRow {
   collectiveId: string
@@ -151,15 +212,14 @@ const collectiveRows = computed<CollectiveRow[]>(() => {
     .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, 'ru'))
 })
 
-async function loadCollectives() {
+async function loadAll() {
   if (!auth.user) await auth.fetchUser()
-  const personId = auth.user?.person_id
-  if (!personId) {
-    personName.value = null
+  await myProfile.load(true)
+  if (!myProfile.profile) {
     memberships.value = []
     return
   }
-  resolvePersonName(personId).then((name) => { personName.value = name })
+  await myProfile.syncToken()
   try {
     await principal.fetchCollectives()
     memberships.value = unwrapList<MemberRead>((await getMyMembersEventV1MeMembersGet()).data)
@@ -168,7 +228,7 @@ async function loadCollectives() {
   }
 }
 
-onIonViewWillEnter(loadCollectives)
+onIonViewWillEnter(loadAll)
 
 async function handleLogout() {
   await auth.logout()
@@ -270,6 +330,50 @@ async function handleLogout() {
 
 .profile-action span {
   flex: 1;
+}
+
+.profile-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+}
+
+.profile-line {
+  display: grid;
+  grid-template-columns: minmax(96px, 140px) 1fr;
+  gap: 12px;
+}
+
+.profile-line dt {
+  font-size: var(--fs-sm);
+  color: var(--ion-color-medium);
+}
+
+.profile-line dd {
+  margin: 0;
+  font-size: var(--fs-md);
+  color: var(--ion-text-color);
+  overflow-wrap: anywhere;
+}
+
+.profile-cta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.profile-hint {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ion-color-medium);
+}
+
+.profile-skeleton {
+  display: block;
+  height: 72px;
+  border-radius: var(--radius-md);
 }
 
 .action-text {

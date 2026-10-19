@@ -2,7 +2,7 @@ import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import PersonFile from '@/components/profile/PersonFile.vue'
-import { adminPersonFileApi, myPersonFileApi, type PersonFileApi } from '@/components/profile/personFileApi'
+import { adminPersonFileApi, type PersonFileApi } from '@/components/profile/personFileApi'
 import { stubBackend } from './helpers/axiosStub'
 
 vi.mock('@ionic/vue', async (importOriginal) => ({
@@ -12,7 +12,7 @@ vi.mock('@ionic/vue', async (importOriginal) => ({
 
 const PERSON_ID = '22222222-2222-4222-8222-222222222222'
 
-describe('personal file adapters', () => {
+describe('admin dossier adapter', () => {
   let backend: ReturnType<typeof stubBackend>
 
   beforeEach(() => {
@@ -22,40 +22,6 @@ describe('personal file adapters', () => {
 
   const last = () => backend.calls[backend.calls.length - 1]
   const body = () => JSON.parse(last().data as string)
-
-  test('the own file goes through the my endpoints', async () => {
-    const api = myPersonFileApi()
-
-    await api.getPerson()
-    expect([last().method, last().url]).toEqual(['get', '/profile/v1/persons/my'])
-    await api.patchPerson({ name: 'Мария' })
-    expect([last().method, last().url]).toEqual(['patch', '/profile/v1/persons/my'])
-    await api.getProfile()
-    expect(last().url).toBe('/profile/v1/profiles/my')
-    await api.saveProfile({ diet_id: 1 }, false)
-    expect([last().method, last().url]).toEqual(['put', '/profile/v1/profiles/my'])
-    await api.saveProfile({ diet_id: 2 }, true)
-    expect([last().method, last().url]).toEqual(['put', '/profile/v1/profiles/my'])
-    await api.getStudent()
-    expect([last().method, last().url]).toEqual(['get', '/profile/v2/students/my'])
-    await api.saveStudent({ student_id: 'S-1', group_id: 3 }, false)
-    expect([last().method, last().url]).toEqual(['put', '/profile/v2/students/my'])
-    await api.removeStudent()
-    expect([last().method, last().url]).toEqual(['delete', '/profile/v2/students/my'])
-  })
-
-  test('the own contacts are listed, added, changed and removed through /contacts/my', async () => {
-    const api = myPersonFileApi()
-
-    await api.listContacts()
-    expect([last().method, last().url, last().params]).toEqual(['get', '/profile/v1/contacts/my', { limit: 100 }])
-    await api.addContact({ type: 'email', value: 'a@b.c' })
-    expect([last().method, last().url]).toEqual(['post', '/profile/v1/contacts/my'])
-    await api.saveContact('c1', { value: 'x@y.z' })
-    expect([last().method, last().url]).toEqual(['patch', '/profile/v1/contacts/my/c1'])
-    await api.removeContact('c1')
-    expect([last().method, last().url]).toEqual(['delete', '/profile/v1/contacts/my/c1'])
-  })
 
   test('the admin dossier creates a missing profile or student with the person id and patches an existing one', async () => {
     const api = adminPersonFileApi(PERSON_ID)
