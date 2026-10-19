@@ -87,6 +87,7 @@
         :searching="searching"
         :active-index="active"
         :show-create="canCreate"
+        :heading="showingRecent ? 'Недавние места' : ''"
         @pick="pick"
         @create-from-address="openModal({ address: $event })"
         @create-named="openModal({ name: $event })"
@@ -99,6 +100,7 @@
       :selected="modelValue"
       :seed-query="modalSeed"
       :draft="modalDraft"
+      :collective-id="collectiveId"
       @select="select"
     />
   </div>
@@ -117,6 +119,7 @@ import type { GeoPoint } from './GeoMap.vue'
 import type { AddressRead, LocationRead } from '@/api/generated/almaEventFlow'
 import { useComboNav } from '@/composables/useComboNav'
 import { useLocationResolver } from '@/composables/useLocationResolver'
+import { recentLoader } from '@/composables/useRecentLocations'
 import { isAddressOnly, isTextOnly } from '@/utils/geo'
 import {
   addressLocality,
@@ -130,13 +133,22 @@ import {
 import type { GeoResult, LocationDraft } from '@/composables/useGeoSearch'
 
 const props = withDefaults(
-  defineProps<{ modelValue: LocationRead | null; label?: string; placeholder?: string }>(),
-  { label: 'Локация', placeholder: 'Локация или адрес' },
+  defineProps<{
+    modelValue: LocationRead | null
+    label?: string
+    placeholder?: string
+    /** Whose events' places are offered first. */
+    collectiveId?: string | null
+  }>(),
+  { label: 'Локация', placeholder: 'Локация или адрес', collectiveId: null },
 )
 const emit = defineEmits<{ 'update:modelValue': [value: LocationRead | null] }>()
 
 const listId = `lf-${Math.random().toString(36).slice(2, 8)}`
-const { query, results, searching, clear, refresh } = useGeoSearch({ limit: 8 })
+const { query, results, searching, showingRecent, clear, refresh } = useGeoSearch({
+  limit: 8,
+  recent: recentLoader(() => props.collectiveId),
+})
 const { resolving, resolve, resolveText } = useLocationResolver()
 
 const root = ref<HTMLElement>()

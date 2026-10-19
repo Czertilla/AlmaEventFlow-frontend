@@ -24,6 +24,7 @@ const fallback = computed(() => (props.id ? `#${shortId(props.id)}` : '—'))
 <style scoped>
 .resource-preview {
   color: var(--ion-text-color);
+  overflow-wrap: anywhere;
 }
 
 .resource-preview--missing {

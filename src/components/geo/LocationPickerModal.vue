@@ -29,7 +29,7 @@
           @pick="onPick"
           @marker-click="onMarkerClick"
           @marker-create="onMarkerCreate"
-          @interact="panelCollapsed = true"
+          @interact="onMapTouched"
           @bbox="onBbox"
         />
 
@@ -73,6 +73,7 @@
               :searching="searching"
               :active-index="active"
               :from="query.trim() ? null : near"
+              :heading="showingRecent ? 'Недавние места' : ''"
               :show-create="canCreate"
               @pick="pick"
               @create-from-address="startCreate({ address: $event })"
@@ -133,6 +134,7 @@ import LocationCreateForm from './LocationCreateForm.vue'
 import type { AddressRead, LocationRead } from '@/api/generated/almaEventFlow'
 import { useComboNav } from '@/composables/useComboNav'
 import { useLocationResolver } from '@/composables/useLocationResolver'
+import { recentLoader } from '@/composables/useRecentLocations'
 import {
   addressLocality,
   canOfferCreate,
@@ -151,10 +153,15 @@ const props = defineProps<{
   selected: LocationRead | null
   seedQuery: string
   draft: LocationDraft | null
+  /** Whose events' places are offered first: the collective the event is made for. */
+  collectiveId?: string | null
 }>()
 const emit = defineEmits<{ 'update:open': [value: boolean]; select: [location: LocationRead] }>()
 
-const { query, near, marked, results, place, searching, markers, clear, refresh } = useGeoSearch({ limit: 30 })
+const { query, near, marked, results, place, searching, showingRecent, markers, clear, refresh } = useGeoSearch({
+  limit: 30,
+  recent: recentLoader(() => props.collectiveId),
+})
 const { resolving, resolve, resolveText } = useLocationResolver()
 
 const view = ref<'browse' | 'create'>('browse')
@@ -164,6 +171,7 @@ const pendingPoint = ref<GeoPoint | null>(null)
 const pickedAddress = ref<AddressRead | null>(null)
 const mapCenter = ref<GeoPoint | null>(null)
 const panelCollapsed = ref(false)
+const mapMoved = ref(false)
 const geoMapRef = ref<InstanceType<typeof GeoMap>>()
 const searchInput = ref<HTMLInputElement>()
 
@@ -178,7 +186,7 @@ const selectedMarker = computed(() => (props.selected ? locationMarker(props.sel
 const selectedPoint = computed<GeoPoint | undefined>(() =>
   selectedMarker.value ? { lat: selectedMarker.value.lat, lon: selectedMarker.value.lon } : undefined,
 )
-const fitResults = computed(() => !!query.value.trim())
+const fitResults = computed(() => !!query.value.trim() || showingRecent.value)
 const placePoint = computed<GeoPoint | undefined>(() => {
   const found = place.value
   if (!found || !query.value.trim() || markers.value.length > 0) return undefined
@@ -218,6 +226,7 @@ watch(
     marked.value = false
     cameFromBrowse.value = false
     panelCollapsed.value = false
+    mapMoved.value = false
     createDraft.value = props.draft ?? {}
     view.value = props.draft ? 'create' : 'browse'
     query.value = props.seedQuery
@@ -230,9 +239,14 @@ watch(query, (text) => {
   if (!text.trim()) followMap()
 })
 
+function onMapTouched() {
+  panelCollapsed.value = true
+  mapMoved.value = true
+}
+
 function followMap() {
   const centre = mapCenter.value
-  if (!centre || query.value.trim() || pendingPoint.value || pickedAddress.value) return
+  if (!mapMoved.value || !centre || query.value.trim() || pendingPoint.value || pickedAddress.value) return
   if (near.value && distanceMeters(near.value, centre) < FOLLOW_THRESHOLD_M) return
   near.value = centre
 }

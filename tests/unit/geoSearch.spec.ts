@@ -125,6 +125,67 @@ describe('useGeoSearch', () => {
     wrapper.unmount()
   })
 
+  test('places given as recent are listed first, in their order, and the general list is not asked', async () => {
+    backend = stubBackend(() => ({ status: 200, data: { items: [location({ id: 'general' })] } }))
+    const recent = vi.fn(async () => [location({ id: 'r2' }), location({ id: 'r1' })])
+    const { api, wrapper } = host({ limit: 8, recent })
+
+    api.refresh()
+    await vi.runAllTimersAsync()
+
+    expect(api.results.value.map((r) => r.item.id)).toEqual(['r2', 'r1'])
+    expect(api.showingRecent.value).toBe(true)
+    expect(backend.calls).toHaveLength(0)
+    wrapper.unmount()
+  })
+
+  test('with no recent places the general list of locations is listed as before', async () => {
+    backend = stubBackend(() => ({ status: 200, data: { items: [location()] } }))
+    const { api, wrapper } = host({ limit: 8, recent: async () => [] })
+
+    api.refresh()
+    await vi.runAllTimersAsync()
+
+    expect(api.results.value.map((r) => r.item.id)).toEqual(['l1'])
+    expect(api.showingRecent.value).toBe(false)
+    wrapper.unmount()
+  })
+
+  test('a recent list that cannot be read falls back to the general one', async () => {
+    backend = stubBackend(() => ({ status: 200, data: { items: [location()] } }))
+    const { api, wrapper } = host({ recent: () => Promise.reject(new Error('down')) })
+
+    api.refresh()
+    await vi.runAllTimersAsync()
+
+    expect(api.results.value.map((r) => r.item.id)).toEqual(['l1'])
+    expect(api.showingRecent.value).toBe(false)
+    wrapper.unmount()
+  })
+
+  test('typing or a point ends the recent list, and clearing starts it again', async () => {
+    backend = stubBackend((config) =>
+      config.url === '/geo/v2/search'
+        ? { status: 200, data: { items: [], external: { state: 'skipped' }, place: null } }
+        : { status: 200, data: { items: [] } },
+    )
+    const { api, wrapper } = host({ recent: async () => [location({ id: 'r1' })] })
+    api.refresh()
+    await vi.runAllTimersAsync()
+    expect(api.showingRecent.value).toBe(true)
+
+    api.near.value = { lat: 55.75, lon: 37.6 }
+    await nextTick()
+    await vi.advanceTimersByTimeAsync(300)
+    expect(api.showingRecent.value).toBe(false)
+
+    api.clear()
+    api.refresh()
+    await vi.runAllTimersAsync()
+    expect(api.showingRecent.value).toBe(true)
+    wrapper.unmount()
+  })
+
   test('typed text goes to the ranked v2 search, which carries the city', async () => {
     backend = stubBackend(() => ({
       status: 200,

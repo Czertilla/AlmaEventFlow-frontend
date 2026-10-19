@@ -50,8 +50,10 @@ export function useEventParticipations(eventId: string) {
 
   const participationItems = ref<ParticipationItem[]>([])
   const expanded = reactive<Record<string, boolean>>({})
-  // member_id → ФИО; пока имя не загрузилось, показываем сокращённый id
+  // member_id → ФИО; сокращённый id показываем только если имя не удалось получить
   const memberNames = reactive<Record<string, string>>({})
+  const namesLoading = reactive(new Set<string>())
+  let namesSettled: Promise<void> = Promise.resolve()
   // Участники коллективов руководителя (для добавления attendance)
   const collectiveMembers = reactive<Record<string, MemberRead[]>>({})
   const addMemberSel = reactive<Record<string, string>>({})
@@ -71,13 +73,22 @@ export function useEventParticipations(eventId: string) {
   function availableMembers(p: ParticipationItem): MemberRead[] {
     const members = collectiveMembers[p.collectiveId] || []
     const withAttendance = new Set(p.attendances.map((a) => a.member_id))
-    return members.filter((m) => m.is_active !== false && !withAttendance.has(m.id))
+    return members.filter((m) => m.is_active !== false && !withAttendance.has(m.id) && !namesLoading.has(m.id))
   }
 
-  // Формат «Фамилия И.О.»
-  function memberLabel(memberId: string): string {
+  // Формат «Фамилия И.О.»; null — имя ещё грузится (на его месте скелетон)
+  function memberLabel(memberId: string): string | null {
     const full = memberNames[memberId]
-    return full ? shortenName(full) : `#${shortId(memberId)}`
+    if (full) return shortenName(full)
+    return namesLoading.has(memberId) ? null : `#${shortId(memberId)}`
+  }
+
+  function memberText(memberId: string): string {
+    return memberLabel(memberId) ?? `#${shortId(memberId)}`
+  }
+
+  function attendancesLoading(p: ParticipationItem): boolean {
+    return p.attendances.some((a) => namesLoading.has(a.member_id))
   }
 
   // Сортировка/группировка отметок по тому же порядку ролей, что задан руководителем
@@ -85,7 +96,7 @@ export function useEventParticipations(eventId: string) {
   // попадает только в свою высшую по приоритету роль.
   function attendanceGroups(p: ParticipationItem): AttendanceGroup[] {
     const byName = (a: AttendanceRead, b: AttendanceRead) =>
-      memberLabel(a.member_id).localeCompare(memberLabel(b.member_id), 'ru')
+      memberText(a.member_id).localeCompare(memberText(b.member_id), 'ru')
     const flat = (): AttendanceGroup[] => [
       { key: 'all', label: null, items: p.attendances.slice().sort(byName) },
     ]
@@ -131,7 +142,10 @@ export function useEventParticipations(eventId: string) {
           try {
             const resp = await getMyCollectiveMembersEventV1MeCollectivesCollectiveIdMembersGet(p.collectiveId, { limit: 100 })
             collectiveMembers[p.collectiveId] = resp.data.items
-            for (const m of resp.data.items) rememberMemberPerson(m.id, m.person_id)
+            for (const m of resp.data.items) {
+              rememberMemberPerson(m.id, m.person_id)
+              if (!memberNames[m.id]) namesLoading.add(m.id)
+            }
           } catch { /* ignore */ }
         }),
     )
@@ -141,8 +155,14 @@ export function useEventParticipations(eventId: string) {
     ])
     await Promise.all(
       Array.from(memberIds).map(async (id) => {
-        const name = await resolveMemberName(id)
-        if (name) memberNames[id] = name
+        if (memberNames[id]) return
+        namesLoading.add(id)
+        try {
+          const name = await resolveMemberName(id)
+          if (name) memberNames[id] = name
+        } finally {
+          namesLoading.delete(id)
+        }
       }),
     )
   }
@@ -189,14 +209,11 @@ export function useEventParticipations(eventId: string) {
     items.sort((a, b) =>
       Number(b.canExpand) - Number(a.canExpand) ||
       a.collectiveName.localeCompare(b.collectiveName, 'ru'))
+    for (const p of items) {
+      for (const a of p.attendances) if (!memberNames[a.member_id]) namesLoading.add(a.member_id)
+    }
     participationItems.value = items
-    loadMemberNames(items).then(() => {
-      // Когда ФИО загрузились — пересортировать списки по именам
-      for (const p of participationItems.value) {
-        p.attendances.sort((a, b) =>
-          (memberNames[a.member_id] || a.member_id).localeCompare(memberNames[b.member_id] || b.member_id, 'ru'))
-      }
-    })
+    namesSettled = loadMemberNames(items)
   }
 
   // Руководитель меняет attendance через эндпоинт своего коллектива, участник — только свою запись.
@@ -262,7 +279,7 @@ export function useEventParticipations(eventId: string) {
   }
 
   async function removeAttendance(p: ParticipationItem, a: AttendanceRead) {
-    const ok = await confirmAction('Удалить отметку?', `Запись присутствия «${memberLabel(a.member_id)}» будет удалена.`)
+    const ok = await confirmAction('Удалить отметку?', `Запись присутствия «${memberText(a.member_id)}» будет удалена.`)
     if (!ok) return
     try {
       await deleteMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdAttendanceAttendanceIdDelete(p.collectiveId, a.id)
@@ -318,6 +335,9 @@ export function useEventParticipations(eventId: string) {
     editableCollectiveId,
     availableMembers,
     memberLabel,
+    memberText,
+    attendancesLoading,
+    whenNamesSettled: () => namesSettled,
     attendanceGroups,
     loadParticipations,
     toggleAttendance,

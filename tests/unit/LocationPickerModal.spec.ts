@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { defineComponent, h } from 'vue'
 import LocationPickerModal from '@/components/geo/LocationPickerModal.vue'
 import { forgetResolved } from '@/composables/useLocationResolver'
+import axios from 'axios'
 import { stubBackend } from './helpers/axiosStub'
 
 const Passthrough = defineComponent({
@@ -42,6 +43,8 @@ const NAMED = { id: 'l1', name: 'Актовый зал', address_id: 'a1', addre
 const TEXT_LOCATION = { id: 'l3', name: 'ул. Пушкина, 10, Казань', address_id: null, address: null, spot: null }
 const PROXY = { id: 'l2', name: null, address_id: 'a1', address: ADDRESS, display_name: 'Тверская улица, 7' }
 
+const axiosUri = (config: Parameters<typeof axios.getUri>[0]) => axios.getUri(config)
+
 let backend: ReturnType<typeof stubBackend>
 const mounted: ReturnType<typeof mount>[] = []
 
@@ -52,9 +55,21 @@ const HITS = [
   { kind: 'address', origin: 'external', score: null, address: ADDRESS },
 ]
 
-async function openModal(items: unknown[] = HITS, seed = 'тверская 7', place: unknown = null) {
+const RECENT_IDS = [{ location_id: 'l2', used_at: '2026-03-01T10:00:00Z' }, { location_id: 'l1', used_at: '2026-02-01T10:00:00Z' }]
+
+async function openModal(
+  items: unknown[] = HITS,
+  seed = 'тверская 7',
+  place: unknown = null,
+  extra: Record<string, unknown> = {},
+  recent: unknown[] = RECENT_IDS,
+) {
   backend.restore()
   backend = stubBackend((config) => {
+    if (config.url?.endsWith('/recent-locations')) return { status: 200, data: recent }
+    if (config.url === '/geo/v2/locations' && config.method === 'get') {
+      return { status: 200, data: [PROXY, NAMED] }
+    }
     if (config.url === '/geo/v2/search') {
       return { status: 200, data: { items, external: { state: 'ok', provider: 'photon' }, place } }
     }
@@ -63,7 +78,7 @@ async function openModal(items: unknown[] = HITS, seed = 'тверская 7', p
     return { status: 200, data: { items: [] } }
   })
   const wrapper = mount(LocationPickerModal, {
-    props: { open: false, selected: null, seedQuery: '', draft: null },
+    props: { open: false, selected: null, seedQuery: '', draft: null, ...extra },
     attachTo: document.body,
     global: {
       stubs: {
@@ -239,9 +254,11 @@ const BOX_AROUND = (lat: number, lon: number) => ({
 })
 
 async function moveMap(wrapper: Awaited<ReturnType<typeof openModal>>, lat: number, lon: number) {
+  wrapper.getComponent(GeoMapStub).vm.$emit('interact')
   wrapper.getComponent(GeoMapStub).vm.$emit('bbox', BOX_AROUND(lat, lon))
   await vi.advanceTimersByTimeAsync(300)
   await flushPromises()
+  await wrapper.get('input').trigger('focus')
 }
 
 const searches = () => backend.to('/geo/v2/search')
@@ -355,6 +372,92 @@ describe('LocationPickerModal around the map', () => {
     await flushPromises()
 
     expect(wrapper.get('.map-stub').attributes('data-fit')).toBe('true')
+  })
+})
+
+describe('LocationPickerModal places the collective used before', () => {
+  const COLLECTIVE = { collectiveId: 'c1' }
+  const itemTitles = (wrapper: Awaited<ReturnType<typeof openModal>>) =>
+    wrapper.findAll('.grl-item:not(.grl-item--create):not(.grl-item--text) .grl-title').map((node) => node.text())
+
+  test('opens on them, latest first, under a heading', async () => {
+    const wrapper = await openModal(HITS, '', null, COLLECTIVE)
+
+    expect(backend.to('/event/v2/collectives/c1/recent-locations')).toHaveLength(1)
+    expect(backend.to('/event/v2/collectives/c1/recent-locations')[0]!.params).toMatchObject({ limit: 10 })
+    expect(backend.to('/geo/v2/locations').filter((call) => call.method === 'get')).toHaveLength(1)
+    expect(wrapper.get('.grl-heading').text()).toBe('Недавние места')
+    expect(itemTitles(wrapper)).toEqual(['Тверская улица, 7', 'Актовый зал'])
+    expect(searches()).toHaveLength(0)
+  })
+
+  test('the geo service is asked for exactly the ids the collective used, in that order', async () => {
+    await openModal(HITS, '', null, COLLECTIVE)
+
+    const call = backend.to('/geo/v2/locations').find((c) => c.method === 'get')!
+    expect(call.params).toEqual({ id: ['l2', 'l1'] })
+    expect(axiosUri(call)).toContain('id=l2&id=l1')
+  })
+
+  test('the map is fitted to them and the list is not replaced when the map settles', async () => {
+    const wrapper = await openModal(HITS, '', null, COLLECTIVE)
+    expect(wrapper.get('.map-stub').attributes('data-fit')).toBe('true')
+
+    wrapper.getComponent(GeoMapStub).vm.$emit('bbox', BOX_AROUND(55.75, 37.6))
+    await vi.advanceTimersByTimeAsync(600)
+    await flushPromises()
+
+    expect(searches()).toHaveLength(0)
+    expect(itemTitles(wrapper)).toEqual(['Тверская улица, 7', 'Актовый зал'])
+  })
+
+  test('once the user moves the map, the places around it take over', async () => {
+    const wrapper = await openModal(HITS, '', null, COLLECTIVE)
+
+    await moveMap(wrapper, 55.5, 37.0)
+
+    expect(searches()).toHaveLength(1)
+    expect(lastSearch()).toMatchObject({ lat: 55.5, lon: 37.0 })
+    expect(wrapper.find('.grl-heading').exists()).toBe(false)
+    expect(wrapper.get('.map-stub').attributes('data-fit')).toBe('false')
+  })
+
+  test('clearing the text goes back to them while the map has not been moved', async () => {
+    const wrapper = await openModal(HITS, '', null, COLLECTIVE)
+    await wrapper.get('input').setValue('суздаль')
+    await vi.advanceTimersByTimeAsync(300)
+    await flushPromises()
+
+    await wrapper.get('button[aria-label="Очистить поиск"]').trigger('click')
+    await vi.advanceTimersByTimeAsync(600)
+    await flushPromises()
+
+    expect(wrapper.get('.grl-heading').text()).toBe('Недавние места')
+    expect(itemTitles(wrapper)).toEqual(['Тверская улица, 7', 'Актовый зал'])
+    expect(searches().every((call) => (call.params as Record<string, unknown>).q === 'суздаль')).toBe(true)
+  })
+
+  test('a collective that has used nothing keeps the general list of locations', async () => {
+    const wrapper = await openModal(HITS, '', null, COLLECTIVE, [])
+
+    expect(backend.to('/geo/v2/locations').filter((call) => call.method === 'get')).toHaveLength(0)
+    expect(backend.to('/geo/v1/locations')).toHaveLength(1)
+    expect(wrapper.find('.grl-heading').exists()).toBe(false)
+  })
+
+  test('without a collective nothing is asked of the event service', async () => {
+    await openModal(HITS, '')
+
+    expect(backend.calls.some((call) => call.url?.includes('recent-locations'))).toBe(false)
+  })
+
+  test('picking one of them selects that location', async () => {
+    const wrapper = await openModal(HITS, '', null, COLLECTIVE)
+
+    await wrapper.findAll('.grl-item:not(.grl-item--create):not(.grl-item--text)')[1]!.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.emitted('select')).toEqual([[NAMED]])
   })
 })
 

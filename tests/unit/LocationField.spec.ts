@@ -8,10 +8,11 @@ import { stubBackend } from './helpers/axiosStub'
 
 const ModalStub = defineComponent({
   name: 'LocationPickerModal',
-  props: { open: Boolean, selected: Object, seedQuery: String, draft: Object },
+  props: { open: Boolean, selected: Object, seedQuery: String, draft: Object, collectiveId: String },
   setup: (props) => () =>
     h('div', {
       class: 'modal-stub',
+      'data-collective': props.collectiveId ?? '',
       'data-open': String(props.open),
       'data-draft': JSON.stringify(props.draft ?? null),
     }),
@@ -37,9 +38,9 @@ const PROXY = { id: 'l2', name: null, address_id: 'a1', address: ADDRESS, displa
 let backend: ReturnType<typeof stubBackend>
 const mounted: ReturnType<typeof mount>[] = []
 
-function field(modelValue: unknown = null) {
+function field(modelValue: unknown = null, extra: Record<string, unknown> = {}) {
   const wrapper = mount(LocationField, {
-    props: { modelValue: modelValue as never },
+    props: { modelValue: modelValue as never, ...extra },
     attachTo: document.body,
     global: { stubs: { IonIcon: true, IonSpinner: true, LocationPickerModal: ModalStub, MapLinkMenu: true } },
   })
@@ -83,6 +84,10 @@ beforeEach(() => {
       }
     }
     if (config.url === '/geo/v1/locations/from-address') return { status: 201, data: PROXY }
+    if (config.url?.endsWith('/recent-locations')) {
+      return { status: 200, data: [{ location_id: 'l1', used_at: '2026-03-01T10:00:00Z' }] }
+    }
+    if (config.url === '/geo/v2/locations' && config.method === 'get') return { status: 200, data: [NAMED] }
     if (config.url === '/geo/v2/locations') return { status: 200, data: TEXT_LOCATION }
     return { status: 200, data: { items: [] } }
   })
@@ -202,6 +207,45 @@ describe('LocationField suggestions', () => {
     await vi.advanceTimersByTimeAsync(300)
 
     expect(wrapper.find('.aac').exists()).toBe(false)
+  })
+})
+
+describe('LocationField places the collective used before', () => {
+  test('focusing the empty field lists them under a heading', async () => {
+    const wrapper = field(null, { collectiveId: 'c1' })
+
+    await wrapper.get('input').trigger('focus')
+    await flushPromises()
+
+    expect(backend.to('/event/v2/collectives/c1/recent-locations')).toHaveLength(1)
+    expect(wrapper.get('.grl-heading').text()).toBe('Недавние места')
+    expect(wrapper.findAll('.grl-item .grl-title').map((node) => node.text())).toEqual(['Актовый зал'])
+  })
+
+  test('picking one of them selects it', async () => {
+    const wrapper = field(null, { collectiveId: 'c1' })
+    await wrapper.get('input').trigger('focus')
+    await flushPromises()
+
+    await wrapper.get('.grl-item').trigger('click')
+
+    expect(wrapper.emitted('update:modelValue')).toEqual([[NAMED]])
+  })
+
+  test('the map window is told whose places to offer', () => {
+    const wrapper = field(null, { collectiveId: 'c1' })
+
+    expect(wrapper.get('.modal-stub').attributes('data-collective')).toBe('c1')
+  })
+
+  test('without a collective the field asks the event service for nothing', async () => {
+    const wrapper = field()
+
+    await wrapper.get('input').trigger('focus')
+    await flushPromises()
+
+    expect(backend.calls.some((call) => call.url?.includes('recent-locations'))).toBe(false)
+    expect(wrapper.find('.grl-heading').exists()).toBe(false)
   })
 })
 

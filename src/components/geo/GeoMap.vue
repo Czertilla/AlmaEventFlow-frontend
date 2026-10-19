@@ -185,13 +185,15 @@ function renderPick() {
   }
 }
 
-function onPointerDown() {
+function onUserInput() {
   emit('interact')
 }
 
 onMounted(() => {
   if (!mapEl.value) return
-  mapEl.value.addEventListener('pointerdown', onPointerDown)
+  mapEl.value.addEventListener('pointerdown', onUserInput)
+  mapEl.value.addEventListener('wheel', onUserInput, { passive: true })
+  mapEl.value.addEventListener('keydown', onUserInput)
   const c = props.center || props.pickedPoint || DEFAULT_CENTER
   map = L.map(mapEl.value, { scrollWheelZoom: props.scrollZoom }).setView([c.lat, c.lon], props.zoom)
   L.tileLayer(TILE_URL, {
@@ -220,7 +222,9 @@ onBeforeUnmount(() => {
   if (bboxTimer) clearTimeout(bboxTimer)
   resizeObserver?.disconnect()
   resizeObserver = null
-  mapEl.value?.removeEventListener('pointerdown', onPointerDown)
+  mapEl.value?.removeEventListener('pointerdown', onUserInput)
+  mapEl.value?.removeEventListener('wheel', onUserInput)
+  mapEl.value?.removeEventListener('keydown', onUserInput)
   map?.remove()
   map = null
   markerLayer = null

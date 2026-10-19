@@ -11,6 +11,8 @@ interface Options {
   limit?: number
   namedLocationsOnly?: boolean
   debounceMs?: number
+  /** Places to list while nothing is typed and no point is picked, before the general list of locations. */
+  recent?: () => Promise<LocationRead[]>
 }
 
 export interface LocationDraft {
@@ -97,7 +99,7 @@ export function resultMarker(result: GeoResult): MapMarker | null {
   }
 }
 
-export function useGeoSearch({ limit = 20, namedLocationsOnly = true, debounceMs = 300 }: Options = {}) {
+export function useGeoSearch({ limit = 20, namedLocationsOnly = true, debounceMs = 300, recent }: Options = {}) {
   const query = ref('')
   const near = ref<GeoPoint | null>(null)
   /** The point was put on the map by the user: only then may a point alone be completed from the outside geocoder. */
@@ -105,6 +107,7 @@ export function useGeoSearch({ limit = 20, namedLocationsOnly = true, debounceMs
   const results = ref<GeoResult[]>([])
   const place = ref<Place | null>(null)
   const searching = ref(false)
+  const showingRecent = ref(false)
 
   let timer: ReturnType<typeof setTimeout> | null = null
   let requestId = 0
@@ -116,6 +119,15 @@ export function useGeoSearch({ limit = 20, namedLocationsOnly = true, debounceMs
     searching.value = true
     try {
       if (!q && !point) {
+        const remembered = recent ? await recent().catch(() => []) : []
+        if (id !== requestId) return
+        if (remembered.length > 0) {
+          results.value = remembered.map((item) => ({ kind: 'location' as const, item }))
+          place.value = null
+          showingRecent.value = true
+          return
+        }
+        showingRecent.value = false
         // Locations are a small, curated set (unlike addresses, which are an
         // unbounded imported dataset) -- always list them, even with nothing
         // typed and no point picked, so an already-created location can be
@@ -130,6 +142,7 @@ export function useGeoSearch({ limit = 20, namedLocationsOnly = true, debounceMs
         place.value = null
         return
       }
+      showingRecent.value = false
       const found = await searchGeoV2SearchGet({
         q: q || undefined,
         lat: point?.lat,
@@ -145,6 +158,7 @@ export function useGeoSearch({ limit = 20, namedLocationsOnly = true, debounceMs
       if (id === requestId) {
         results.value = []
         place.value = null
+        showingRecent.value = false
       }
     } finally {
       if (id === requestId) searching.value = false
@@ -178,8 +192,9 @@ export function useGeoSearch({ limit = 20, namedLocationsOnly = true, debounceMs
     marked.value = false
     results.value = []
     place.value = null
+    showingRecent.value = false
     searching.value = false
   }
 
-  return { query, near, marked, results, place, searching, markers, clear, refresh }
+  return { query, near, marked, results, place, searching, showingRecent, markers, clear, refresh }
 }

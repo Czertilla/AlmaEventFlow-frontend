@@ -5,12 +5,16 @@ import {
   getParticipationEventV1ParticipationsParticipationIdGet,
   getCityGeoV1CitiesCityIdGet,
   getAddressGeoV1AddressesAddressIdGet,
+  getLocationGeoV1LocationsLocationIdGet,
+  getRoleEventV1RolesRoleIdGet,
+  getMemberEventV1MembersMemberIdGet,
+  getStudentGroupProfileV1StudentsGroupsGroupIdGet,
 } from '@/api/generated/almaEventFlow'
 import { resolvePersonName, resolveMemberName } from '@/utils/names'
 
 export type ResourceKind =
-  | 'person' | 'member' | 'collective' | 'event'
-  | 'organization' | 'participation' | 'city' | 'address'
+  | 'person' | 'member' | 'memberInCollective' | 'collective' | 'event'
+  | 'organization' | 'participation' | 'city' | 'address' | 'location' | 'role' | 'group'
 
 // Кэш по типу ресурса -- имена меняются редко, как и в utils/names.ts.
 // Неудачу не кешируем (см. resolvePersonName) -- единичный сетевой сбой
@@ -92,9 +96,45 @@ async function resolveParticipationLabel(id: string): Promise<string | null> {
   })
 }
 
+async function resolveGroupName(id: string): Promise<string | null> {
+  return cached('group', id, async () => (await getStudentGroupProfileV1StudentsGroupsGroupIdGet(Number(id))).data.name)
+}
+
+async function resolveLocationName(id: string): Promise<string | null> {
+  return cached('location', id, async () => {
+    const { data } = await getLocationGeoV1LocationsLocationIdGet(id)
+    return data.display_name || data.name || data.address?.name || null
+  })
+}
+
+// Роль живёт внутри коллектива, а названия вроде «Хормейстер» повторяются.
+async function resolveRoleName(id: string): Promise<string | null> {
+  return cached('role', id, async () => {
+    const { data } = await getRoleEventV1RolesRoleIdGet(id)
+    const collective = await resolveCollectiveName(data.collective_id)
+    return [data.name, collective].filter(Boolean).join(' · ')
+  })
+}
+
+// Один человек состоит в нескольких коллективах: участник -- это «ФИО · Коллектив».
+async function resolveMemberInCollective(id: string): Promise<string | null> {
+  return cached('memberInCollective', id, async () => {
+    const { data } = await getMemberEventV1MembersMemberIdGet(id)
+    const [person, collective] = await Promise.all([
+      resolvePersonName(data.person_id),
+      resolveCollectiveName(data.collective_id),
+    ])
+    return [person, collective].filter(Boolean).join(' · ') || null
+  })
+}
+
 const resolvers: Record<ResourceKind, (id: string) => Promise<string | null>> = {
   person: resolvePersonName,
   member: resolveMemberName,
+  memberInCollective: resolveMemberInCollective,
+  location: resolveLocationName,
+  group: resolveGroupName,
+  role: resolveRoleName,
   collective: resolveCollectiveName,
   event: resolveEventName,
   organization: resolveOrganizationName,

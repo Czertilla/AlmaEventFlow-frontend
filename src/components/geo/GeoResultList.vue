@@ -5,6 +5,8 @@
       <span>Ищем…</span>
     </li>
 
+    <li v-if="heading && results.length > 0" class="grl-heading" role="presentation">{{ heading }}</li>
+
     <li
       v-for="(r, i) in results"
       :id="geoOptionId(id, i)"
@@ -103,8 +105,9 @@ const props = withDefaults(
     addressActions?: boolean
     /** Where the distances are counted from: the map centre or a marked point. */
     from?: GeoPoint | null
+    heading?: string
   }>(),
-  { showCreate: false, showText: true, addressActions: true, from: null },
+  { showCreate: false, showText: true, addressActions: true, from: null, heading: '' },
 )
 
 const emit = defineEmits<{
@@ -129,6 +132,13 @@ function distanceOf(result: GeoResult): string {
   margin: 0;
   padding: 6px;
   list-style: none;
+}
+
+.grl-heading {
+  padding: 6px 10px 2px;
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  color: var(--ion-color-medium);
 }
 
 .grl-item {
