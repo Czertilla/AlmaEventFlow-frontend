@@ -28001,31 +28001,21 @@
                 }
             }
         },
-        "/profile/v2/persons/my": {
-            "post": {
+        "/profile/v2/profiles/my": {
+            "get": {
                 "tags": [
-                    "person"
+                    "profile"
                 ],
-                "summary": "Create My Person",
-                "description": "Creates the caller's own person and attaches it to the account.\n\nThe access token carries the person id: refresh it afterwards, or the\n`/my` endpoints keep answering `ATTACHED_PERSON_REQUIRED`.",
-                "operationId": "create_my_person_profile_v2_persons_my_post",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/PersonCreate"
-                            }
-                        }
-                    },
-                    "required": true
-                },
+                "summary": "Get My Profile",
+                "description": "The caller's whole profile: name, birthdate, diet, student card, contacts.\n\n`404 PROFILE_NOT_FOUND` until the user has made one.",
+                "operationId": "get_my_profile_profile_v2_profiles_my_get",
                 "responses": {
                     "200": {
                         "description": "Successful Response",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/PersonRead"
+                                    "$ref": "#/components/schemas/MyProfileRead"
                                 }
                             }
                         }
@@ -28072,18 +28062,113 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "ACCOUNT_ALREADY_LINKED",
+                    "404": {
+                        "description": "PROFILE_NOT_FOUND",
                         "content": {
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/ErrorModel"
                                 },
                                 "examples": {
-                                    "ACCOUNT_ALREADY_LINKED": {
-                                        "summary": "ACCOUNT_ALREADY_LINKED",
+                                    "PROFILE_NOT_FOUND": {
+                                        "summary": "PROFILE_NOT_FOUND",
                                         "value": {
-                                            "detail": "ACCOUNT_ALREADY_LINKED"
+                                            "detail": "PROFILE_NOT_FOUND"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "profile"
+                ],
+                "summary": "Create My Profile",
+                "description": "Makes the caller's profile in one transaction and links it to the account.\n\nA user makes one profile for themselves: a second attempt is\n`403 PROFILE_ALREADY_EXISTS`. The access token carries the linked person\nonly after its next refresh; profile endpoints do not depend on it.",
+                "operationId": "create_my_profile_profile_v2_profiles_my_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/MyProfileWrite"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MyProfileRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "PROFILE_ALREADY_EXISTS",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "PROFILE_ALREADY_EXISTS": {
+                                        "summary": "PROFILE_ALREADY_EXISTS",
+                                        "value": {
+                                            "detail": "PROFILE_ALREADY_EXISTS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "The account claims a person that the profile service has no link for",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "ACCOUNT_LINK_OUT_OF_SYNC": {
+                                        "summary": "ACCOUNT_LINK_OUT_OF_SYNC",
+                                        "value": {
+                                            "detail": "ACCOUNT_LINK_OUT_OF_SYNC"
                                         }
                                     }
                                 }
@@ -28106,122 +28191,19 @@
                         "HTTPBearer": []
                     }
                 ]
-            }
-        },
-        "/profile/v2/students/my": {
-            "get": {
-                "tags": [
-                    "student"
-                ],
-                "summary": "Get My Student",
-                "operationId": "get_my_student_profile_v2_students_my_get",
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/StudentRead"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Missing or invalid authentication token",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "NOT_AUTHENTICATED": {
-                                        "summary": "Missing or invalid authentication token",
-                                        "value": {
-                                            "detail": "NOT_AUTHENTICATED"
-                                        }
-                                    },
-                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
-                                        "summary": "Token decode failed",
-                                        "value": {
-                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Insufficient permissions",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "FORBIDDEN": {
-                                        "summary": "Not superuser or not verified",
-                                        "value": {
-                                            "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "STUDENT_NOT_FOUND",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "STUDENT_NOT_FOUND": {
-                                        "summary": "STUDENT_NOT_FOUND",
-                                        "value": {
-                                            "detail": "STUDENT_NOT_FOUND"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "HTTPBearer": []
-                    }
-                ]
             },
             "put": {
                 "tags": [
-                    "student"
+                    "profile"
                 ],
-                "summary": "Put My Student",
-                "operationId": "put_my_student_profile_v2_students_my_put",
+                "summary": "Put My Profile",
+                "description": "Replaces the whole profile: a student card or a contact left out is removed.",
+                "operationId": "put_my_profile_profile_v2_profiles_my_put",
                 "requestBody": {
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/StudentPutData"
+                                "$ref": "#/components/schemas/MyProfileWrite"
                             }
                         }
                     },
@@ -28233,7 +28215,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/StudentRead"
+                                    "$ref": "#/components/schemas/MyProfileRead"
                                 }
                             }
                         }
@@ -28274,24 +28256,6 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
                                         }
                                     }
                                 }
@@ -28322,210 +28286,6 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "HTTPBearer": []
-                    }
-                ]
-            },
-            "patch": {
-                "tags": [
-                    "student"
-                ],
-                "summary": "Patch My Student",
-                "operationId": "patch_my_student_profile_v2_students_my_patch",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/StudentPatchData"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/StudentRead"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Missing or invalid authentication token",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "NOT_AUTHENTICATED": {
-                                        "summary": "Missing or invalid authentication token",
-                                        "value": {
-                                            "detail": "NOT_AUTHENTICATED"
-                                        }
-                                    },
-                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
-                                        "summary": "Token decode failed",
-                                        "value": {
-                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Insufficient permissions",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "FORBIDDEN": {
-                                        "summary": "Not superuser or not verified",
-                                        "value": {
-                                            "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "STUDENT_NOT_FOUND",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "STUDENT_NOT_FOUND": {
-                                        "summary": "STUDENT_NOT_FOUND",
-                                        "value": {
-                                            "detail": "STUDENT_NOT_FOUND"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "HTTPBearer": []
-                    }
-                ]
-            },
-            "delete": {
-                "tags": [
-                    "student"
-                ],
-                "summary": "Delete My Student",
-                "operationId": "delete_my_student_profile_v2_students_my_delete",
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {}
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Missing or invalid authentication token",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "NOT_AUTHENTICATED": {
-                                        "summary": "Missing or invalid authentication token",
-                                        "value": {
-                                            "detail": "NOT_AUTHENTICATED"
-                                        }
-                                    },
-                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
-                                        "summary": "Token decode failed",
-                                        "value": {
-                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Insufficient permissions",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "FORBIDDEN": {
-                                        "summary": "Not superuser or not verified",
-                                        "value": {
-                                            "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
-                                        }
-                                    }
                                 }
                             }
                         }
@@ -35828,6 +35588,384 @@
                 ],
                 "title": "MyCollectiveRead",
                 "description": "Summary used by ``GET /me/collectives`` (and the bot's collective\nlookups) -- just enough to let a caller pick one of their own led\ncollectives by name."
+            },
+            "MyContactData": {
+                "properties": {
+                    "id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Id",
+                        "description": "Keeps and changes an existing contact; one left out is deleted."
+                    },
+                    "type": {
+                        "$ref": "#/components/schemas/ContactType"
+                    },
+                    "value": {
+                        "type": "string",
+                        "maxLength": 256,
+                        "minLength": 1,
+                        "title": "Value"
+                    },
+                    "is_main": {
+                        "type": "boolean",
+                        "title": "Is Main",
+                        "default": false
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "type",
+                    "value"
+                ],
+                "title": "MyContactData"
+            },
+            "MyProfileRead": {
+                "properties": {
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "edited_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Edited At"
+                    },
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "surname": {
+                        "type": "string",
+                        "title": "Surname"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "patronymic": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Patronymic"
+                    },
+                    "birthdate": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Birthdate"
+                    },
+                    "workplace_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Workplace Id"
+                    },
+                    "diet_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Diet Id"
+                    },
+                    "diet": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/DietRead"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "student": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/MyStudentRead"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "contacts": {
+                        "items": {
+                            "$ref": "#/components/schemas/ContactItemRead"
+                        },
+                        "type": "array",
+                        "title": "Contacts"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "edited_at",
+                    "id",
+                    "surname",
+                    "name",
+                    "patronymic",
+                    "birthdate",
+                    "workplace_id",
+                    "diet_id",
+                    "diet",
+                    "student",
+                    "contacts"
+                ],
+                "title": "MyProfileRead"
+            },
+            "MyProfileWrite": {
+                "properties": {
+                    "surname": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "minLength": 1,
+                        "title": "Surname"
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "minLength": 1,
+                        "title": "Name"
+                    },
+                    "patronymic": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 128
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Patronymic"
+                    },
+                    "birthdate": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Birthdate"
+                    },
+                    "workplace_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Workplace Id"
+                    },
+                    "diet_id": {
+                        "anyOf": [
+                            {
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Diet Id"
+                    },
+                    "student": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/MyStudentData"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "description": "Left out or null: the user is not a student."
+                    },
+                    "contacts": {
+                        "items": {
+                            "$ref": "#/components/schemas/MyContactData"
+                        },
+                        "type": "array",
+                        "maxItems": 50,
+                        "title": "Contacts"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "surname",
+                    "name"
+                ],
+                "title": "MyProfileWrite"
+            },
+            "MyStudentData": {
+                "properties": {
+                    "student_id": {
+                        "type": "string",
+                        "maxLength": 64,
+                        "minLength": 1,
+                        "title": "Student Id"
+                    },
+                    "group_id": {
+                        "type": "integer",
+                        "title": "Group Id"
+                    },
+                    "faculty_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Faculty Id"
+                    },
+                    "is_budget": {
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Is Budget"
+                    },
+                    "is_full": {
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Is Full"
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "title": "Is Active",
+                        "default": true
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "student_id",
+                    "group_id"
+                ],
+                "title": "MyStudentData"
+            },
+            "MyStudentRead": {
+                "properties": {
+                    "student_id": {
+                        "type": "string",
+                        "title": "Student Id"
+                    },
+                    "group_id": {
+                        "type": "integer",
+                        "title": "Group Id"
+                    },
+                    "faculty_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Faculty Id"
+                    },
+                    "is_budget": {
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Is Budget"
+                    },
+                    "is_full": {
+                        "anyOf": [
+                            {
+                                "type": "boolean"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Is Full"
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "title": "Is Active"
+                    },
+                    "group": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/StudentGroupRead"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "student_id",
+                    "group_id",
+                    "faculty_id",
+                    "is_budget",
+                    "is_full",
+                    "is_active",
+                    "group"
+                ],
+                "title": "MyStudentRead"
             },
             "NameVariantCreate": {
                 "properties": {

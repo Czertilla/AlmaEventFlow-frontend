@@ -1101,6 +1101,86 @@ export interface MyCollectiveRead {
   is_verified: boolean;
 }
 
+export interface MyContactData {
+  /** Keeps and changes an existing contact; one left out is deleted. */
+  id?: string | null;
+  type: ContactType;
+  /**
+     * @minLength 1
+     * @maxLength 256
+     */
+  value: string;
+  is_main?: boolean;
+}
+
+export interface StudentGroupRead {
+  id: number;
+  /** @maxLength 32 */
+  name: string;
+  degree_id: number;
+  faculty_id: string;
+  grade: number;
+}
+
+export interface MyStudentRead {
+  student_id: string;
+  group_id: number;
+  faculty_id: string | null;
+  is_budget: boolean | null;
+  is_full: boolean | null;
+  is_active: boolean;
+  group: StudentGroupRead | null;
+}
+
+export interface MyProfileRead {
+  created_at: string;
+  edited_at: string | null;
+  id: string;
+  surname: string;
+  name: string;
+  patronymic: string | null;
+  birthdate: string | null;
+  workplace_id: string | null;
+  diet_id: number | null;
+  diet: DietRead | null;
+  student: MyStudentRead | null;
+  contacts: ContactItemRead[];
+}
+
+export interface MyStudentData {
+  /**
+     * @minLength 1
+     * @maxLength 64
+     */
+  student_id: string;
+  group_id: number;
+  faculty_id?: string | null;
+  is_budget?: boolean | null;
+  is_full?: boolean | null;
+  is_active?: boolean;
+}
+
+export interface MyProfileWrite {
+  /**
+     * @minLength 1
+     * @maxLength 128
+     */
+  surname: string;
+  /**
+     * @minLength 1
+     * @maxLength 128
+     */
+  name: string;
+  patronymic?: string | null;
+  birthdate?: string | null;
+  workplace_id?: string | null;
+  diet_id?: number | null;
+  /** Left out or null: the user is not a student. */
+  student?: MyStudentData | null;
+  /** @maxItems 50 */
+  contacts?: MyContactData[];
+}
+
 export interface NameVariantCreate {
   /** @maxLength 128 */
   surname: string;
@@ -1355,15 +1435,6 @@ export interface StudentDegreeRead {
 export interface PageV1StudentDegreeRead {
   items: StudentDegreeRead[];
   pagination: PaginationV1;
-}
-
-export interface StudentGroupRead {
-  id: number;
-  /** @maxLength 32 */
-  name: string;
-  degree_id: number;
-  faculty_id: string;
-  grade: number;
 }
 
 export interface PageV1StudentGroupRead {
@@ -5432,64 +5503,46 @@ export const deleteStudentGroupProfileV1StudentsGroupsGroupIdDelete = (
   }
 
 /**
- * Creates the caller's own person and attaches it to the account.
+ * The caller's whole profile: name, birthdate, diet, student card, contacts.
  *
- * The access token carries the person id: refresh it afterwards, or the
- * `/my` endpoints keep answering `ATTACHED_PERSON_REQUIRED`.
- * @summary Create My Person
+ * `404 PROFILE_NOT_FOUND` until the user has made one.
+ * @summary Get My Profile
  */
-export const createMyPersonProfileV2PersonsMyPost = (
-    personCreate: PersonCreate, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<PersonRead>> => {
-    return axios.post(
-      `/profile/v2/persons/my`,
-      personCreate,options
-    );
-  }
-
-/**
- * @summary Get My Student
- */
-export const getMyStudentProfileV2StudentsMyGet = (
+export const getMyProfileProfileV2ProfilesMyGet = (
      options?: AxiosRequestConfig
- ): Promise<AxiosResponse<StudentRead>> => {
+ ): Promise<AxiosResponse<MyProfileRead>> => {
     return axios.get(
-      `/profile/v2/students/my`,options
+      `/profile/v2/profiles/my`,options
     );
   }
 
 /**
- * @summary Put My Student
+ * Makes the caller's profile in one transaction and links it to the account.
+ *
+ * A user makes one profile for themselves: a second attempt is
+ * `403 PROFILE_ALREADY_EXISTS`. The access token carries the linked person
+ * only after its next refresh; profile endpoints do not depend on it.
+ * @summary Create My Profile
  */
-export const putMyStudentProfileV2StudentsMyPut = (
-    studentPutData: StudentPutData, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<StudentRead>> => {
+export const createMyProfileProfileV2ProfilesMyPost = (
+    myProfileWrite: MyProfileWrite, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<MyProfileRead>> => {
+    return axios.post(
+      `/profile/v2/profiles/my`,
+      myProfileWrite,options
+    );
+  }
+
+/**
+ * Replaces the whole profile: a student card or a contact left out is removed.
+ * @summary Put My Profile
+ */
+export const putMyProfileProfileV2ProfilesMyPut = (
+    myProfileWrite: MyProfileWrite, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<MyProfileRead>> => {
     return axios.put(
-      `/profile/v2/students/my`,
-      studentPutData,options
-    );
-  }
-
-/**
- * @summary Patch My Student
- */
-export const patchMyStudentProfileV2StudentsMyPatch = (
-    studentPatchData: StudentPatchData, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<StudentRead>> => {
-    return axios.patch(
-      `/profile/v2/students/my`,
-      studentPatchData,options
-    );
-  }
-
-/**
- * @summary Delete My Student
- */
-export const deleteMyStudentProfileV2StudentsMyDelete = (
-     options?: AxiosRequestConfig
- ): Promise<AxiosResponse<unknown>> => {
-    return axios.delete(
-      `/profile/v2/students/my`,options
+      `/profile/v2/profiles/my`,
+      myProfileWrite,options
     );
   }
 
@@ -6137,11 +6190,9 @@ export type GetStudentGroupProfileV1StudentsGroupsGroupIdGetResult = AxiosRespon
 export type PutStudentGroupProfileV1StudentsGroupsGroupIdPutResult = AxiosResponse<StudentGroupRead>
 export type PatchStudentGroupProfileV1StudentsGroupsGroupIdPatchResult = AxiosResponse<StudentGroupRead>
 export type DeleteStudentGroupProfileV1StudentsGroupsGroupIdDeleteResult = AxiosResponse<unknown>
-export type CreateMyPersonProfileV2PersonsMyPostResult = AxiosResponse<PersonRead>
-export type GetMyStudentProfileV2StudentsMyGetResult = AxiosResponse<StudentRead>
-export type PutMyStudentProfileV2StudentsMyPutResult = AxiosResponse<StudentRead>
-export type PatchMyStudentProfileV2StudentsMyPatchResult = AxiosResponse<StudentRead>
-export type DeleteMyStudentProfileV2StudentsMyDeleteResult = AxiosResponse<unknown>
+export type GetMyProfileProfileV2ProfilesMyGetResult = AxiosResponse<MyProfileRead>
+export type CreateMyProfileProfileV2ProfilesMyPostResult = AxiosResponse<MyProfileRead>
+export type PutMyProfileProfileV2ProfilesMyPutResult = AxiosResponse<MyProfileRead>
 export type LoginUserV1AuthJwtLoginPostResult = AxiosResponse<LoginUserV1AuthJwtLoginPost200>
 export type RefreshUserV1AuthJwtRefreshPostResult = AxiosResponse<RefreshUserV1AuthJwtRefreshPost200>
 export type LogoutUserV1AuthJwtLogoutPostResult = AxiosResponse<void>
