@@ -341,6 +341,21 @@ export interface ClusterFeature {
   properties: ClusterProperties;
 }
 
+export interface CollectiveAttendanceSummary {
+  attended: number;
+  absent: number;
+  unmarked: number;
+  upcoming: number;
+  /** Declared places of events already decided: attended + absent + unmarked. */
+  past: number;
+  /** Of those, how many the leader confirmed. */
+  verified: number;
+  /** attended / past, 0..1; null while nothing is decided. */
+  rate: number | null;
+  /** Events of the collective inside the period. */
+  events: number;
+}
+
 export interface CollectiveCreate {
   /** @maxLength 128 */
   name: string;
@@ -350,12 +365,94 @@ export interface CollectiveCreate {
   university_id?: string | null;
 }
 
+export interface CollectiveDay {
+  attended: number;
+  absent: number;
+  unmarked: number;
+  upcoming: number;
+  date: string;
+}
+
+export type EventStatusEnumV1 = typeof EventStatusEnumV1[keyof typeof EventStatusEnumV1];
+
+
+export const EventStatusEnumV1 = {
+  draft: 'draft',
+  template: 'template',
+  active: 'active',
+  archived: 'archived',
+} as const;
+
+export interface CollectiveEventItem {
+  attended: number;
+  absent: number;
+  unmarked: number;
+  upcoming: number;
+  event_id: string;
+  event_name: string;
+  date: string;
+  status: EventStatusEnumV1;
+  type: EventTypeEnumV1 | null;
+}
+
+export interface MemberPerson {
+  id: string;
+  surname: string;
+  name: string;
+  patronymic: string | null;
+}
+
+export interface CollectiveInfo {
+  id: string;
+  name: string;
+  is_verified: boolean;
+  principal: MemberPerson | null;
+  active_members: number;
+}
+
+export interface CollectiveMemberItem {
+  attended: number;
+  absent: number;
+  unmarked: number;
+  upcoming: number;
+  member_id: string;
+  person: MemberPerson;
+  is_active: boolean;
+  /** attended + absent + unmarked of the member. */
+  past: number;
+  /** attended / past, 0..1. */
+  rate: number | null;
+}
+
 export interface CollectivePatchData {
   name?: string | null;
   acronym?: string | null;
   principal_id?: string | null;
   address_id?: string | null;
   university_id?: string | null;
+}
+
+/**
+ * Counts cover the places declared (attendance rows) for the collective's
+ * active and archived events dated inside the period.
+ */
+export interface CollectiveProfileRead {
+  collective: CollectiveInfo;
+  /** The caller leads the collective (or is a superuser). */
+  can_manage: boolean;
+  date_from: string;
+  date_to: string;
+  /** Years with events of the collective, newest first, any period. */
+  years: number[];
+  summary: CollectiveAttendanceSummary;
+  by_type: AttendanceByType[];
+  by_month: AttendanceByMonth[];
+  /** One entry per day with events, oldest first. */
+  days: CollectiveDay[];
+  /** Newest first. */
+  events: CollectiveEventItem[];
+  /** Active members and those with events in the period, by surname. */
+  members: CollectiveMemberItem[];
 }
 
 export interface CollectivePutData {
@@ -497,16 +594,6 @@ export type ErrorModelDetail = string | {[key: string]: string};
 export interface ErrorModel {
   detail: ErrorModelDetail;
 }
-
-export type EventStatusEnumV1 = typeof EventStatusEnumV1[keyof typeof EventStatusEnumV1];
-
-
-export const EventStatusEnumV1 = {
-  draft: 'draft',
-  template: 'template',
-  active: 'active',
-  archived: 'archived',
-} as const;
 
 export type EventLevelEnumV1 = typeof EventLevelEnumV1[keyof typeof EventLevelEnumV1];
 
@@ -960,13 +1047,6 @@ export interface MemberCreateData {
 export interface MemberPatchData {
   roles?: string[] | null;
   is_active?: boolean | null;
-}
-
-export interface MemberPerson {
-  id: string;
-  surname: string;
-  name: string;
-  patronymic: string | null;
 }
 
 export interface RolePreview {
@@ -1476,6 +1556,11 @@ export interface ProfilePutData {
   diet_id?: number | null;
 }
 
+export interface RecentLocationRead {
+  location_id: string;
+  used_at: string;
+}
+
 export interface RewardPutData {
   name: string;
   degree?: number | null;
@@ -1715,11 +1800,6 @@ export interface UserUpdate {
 
 export interface VapidPublicKey {
   public_key: string;
-}
-
-export interface RecentLocationRead {
-  location_id: string;
-  used_at: string;
 }
 
 export type GetAttendancesEventV1AttendancesGetParams = {
@@ -2642,6 +2722,17 @@ export type GetRecentLocationsEventV2CollectivesCollectiveIdRecentLocationsGetPa
  * @maximum 50
  */
 limit?: number;
+};
+
+export type GetCollectiveProfileEventV2CollectivesCollectiveIdProfileGetParams = {
+/**
+ * First day of the period; the last 365 days when omitted.
+ */
+date_from?: string | null;
+/**
+ * Last day of the period; today when omitted.
+ */
+date_to?: string | null;
 };
 
 /**
@@ -5341,6 +5432,68 @@ export const deleteStudentGroupProfileV1StudentsGroupsGroupIdDelete = (
   }
 
 /**
+ * Creates the caller's own person and attaches it to the account.
+ *
+ * The access token carries the person id: refresh it afterwards, or the
+ * `/my` endpoints keep answering `ATTACHED_PERSON_REQUIRED`.
+ * @summary Create My Person
+ */
+export const createMyPersonProfileV2PersonsMyPost = (
+    personCreate: PersonCreate, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<PersonRead>> => {
+    return axios.post(
+      `/profile/v2/persons/my`,
+      personCreate,options
+    );
+  }
+
+/**
+ * @summary Get My Student
+ */
+export const getMyStudentProfileV2StudentsMyGet = (
+     options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<StudentRead>> => {
+    return axios.get(
+      `/profile/v2/students/my`,options
+    );
+  }
+
+/**
+ * @summary Put My Student
+ */
+export const putMyStudentProfileV2StudentsMyPut = (
+    studentPutData: StudentPutData, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<StudentRead>> => {
+    return axios.put(
+      `/profile/v2/students/my`,
+      studentPutData,options
+    );
+  }
+
+/**
+ * @summary Patch My Student
+ */
+export const patchMyStudentProfileV2StudentsMyPatch = (
+    studentPatchData: StudentPatchData, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<StudentRead>> => {
+    return axios.patch(
+      `/profile/v2/students/my`,
+      studentPatchData,options
+    );
+  }
+
+/**
+ * @summary Delete My Student
+ */
+export const deleteMyStudentProfileV2StudentsMyDelete = (
+     options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<unknown>> => {
+    return axios.delete(
+      `/profile/v2/students/my`,options
+    );
+  }
+
+/**
  * @summary Login
  */
 export const loginUserV1AuthJwtLoginPost = (
@@ -5753,6 +5906,24 @@ export const getRecentLocationsEventV2CollectivesCollectiveIdRecentLocationsGet 
     );
   }
 
+/**
+ * A collective's card with the attendance of its whole roster.
+ *
+ * Open to the leader, the collective's active members and superusers
+ * (``403 NOT_COLLECTIVE_MEMBER`` otherwise).
+ * @summary Get Collective Profile
+ */
+export const getCollectiveProfileEventV2CollectivesCollectiveIdProfileGet = (
+    collectiveId: string,
+    params?: GetCollectiveProfileEventV2CollectivesCollectiveIdProfileGetParams, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<CollectiveProfileRead>> => {
+    return axios.get(
+      `/event/v2/collectives/${collectiveId}/profile`,{
+    ...options,
+        params: {...params, ...options?.params},}
+    );
+  }
+
 export type GetAttendancesEventV1AttendancesGetResult = AxiosResponse<PageV1AttendanceRead>
 export type CreateAttendanceEventV1AttendancesPostResult = AxiosResponse<AttendanceRead>
 export type GetAttendanceEventV1AttendancesAttendanceIdGetResult = AxiosResponse<AttendanceRead>
@@ -5966,6 +6137,11 @@ export type GetStudentGroupProfileV1StudentsGroupsGroupIdGetResult = AxiosRespon
 export type PutStudentGroupProfileV1StudentsGroupsGroupIdPutResult = AxiosResponse<StudentGroupRead>
 export type PatchStudentGroupProfileV1StudentsGroupsGroupIdPatchResult = AxiosResponse<StudentGroupRead>
 export type DeleteStudentGroupProfileV1StudentsGroupsGroupIdDeleteResult = AxiosResponse<unknown>
+export type CreateMyPersonProfileV2PersonsMyPostResult = AxiosResponse<PersonRead>
+export type GetMyStudentProfileV2StudentsMyGetResult = AxiosResponse<StudentRead>
+export type PutMyStudentProfileV2StudentsMyPutResult = AxiosResponse<StudentRead>
+export type PatchMyStudentProfileV2StudentsMyPatchResult = AxiosResponse<StudentRead>
+export type DeleteMyStudentProfileV2StudentsMyDeleteResult = AxiosResponse<unknown>
 export type LoginUserV1AuthJwtLoginPostResult = AxiosResponse<LoginUserV1AuthJwtLoginPost200>
 export type RefreshUserV1AuthJwtRefreshPostResult = AxiosResponse<RefreshUserV1AuthJwtRefreshPost200>
 export type LogoutUserV1AuthJwtLogoutPostResult = AxiosResponse<void>
@@ -5997,3 +6173,4 @@ export type LinkPersonUserV1UsersUserIdPersonPatchResult = AxiosResponse<UserRea
 export type LinkInviteUserV1UsersMeLinkInvitePostResult = AxiosResponse<UserRead>
 export type HealthUserV1HealthGetResult = AxiosResponse<HealthV1>
 export type GetRecentLocationsEventV2CollectivesCollectiveIdRecentLocationsGetResult = AxiosResponse<RecentLocationRead[]>
+export type GetCollectiveProfileEventV2CollectivesCollectiveIdProfileGetResult = AxiosResponse<CollectiveProfileRead>

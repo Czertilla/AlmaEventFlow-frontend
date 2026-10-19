@@ -28001,6 +28001,543 @@
                 }
             }
         },
+        "/profile/v2/persons/my": {
+            "post": {
+                "tags": [
+                    "person"
+                ],
+                "summary": "Create My Person",
+                "description": "Creates the caller's own person and attaches it to the account.\n\nThe access token carries the person id: refresh it afterwards, or the\n`/my` endpoints keep answering `ATTACHED_PERSON_REQUIRED`.",
+                "operationId": "create_my_person_profile_v2_persons_my_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PersonCreate"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PersonRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ACCOUNT_ALREADY_LINKED",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "ACCOUNT_ALREADY_LINKED": {
+                                        "summary": "ACCOUNT_ALREADY_LINKED",
+                                        "value": {
+                                            "detail": "ACCOUNT_ALREADY_LINKED"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/profile/v2/students/my": {
+            "get": {
+                "tags": [
+                    "student"
+                ],
+                "summary": "Get My Student",
+                "operationId": "get_my_student_profile_v2_students_my_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StudentRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "STUDENT_NOT_FOUND",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "STUDENT_NOT_FOUND": {
+                                        "summary": "STUDENT_NOT_FOUND",
+                                        "value": {
+                                            "detail": "STUDENT_NOT_FOUND"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "student"
+                ],
+                "summary": "Put My Student",
+                "operationId": "put_my_student_profile_v2_students_my_put",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StudentPutData"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StudentRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "PROFILE_NOT_FOUND",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "PROFILE_NOT_FOUND": {
+                                        "summary": "PROFILE_NOT_FOUND",
+                                        "value": {
+                                            "detail": "PROFILE_NOT_FOUND"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "student"
+                ],
+                "summary": "Patch My Student",
+                "operationId": "patch_my_student_profile_v2_students_my_patch",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StudentPatchData"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StudentRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "STUDENT_NOT_FOUND",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "STUDENT_NOT_FOUND": {
+                                        "summary": "STUDENT_NOT_FOUND",
+                                        "value": {
+                                            "detail": "STUDENT_NOT_FOUND"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "student"
+                ],
+                "summary": "Delete My Student",
+                "operationId": "delete_my_student_profile_v2_students_my_delete",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
         "/user/v1/auth/jwt/login": {
             "post": {
                 "tags": [
@@ -30368,6 +30905,153 @@
                     }
                 }
             }
+        },
+        "/event/v2/collectives/{collective_id}/profile": {
+            "get": {
+                "tags": [
+                    "collective"
+                ],
+                "summary": "Get Collective Profile",
+                "description": "A collective's card with the attendance of its whole roster.\n\nOpen to the leader, the collective's active members and superusers\n(``403 NOT_COLLECTIVE_MEMBER`` otherwise).",
+                "operationId": "get_collective_profile_event_v2_collectives__collective_id__profile_get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "collective_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Collective Id"
+                        }
+                    },
+                    {
+                        "name": "date_from",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "date"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "First day of the period; the last 365 days when omitted.",
+                            "title": "Date From"
+                        },
+                        "description": "First day of the period; the last 365 days when omitted."
+                    },
+                    {
+                        "name": "date_to",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "date"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Last day of the period; today when omitted.",
+                            "title": "Date To"
+                        },
+                        "description": "Last day of the period; today when omitted."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/CollectiveProfileRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "NOT_COLLECTIVE_MEMBER",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_COLLECTIVE_MEMBER": {
+                                        "summary": "NOT_COLLECTIVE_MEMBER",
+                                        "value": {
+                                            "detail": "NOT_COLLECTIVE_MEMBER"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "COLLECTIVE_NOT_FOUND",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "COLLECTIVE_NOT_FOUND": {
+                                        "summary": "COLLECTIVE_NOT_FOUND",
+                                        "value": {
+                                            "detail": "COLLECTIVE_NOT_FOUND"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -31690,6 +32374,65 @@
                 ],
                 "title": "ClusterProperties"
             },
+            "CollectiveAttendanceSummary": {
+                "properties": {
+                    "attended": {
+                        "type": "integer",
+                        "title": "Attended"
+                    },
+                    "absent": {
+                        "type": "integer",
+                        "title": "Absent"
+                    },
+                    "unmarked": {
+                        "type": "integer",
+                        "title": "Unmarked"
+                    },
+                    "upcoming": {
+                        "type": "integer",
+                        "title": "Upcoming"
+                    },
+                    "past": {
+                        "type": "integer",
+                        "title": "Past",
+                        "description": "Declared places of events already decided: attended + absent + unmarked."
+                    },
+                    "verified": {
+                        "type": "integer",
+                        "title": "Verified",
+                        "description": "Of those, how many the leader confirmed."
+                    },
+                    "rate": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Rate",
+                        "description": "attended / past, 0..1; null while nothing is decided."
+                    },
+                    "events": {
+                        "type": "integer",
+                        "title": "Events",
+                        "description": "Events of the collective inside the period."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "attended",
+                    "absent",
+                    "unmarked",
+                    "upcoming",
+                    "past",
+                    "verified",
+                    "rate",
+                    "events"
+                ],
+                "title": "CollectiveAttendanceSummary"
+            },
             "CollectiveCreate": {
                 "properties": {
                     "name": {
@@ -31751,6 +32494,202 @@
                     "name"
                 ],
                 "title": "CollectiveCreate"
+            },
+            "CollectiveDay": {
+                "properties": {
+                    "attended": {
+                        "type": "integer",
+                        "title": "Attended"
+                    },
+                    "absent": {
+                        "type": "integer",
+                        "title": "Absent"
+                    },
+                    "unmarked": {
+                        "type": "integer",
+                        "title": "Unmarked"
+                    },
+                    "upcoming": {
+                        "type": "integer",
+                        "title": "Upcoming"
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date",
+                        "title": "Date"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "attended",
+                    "absent",
+                    "unmarked",
+                    "upcoming",
+                    "date"
+                ],
+                "title": "CollectiveDay"
+            },
+            "CollectiveEventItem": {
+                "properties": {
+                    "attended": {
+                        "type": "integer",
+                        "title": "Attended"
+                    },
+                    "absent": {
+                        "type": "integer",
+                        "title": "Absent"
+                    },
+                    "unmarked": {
+                        "type": "integer",
+                        "title": "Unmarked"
+                    },
+                    "upcoming": {
+                        "type": "integer",
+                        "title": "Upcoming"
+                    },
+                    "event_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Event Id"
+                    },
+                    "event_name": {
+                        "type": "string",
+                        "title": "Event Name"
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date",
+                        "title": "Date"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/EventStatusEnumV1"
+                    },
+                    "type": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/EventTypeEnumV1"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "attended",
+                    "absent",
+                    "unmarked",
+                    "upcoming",
+                    "event_id",
+                    "event_name",
+                    "date",
+                    "status",
+                    "type"
+                ],
+                "title": "CollectiveEventItem"
+            },
+            "CollectiveInfo": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "is_verified": {
+                        "type": "boolean",
+                        "title": "Is Verified"
+                    },
+                    "principal": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/components/schemas/MemberPerson"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
+                    },
+                    "active_members": {
+                        "type": "integer",
+                        "title": "Active Members"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "name",
+                    "is_verified",
+                    "principal",
+                    "active_members"
+                ],
+                "title": "CollectiveInfo"
+            },
+            "CollectiveMemberItem": {
+                "properties": {
+                    "attended": {
+                        "type": "integer",
+                        "title": "Attended"
+                    },
+                    "absent": {
+                        "type": "integer",
+                        "title": "Absent"
+                    },
+                    "unmarked": {
+                        "type": "integer",
+                        "title": "Unmarked"
+                    },
+                    "upcoming": {
+                        "type": "integer",
+                        "title": "Upcoming"
+                    },
+                    "member_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Member Id"
+                    },
+                    "person": {
+                        "$ref": "#/components/schemas/MemberPerson"
+                    },
+                    "is_active": {
+                        "type": "boolean",
+                        "title": "Is Active"
+                    },
+                    "past": {
+                        "type": "integer",
+                        "title": "Past",
+                        "description": "attended + absent + unmarked of the member."
+                    },
+                    "rate": {
+                        "anyOf": [
+                            {
+                                "type": "number"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Rate",
+                        "description": "attended / past, 0..1."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "attended",
+                    "absent",
+                    "unmarked",
+                    "upcoming",
+                    "member_id",
+                    "person",
+                    "is_active",
+                    "past",
+                    "rate"
+                ],
+                "title": "CollectiveMemberItem"
             },
             "CollectivePatchData": {
                 "properties": {
@@ -31817,6 +32756,93 @@
                 },
                 "type": "object",
                 "title": "CollectivePatchData"
+            },
+            "CollectiveProfileRead": {
+                "properties": {
+                    "collective": {
+                        "$ref": "#/components/schemas/CollectiveInfo"
+                    },
+                    "can_manage": {
+                        "type": "boolean",
+                        "title": "Can Manage",
+                        "description": "The caller leads the collective (or is a superuser)."
+                    },
+                    "date_from": {
+                        "type": "string",
+                        "format": "date",
+                        "title": "Date From"
+                    },
+                    "date_to": {
+                        "type": "string",
+                        "format": "date",
+                        "title": "Date To"
+                    },
+                    "years": {
+                        "items": {
+                            "type": "integer"
+                        },
+                        "type": "array",
+                        "title": "Years",
+                        "description": "Years with events of the collective, newest first, any period."
+                    },
+                    "summary": {
+                        "$ref": "#/components/schemas/CollectiveAttendanceSummary"
+                    },
+                    "by_type": {
+                        "items": {
+                            "$ref": "#/components/schemas/AttendanceByType"
+                        },
+                        "type": "array",
+                        "title": "By Type"
+                    },
+                    "by_month": {
+                        "items": {
+                            "$ref": "#/components/schemas/AttendanceByMonth"
+                        },
+                        "type": "array",
+                        "title": "By Month"
+                    },
+                    "days": {
+                        "items": {
+                            "$ref": "#/components/schemas/CollectiveDay"
+                        },
+                        "type": "array",
+                        "title": "Days",
+                        "description": "One entry per day with events, oldest first."
+                    },
+                    "events": {
+                        "items": {
+                            "$ref": "#/components/schemas/CollectiveEventItem"
+                        },
+                        "type": "array",
+                        "title": "Events",
+                        "description": "Newest first."
+                    },
+                    "members": {
+                        "items": {
+                            "$ref": "#/components/schemas/CollectiveMemberItem"
+                        },
+                        "type": "array",
+                        "title": "Members",
+                        "description": "Active members and those with events in the period, by surname."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "collective",
+                    "can_manage",
+                    "date_from",
+                    "date_to",
+                    "years",
+                    "summary",
+                    "by_type",
+                    "by_month",
+                    "days",
+                    "events",
+                    "members"
+                ],
+                "title": "CollectiveProfileRead",
+                "description": "Counts cover the places declared (attendance rows) for the collective's\nactive and archived events dated inside the period."
             },
             "CollectivePutData": {
                 "properties": {
@@ -36653,6 +37679,26 @@
                 ],
                 "title": "ProfileRead"
             },
+            "RecentLocationRead": {
+                "properties": {
+                    "location_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Location Id"
+                    },
+                    "used_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Used At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "location_id",
+                    "used_at"
+                ],
+                "title": "RecentLocationRead"
+            },
             "RewardPutData": {
                 "properties": {
                     "name": {
@@ -38729,26 +39775,6 @@
                     "name"
                 ],
                 "title": "OrganizationRead"
-            },
-            "RecentLocationRead": {
-                "properties": {
-                    "location_id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "title": "Location Id"
-                    },
-                    "used_at": {
-                        "type": "string",
-                        "format": "date-time",
-                        "title": "Used At"
-                    }
-                },
-                "type": "object",
-                "required": [
-                    "location_id",
-                    "used_at"
-                ],
-                "title": "RecentLocationRead"
             }
         },
         "securitySchemes": {
