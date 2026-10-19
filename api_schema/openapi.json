@@ -19,6 +19,39 @@
                 ],
                 "parameters": [
                     {
+                        "name": "id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Id"
+                        }
+                    },
+                    {
+                        "name": "id__in",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Id  In"
+                        }
+                    },
+                    {
                         "name": "created_at__gte",
                         "in": "query",
                         "required": false,
@@ -103,6 +136,22 @@
                         }
                     },
                     {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Search"
+                        }
+                    },
+                    {
                         "name": "order_by",
                         "in": "query",
                         "required": false,
@@ -120,22 +169,6 @@
                             "title": "Order By"
                         },
                         "description": "Comma-separated fields, prefix a field with `-` for descending order. Allowed: is_attended, is_verified, created_at, edited_at."
-                    },
-                    {
-                        "name": "search",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Search"
-                        }
                     },
                     {
                         "name": "participation_id",
@@ -171,6 +204,72 @@
                         }
                     },
                     {
+                        "name": "collective_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Collective Id"
+                        }
+                    },
+                    {
+                        "name": "collective_id__in",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Collective Id  In"
+                        }
+                    },
+                    {
+                        "name": "event_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Event Id"
+                        }
+                    },
+                    {
+                        "name": "event_id__in",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Event Id  In"
+                        }
+                    },
+                    {
                         "name": "member_id",
                         "in": "query",
                         "required": false,
@@ -201,6 +300,39 @@
                                 }
                             ],
                             "title": "Member Id  In"
+                        }
+                    },
+                    {
+                        "name": "person_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Person Id"
+                        }
+                    },
+                    {
+                        "name": "person_id__in",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Person Id  In"
                         }
                     },
                     {
@@ -867,6 +999,39 @@
                     }
                 ],
                 "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Id"
+                        }
+                    },
+                    {
+                        "name": "id__in",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Id  In"
+                        }
+                    },
                     {
                         "name": "created_at__gte",
                         "in": "query",
@@ -3261,6 +3426,39 @@
                         }
                     },
                     {
+                        "name": "id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Id"
+                        }
+                    },
+                    {
+                        "name": "id__in",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Id  In"
+                        }
+                    },
+                    {
                         "name": "created_at__gte",
                         "in": "query",
                         "required": false,
@@ -3390,6 +3588,16 @@
                         }
                     },
                     {
+                        "name": "include_inactive",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": false,
+                            "title": "Include Inactive"
+                        }
+                    },
+                    {
                         "name": "collective_id__in",
                         "in": "query",
                         "required": false,
@@ -3436,6 +3644,39 @@
                                 }
                             ],
                             "title": "Person Id  In"
+                        }
+                    },
+                    {
+                        "name": "role_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Role Id"
+                        }
+                    },
+                    {
+                        "name": "role_id__in",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Role Id  In"
                         }
                     },
                     {
@@ -3852,6 +4093,39 @@
                             "type": "string",
                             "format": "uuid",
                             "title": "Collective Id"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Id"
+                        }
+                    },
+                    {
+                        "name": "id__in",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Id  In"
                         }
                     },
                     {
@@ -6130,6 +6404,39 @@
                 ],
                 "parameters": [
                     {
+                        "name": "id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Id"
+                        }
+                    },
+                    {
+                        "name": "id__in",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Id  In"
+                        }
+                    },
+                    {
                         "name": "created_at__gte",
                         "in": "query",
                         "required": false,
@@ -6259,6 +6566,16 @@
                         }
                     },
                     {
+                        "name": "include_inactive",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "boolean",
+                            "default": false,
+                            "title": "Include Inactive"
+                        }
+                    },
+                    {
                         "name": "collective_id",
                         "in": "query",
                         "required": false,
@@ -6322,6 +6639,39 @@
                                 }
                             ],
                             "title": "Person Id  In"
+                        }
+                    },
+                    {
+                        "name": "role_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Role Id"
+                        }
+                    },
+                    {
+                        "name": "role_id__in",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Role Id  In"
                         }
                     },
                     {
@@ -6957,6 +7307,39 @@
                 ],
                 "parameters": [
                     {
+                        "name": "id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Id"
+                        }
+                    },
+                    {
+                        "name": "id__in",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Id  In"
+                        }
+                    },
+                    {
                         "name": "created_at__gte",
                         "in": "query",
                         "required": false,
@@ -7038,6 +7421,22 @@
                                 }
                             ],
                             "title": "Edited At  Isnull"
+                        }
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Search"
                         }
                     },
                     {
@@ -8838,6 +9237,39 @@
                     }
                 ],
                 "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Id"
+                        }
+                    },
+                    {
+                        "name": "id__in",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Id  In"
+                        }
+                    },
                     {
                         "name": "created_at__gte",
                         "in": "query",
@@ -13719,6 +14151,106 @@
                         "HTTPBearer": []
                     }
                 ]
+            },
+            "get": {
+                "tags": [
+                    "location"
+                ],
+                "summary": "Get Locations",
+                "description": "The locations with these ids, in the order given. An id nobody has\nis left out, so a list of remembered places never fails on a deleted one.",
+                "operationId": "get_locations_geo_v2_locations_get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "format": "uuid"
+                            },
+                            "minItems": 1,
+                            "maxItems": 50,
+                            "description": "Ids of the locations to read; repeat the parameter.",
+                            "title": "Id"
+                        },
+                        "description": "Ids of the locations to read; repeat the parameter."
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/LocationReadV2"
+                                    },
+                                    "title": "Response Get Locations Geo V2 Locations Get"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/geo/v2/map": {
@@ -14831,6 +15363,39 @@
                     }
                 ],
                 "parameters": [
+                    {
+                        "name": "id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Id"
+                        }
+                    },
+                    {
+                        "name": "id__in",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Id  In"
+                        }
+                    },
                     {
                         "name": "created_at__gte",
                         "in": "query",
@@ -29696,6 +30261,113 @@
                     }
                 }
             }
+        },
+        "/event/v2/collectives/{collective_id}/recent-locations": {
+            "get": {
+                "tags": [
+                    "location"
+                ],
+                "summary": "Get Recent Locations",
+                "description": "Where the collective held its events lately, the latest first.\n\nA place counts from the time its event was last edited (created, when it\nnever was). For the leader of the collective and superusers; meant to\nseed a place picker, the ids are read from geo.",
+                "operationId": "get_recent_locations_event_v2_collectives__collective_id__recent_locations_get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "collective_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Collective Id"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 50,
+                            "minimum": 1,
+                            "default": 10,
+                            "title": "Limit"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/RecentLocationRead"
+                                    },
+                                    "title": "Response Get Recent Locations Event V2 Collectives  Collective Id  Recent Locations Get"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "NOT_COLLECTIVE_PRINCIPAL",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_COLLECTIVE_PRINCIPAL": {
+                                        "summary": "NOT_COLLECTIVE_PRINCIPAL",
+                                        "value": {
+                                            "detail": "NOT_COLLECTIVE_PRINCIPAL"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     },
     "components": {
@@ -38057,6 +38729,26 @@
                     "name"
                 ],
                 "title": "OrganizationRead"
+            },
+            "RecentLocationRead": {
+                "properties": {
+                    "location_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Location Id"
+                    },
+                    "used_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Used At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "location_id",
+                    "used_at"
+                ],
+                "title": "RecentLocationRead"
             }
         },
         "securitySchemes": {

@@ -1717,21 +1717,34 @@ export interface VapidPublicKey {
   public_key: string;
 }
 
+export interface RecentLocationRead {
+  location_id: string;
+  used_at: string;
+}
+
 export type GetAttendancesEventV1AttendancesGetParams = {
+id?: string | null;
+id__in?: string | null;
 created_at__gte?: string | null;
 created_at__lte?: string | null;
 edited_at__gte?: string | null;
 edited_at__lte?: string | null;
 edited_at__isnull?: boolean | null;
+search?: string | null;
 /**
  * Comma-separated fields, prefix a field with `-` for descending order. Allowed: is_attended, is_verified, created_at, edited_at.
  */
 order_by?: string | null;
-search?: string | null;
 participation_id?: string | null;
 participation_id__in?: string | null;
+collective_id?: string | null;
+collective_id__in?: string | null;
+event_id?: string | null;
+event_id__in?: string | null;
 member_id?: string | null;
 member_id__in?: string | null;
+person_id?: string | null;
+person_id__in?: string | null;
 is_attended?: boolean | null;
 is_verified?: boolean | null;
 page?: number;
@@ -1743,6 +1756,8 @@ limit?: number;
 };
 
 export type GetEventsEventV1EventsGetParams = {
+id?: string | null;
+id__in?: string | null;
 created_at__gte?: string | null;
 created_at__lte?: string | null;
 edited_at__gte?: string | null;
@@ -1828,6 +1843,8 @@ limit?: number;
 };
 
 export type GetMyCollectiveMembersEventV1MeCollectivesCollectiveIdMembersGetParams = {
+id?: string | null;
+id__in?: string | null;
 created_at__gte?: string | null;
 created_at__lte?: string | null;
 edited_at__gte?: string | null;
@@ -1839,9 +1856,12 @@ search?: string | null;
  */
 order_by?: string | null;
 is_active?: boolean;
+include_inactive?: boolean;
 collective_id__in?: string | null;
 person_id?: string | null;
 person_id__in?: string | null;
+role_id?: string | null;
+role_id__in?: string | null;
 page?: number;
 /**
  * @maximum 100
@@ -1851,6 +1871,8 @@ limit?: number;
 };
 
 export type GetMyCollectiveRolesEventV1MeCollectivesCollectiveIdRolesGetParams = {
+id?: string | null;
+id__in?: string | null;
 created_at__gte?: string | null;
 created_at__lte?: string | null;
 edited_at__gte?: string | null;
@@ -1871,6 +1893,8 @@ limit?: number;
 };
 
 export type GetMembersEventV1MembersGetParams = {
+id?: string | null;
+id__in?: string | null;
 created_at__gte?: string | null;
 created_at__lte?: string | null;
 edited_at__gte?: string | null;
@@ -1882,10 +1906,13 @@ search?: string | null;
  */
 order_by?: string | null;
 is_active?: boolean;
+include_inactive?: boolean;
 collective_id?: string | null;
 collective_id__in?: string | null;
 person_id?: string | null;
 person_id__in?: string | null;
+role_id?: string | null;
+role_id__in?: string | null;
 page?: number;
 /**
  * @maximum 100
@@ -1895,11 +1922,14 @@ limit?: number;
 };
 
 export type GetParticipationsEventV1ParticipationsGetParams = {
+id?: string | null;
+id__in?: string | null;
 created_at__gte?: string | null;
 created_at__lte?: string | null;
 edited_at__gte?: string | null;
 edited_at__lte?: string | null;
 edited_at__isnull?: boolean | null;
+search?: string | null;
 /**
  * Comma-separated fields, prefix a field with `-` for descending order. Allowed: collective_id, priority_degree, created_at, edited_at.
  */
@@ -1979,6 +2009,8 @@ secret_key?: string;
 };
 
 export type GetRolesEventV1RolesGetParams = {
+id?: string | null;
+id__in?: string | null;
 created_at__gte?: string | null;
 created_at__lte?: string | null;
 edited_at__gte?: string | null;
@@ -2132,6 +2164,15 @@ page?: number;
 limit?: number;
 };
 
+export type GetLocationsGeoV2LocationsGetParams = {
+/**
+ * Ids of the locations to read; repeat the parameter.
+ * @minItems 1
+ * @maxItems 50
+ */
+id: string[];
+};
+
 export type GetMapGeoV2MapGetParams = {
 /**
  * west,south,east,north in degrees (RFC 7946 order). West greater than east means a window across the antimeridian.
@@ -2201,6 +2242,8 @@ export const SearchGeoV2SearchGetExternal = {
 export type SendTestNotificationNotifyV1TestPost200 = {[key: string]: string};
 
 export type ListCollectivesOrgV1CollectivesGetParams = {
+id?: string | null;
+id__in?: string | null;
 created_at__gte?: string | null;
 created_at__lte?: string | null;
 edited_at__gte?: string | null;
@@ -2589,6 +2632,14 @@ page?: number;
 /**
  * @maximum 100
  * @exclusiveMinimum 0
+ */
+limit?: number;
+};
+
+export type GetRecentLocationsEventV2CollectivesCollectiveIdRecentLocationsGetParams = {
+/**
+ * @minimum 1
+ * @maximum 50
  */
 limit?: number;
 };
@@ -3952,6 +4003,21 @@ export const createLocationGeoV2LocationsPost = (
     return axios.post(
       `/geo/v2/locations`,
       locationCreateV2,options
+    );
+  }
+
+/**
+ * The locations with these ids, in the order given. An id nobody has
+ * is left out, so a list of remembered places never fails on a deleted one.
+ * @summary Get Locations
+ */
+export const getLocationsGeoV2LocationsGet = (
+    params: GetLocationsGeoV2LocationsGetParams, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<LocationReadV2[]>> => {
+    return axios.get(
+      `/geo/v2/locations`,{
+    ...options,
+        params: {...params, ...options?.params},}
     );
   }
 
@@ -5668,6 +5734,25 @@ export const healthUserV1HealthGet = (
     );
   }
 
+/**
+ * Where the collective held its events lately, the latest first.
+ *
+ * A place counts from the time its event was last edited (created, when it
+ * never was). For the leader of the collective and superusers; meant to
+ * seed a place picker, the ids are read from geo.
+ * @summary Get Recent Locations
+ */
+export const getRecentLocationsEventV2CollectivesCollectiveIdRecentLocationsGet = (
+    collectiveId: string,
+    params?: GetRecentLocationsEventV2CollectivesCollectiveIdRecentLocationsGetParams, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<RecentLocationRead[]>> => {
+    return axios.get(
+      `/event/v2/collectives/${collectiveId}/recent-locations`,{
+    ...options,
+        params: {...params, ...options?.params},}
+    );
+  }
+
 export type GetAttendancesEventV1AttendancesGetResult = AxiosResponse<PageV1AttendanceRead>
 export type CreateAttendanceEventV1AttendancesPostResult = AxiosResponse<AttendanceRead>
 export type GetAttendanceEventV1AttendancesAttendanceIdGetResult = AxiosResponse<AttendanceRead>
@@ -5773,6 +5858,7 @@ export type GetMapGeoV1MapGetResult = AxiosResponse<MapResult>
 export type GetAddressGeoV2AddressesAddressIdGetResult = AxiosResponse<AddressReadV2>
 export type GetLocationGeoV2LocationsLocationIdGetResult = AxiosResponse<LocationReadV2>
 export type CreateLocationGeoV2LocationsPostResult = AxiosResponse<LocationReadV2>
+export type GetLocationsGeoV2LocationsGetResult = AxiosResponse<LocationReadV2[]>
 export type GetMapGeoV2MapGetResult = AxiosResponse<MapResponse>
 export type SearchGeoV2SearchGetResult = AxiosResponse<SearchResponse>
 export type HealthMailV1HealthGetResult = AxiosResponse<HealthV1>
@@ -5910,3 +5996,4 @@ export type CreateInviteTokenUserV1UsersInvitePostResult = AxiosResponse<InviteT
 export type LinkPersonUserV1UsersUserIdPersonPatchResult = AxiosResponse<UserRead>
 export type LinkInviteUserV1UsersMeLinkInvitePostResult = AxiosResponse<UserRead>
 export type HealthUserV1HealthGetResult = AxiosResponse<HealthV1>
+export type GetRecentLocationsEventV2CollectivesCollectiveIdRecentLocationsGetResult = AxiosResponse<RecentLocationRead[]>
