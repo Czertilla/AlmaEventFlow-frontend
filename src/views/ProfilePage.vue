@@ -22,7 +22,44 @@
           <UuidBadge v-if="auth.user?.id" :id="auth.user.id" />
         </div>
 
+        <section v-if="collectiveRows.length" class="ui-card">
+          <div class="ui-card-head">
+            <h3 class="ui-card-title">Мои коллективы</h3>
+            <span class="ui-count">{{ collectiveRows.length }}</span>
+          </div>
+          <ul class="collective-list">
+            <li v-for="row in collectiveRows" :key="row.collectiveId" class="collective-row">
+              <span class="collective-dot" :style="{ background: row.color }" />
+              <div class="collective-main">
+                <span class="collective-name">{{ row.name }}</span>
+                <span class="collective-meta">{{ row.meta }}</span>
+                <div class="collective-actions">
+                  <button
+                    v-if="row.memberId"
+                    type="button"
+                    class="ui-btn ui-btn--primary ui-btn--sm"
+                    @click="router.push(`/member/${row.memberId}`)"
+                  >
+                    Мой профиль участника
+                  </button>
+                  <button type="button" class="ui-btn ui-btn--ghost ui-btn--sm" @click="router.push(`/collective/${row.collectiveId}`)">
+                    О коллективе
+                  </button>
+                </div>
+              </div>
+            </li>
+          </ul>
+        </section>
+
         <div class="profile-actions">
+          <router-link to="/profile/file" class="profile-action">
+            <ion-icon :icon="documentTextOutline" />
+            <span class="action-text">
+              Личное дело
+              <small class="action-sub">{{ personName || (hasPerson ? 'Данные о вас' : 'Ещё не создано — заполните данные о себе') }}</small>
+            </span>
+            <ion-icon :icon="chevronForwardOutline" class="action-arrow" />
+          </router-link>
           <router-link to="/profile/edit" class="profile-action">
             <ion-icon :icon="createOutline" />
             <span>Редактировать профиль</span>
@@ -49,21 +86,89 @@
 </template>
 
 <script setup lang="ts">
+import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { usePrincipalStore } from '@/stores/principal'
 import { usePlatform } from '@/composables/usePlatform'
 import UuidBadge from '@/components/common/UuidBadge.vue'
 import TimestampsMeta from '@/components/common/TimestampsMeta.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBackButton, IonIcon,
+  onIonViewWillEnter,
 } from '@ionic/vue'
 import {
   settingsOutline, logOutOutline, chevronForwardOutline,
-  createOutline, shieldCheckmarkOutline,
+  createOutline, shieldCheckmarkOutline, documentTextOutline,
 } from 'ionicons/icons'
+import { getMyMembersEventV1MeMembersGet } from '@/api/generated/almaEventFlow'
+import type { MemberRead } from '@/api/generated/almaEventFlow'
+import { unwrapList } from '@/api/pagination'
+import { getCollectiveColor } from '@/utils/colors'
+import { resolvePersonName } from '@/utils/names'
 
 const auth = useAuthStore()
+const principal = usePrincipalStore()
+const router = useRouter()
 const { isDesktop } = usePlatform()
+
+const personName = ref<string | null>(null)
+const memberships = ref<MemberRead[]>([])
+
+const hasPerson = computed(() => !!auth.user?.person_id)
+
+interface CollectiveRow {
+  collectiveId: string
+  name: string
+  color: string
+  memberId: string | null
+  meta: string
+  order: number
+}
+
+const collectiveRows = computed<CollectiveRow[]>(() => {
+  const byCollective = new Map(memberships.value.map((m) => [m.collective_id, m]))
+  const ids = new Set([...byCollective.keys(), ...principal.principalCollectiveIds])
+  return [...ids]
+    .map((id) => {
+      const member = byCollective.get(id)
+      const leader = principal.principalCollectiveIds.has(id)
+      const meta = [
+        leader ? 'Руководитель' : '',
+        ...(member?.roles.map((role) => role.name) ?? []),
+        member && !member.is_active ? 'Неактивен' : '',
+      ].filter(Boolean)
+      return {
+        collectiveId: id,
+        name: principal.collectives.find((c) => c.id === id)?.name ?? `Коллектив ${id.slice(0, 8)}`,
+        color: getCollectiveColor(id),
+        memberId: member?.id ?? null,
+        meta: meta.join(' · ') || 'Участник',
+        order: member && !member.is_active ? 1 : 0,
+      }
+    })
+    .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, 'ru'))
+})
+
+async function loadCollectives() {
+  if (!auth.user) await auth.fetchUser()
+  const personId = auth.user?.person_id
+  if (!personId) {
+    personName.value = null
+    memberships.value = []
+    return
+  }
+  resolvePersonName(personId).then((name) => { personName.value = name })
+  try {
+    await principal.fetchCollectives()
+    memberships.value = unwrapList<MemberRead>((await getMyMembersEventV1MeMembersGet()).data)
+  } catch {
+    memberships.value = []
+  }
+}
+
+onIonViewWillEnter(loadCollectives)
 
 async function handleLogout() {
   await auth.logout()
@@ -165,6 +270,72 @@ async function handleLogout() {
 
 .profile-action span {
   flex: 1;
+}
+
+.action-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.action-sub {
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-regular);
+  color: var(--ion-color-medium);
+}
+
+.collective-list {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.collective-list > li + li {
+  border-top: 1px solid var(--ion-border-color);
+}
+
+.collective-row {
+  display: flex;
+  gap: 12px;
+  padding: 12px 0;
+}
+
+.collective-dot {
+  width: 10px;
+  height: 10px;
+  margin-top: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+}
+
+.collective-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.collective-name {
+  font-size: var(--fs-lg);
+  font-weight: var(--fw-semibold);
+  color: var(--ion-text-color);
+  overflow-wrap: anywhere;
+}
+
+.collective-meta {
+  font-size: var(--fs-xs);
+  color: var(--ion-color-medium);
+}
+
+.collective-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .action-arrow {

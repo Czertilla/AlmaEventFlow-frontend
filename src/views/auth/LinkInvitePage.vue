@@ -114,7 +114,7 @@ async function handleLink() {
   linking.value = true
   try {
     await linkInviteUserV1UsersMeLinkInvitePost({ token: token.value })
-    await auth.fetchUser()
+    await auth.tryRefresh()
     done.value = true
   } catch (err) {
     error.value = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail

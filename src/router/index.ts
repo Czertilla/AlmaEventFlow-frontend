@@ -85,6 +85,11 @@ const appRoutes: Array<RouteRecordRaw> = [
     meta: { auth: true },
   },
   {
+    path: '/profile/file',
+    component: () => import('@/views/PersonalFilePage.vue'),
+    meta: { auth: true },
+  },
+  {
     path: '/profile/edit',
     component: () => import('@/views/EditProfilePage.vue'),
     meta: { auth: true },
