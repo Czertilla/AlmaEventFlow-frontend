@@ -1,6 +1,6 @@
 <template>
   <div class="ah">
-    <div v-if="day" class="ah-day">
+    <div v-if="day" class="ui-banner ah-day">
       <span class="ah-day-text">{{ dayTitle(day) }}</span>
       <button type="button" class="ui-icon-btn" aria-label="Показать все дни" @click="emit('clearDay')">
         <ion-icon :icon="closeOutline" />
@@ -111,17 +111,7 @@ watch(filter, () => { limit.value = PAGE })
 
 <style scoped>
 .ah-day {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
   margin-bottom: 10px;
-  padding: 6px 6px 6px 12px;
-  border-radius: var(--radius-sm);
-  background: rgba(var(--ion-color-primary-rgb), 0.08);
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-semibold);
-  color: var(--ion-color-primary);
 }
 
 .ah-filters {

@@ -1,13 +1,13 @@
 <template>
   <ul class="lg" aria-label="Обозначения">
     <li v-if="scale" class="lg-item lg-item--scale">
-      <span class="lg-label">{{ outcomeLabels.attended }}</span>
+      <span class="lg-label">{{ scaleLabels[0] }}</span>
       <span class="lg-scale" :style="{ background: gradient }" />
-      <span class="lg-label">{{ outcomeLabels.absent }}</span>
+      <span class="lg-label">{{ scaleLabels[1] }}</span>
     </li>
     <li v-for="outcome in swatches" :key="outcome" class="lg-item">
       <span class="lg-swatch" :class="`ui-att--${outcome}`" />
-      <span class="lg-label">{{ scale && outcome === 'unmarked' ? 'Есть неотмеченные' : outcomeLabels[outcome] }}</span>
+      <span class="lg-label">{{ scale && outcome === 'unmarked' ? 'Есть неотмеченные' : labels[outcome] }}</span>
     </li>
   </ul>
 </template>
@@ -19,7 +19,14 @@ import { OUTCOMES, outcomeLabels, rateGradient, type Outcome } from '@/utils/mem
 const props = withDefaults(defineProps<{
   shown?: Outcome[]
   scale?: boolean
-}>(), { shown: () => OUTCOMES, scale: false })
+  scaleLabels?: [string, string]
+  labels?: Record<Outcome, string>
+}>(), {
+  labels: () => outcomeLabels,
+  shown: () => OUTCOMES,
+  scale: false,
+  scaleLabels: () => [outcomeLabels.attended, outcomeLabels.absent],
+})
 
 const gradient = rateGradient()
 const swatches = computed(() => (props.scale ? props.shown.filter((o) => o !== 'attended' && o !== 'absent') : props.shown))

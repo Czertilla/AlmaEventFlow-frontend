@@ -30,7 +30,7 @@
             <strong>{{ bucket.label }} {{ bucket.key.slice(0, 4) }}</strong>
             <span v-for="outcome in OUTCOMES" :key="outcome" class="mb-tip-row">
               <ion-icon :icon="outcomeIcons[outcome]" :class="`ui-att-ink--${outcome}`" />
-              {{ outcomeLabels[outcome] }}: {{ bucket[outcome] }}
+              {{ labels[outcome] }}: {{ bucket[outcome] }}
             </span>
           </div>
         </div>
@@ -43,10 +43,13 @@
 import { computed } from 'vue'
 import { IonIcon } from '@ionic/vue'
 import {
-  OUTCOMES, outcomeIcons, outcomeLabels, type MonthBucket,
+  OUTCOMES, outcomeIcons, outcomeLabels, type MonthBucket, type Outcome,
 } from '@/utils/memberAttendance'
 
-const props = defineProps<{ buckets: MonthBucket[] }>()
+const props = withDefaults(defineProps<{
+  buckets: MonthBucket[]
+  labels?: Record<Outcome, string>
+}>(), { labels: () => outcomeLabels })
 
 function total(bucket: MonthBucket): number {
   return OUTCOMES.reduce((sum, outcome) => sum + bucket[outcome], 0)
@@ -65,7 +68,7 @@ function labelSkipped(index: number): boolean {
 }
 
 function bucketLabel(bucket: MonthBucket): string {
-  const parts = OUTCOMES.filter((o) => bucket[o] > 0).map((o) => `${outcomeLabels[o]}: ${bucket[o]}`)
+  const parts = OUTCOMES.filter((o) => bucket[o] > 0).map((o) => `${props.labels[o]}: ${bucket[o]}`)
   return `${bucket.label} ${bucket.key.slice(0, 4)}. ${parts.join(', ') || 'нет мероприятий'}`
 }
 </script>

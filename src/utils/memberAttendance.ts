@@ -4,7 +4,9 @@ import {
 } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import { checkmarkCircle, closeCircle, helpCircle, time } from 'ionicons/icons'
-import type { AttendanceByMonth, MemberAttendanceItem } from '@/api/generated/almaEventFlow'
+import type {
+  AttendanceByMonth, CollectiveDay, CollectiveEventItem, MemberAttendanceItem,
+} from '@/api/generated/almaEventFlow'
 
 export type Outcome = MemberAttendanceItem['outcome']
 export type WeekStart = 0 | 1
@@ -15,6 +17,13 @@ export const OUTCOMES: Outcome[] = ['attended', 'absent', 'unmarked', 'upcoming'
 export const outcomeLabels: Record<Outcome, string> = {
   attended: 'Присутствовал',
   absent: 'Отсутствовал',
+  unmarked: 'Не отмечено',
+  upcoming: 'Предстоит',
+}
+
+export const collectiveOutcomeLabels: Record<Outcome, string> = {
+  attended: 'Присутствий',
+  absent: 'Отсутствий',
   unmarked: 'Не отмечено',
   upcoming: 'Предстоит',
 }
@@ -50,9 +59,17 @@ export function emptyCounts(): Record<Outcome, number> {
   return { attended: 0, absent: 0, unmarked: 0, upcoming: 0 }
 }
 
+export interface DayEntry {
+  id: string
+  label: string
+  outcome?: Outcome
+  detail?: string
+}
+
 export interface DaySummary {
   key: string
   items: MemberAttendanceItem[]
+  entries: DayEntry[]
   counts: Record<Outcome, number>
   /** Доля присутствовавших среди отмеченных (присутствовал + отсутствовал) за день; null -- отмеченных нет. */
   rate: number | null
@@ -63,10 +80,11 @@ export function groupByDay(items: MemberAttendanceItem[]): Map<string, DaySummar
   for (const item of items) {
     let day = days.get(item.date)
     if (!day) {
-      day = { key: item.date, items: [], counts: emptyCounts(), rate: null }
+      day = { key: item.date, items: [], entries: [], counts: emptyCounts(), rate: null }
       days.set(item.date, day)
     }
     day.items.push(item)
+    day.entries.push({ id: item.attendance_id, label: item.event_name, outcome: item.outcome })
     day.counts[item.outcome] += 1
   }
   for (const day of days.values()) {
@@ -74,6 +92,32 @@ export function groupByDay(items: MemberAttendanceItem[]): Map<string, DaySummar
     day.rate = marked ? day.counts.attended / marked : null
   }
   return days
+}
+
+export function eventRateLabel(event: CollectiveEventItem): string {
+  const marked = event.attended + event.absent
+  return marked ? `${event.attended} из ${marked}` : 'не отмечено'
+}
+
+export function collectiveDays(days: CollectiveDay[], events: CollectiveEventItem[]): Map<string, DaySummary> {
+  const byDate = new Map<string, DayEntry[]>()
+  for (const event of events) {
+    const entries = byDate.get(event.date) ?? []
+    entries.push({ id: event.event_id, label: event.event_name, detail: eventRateLabel(event) })
+    byDate.set(event.date, entries)
+  }
+  const result = new Map<string, DaySummary>()
+  for (const day of days) {
+    const marked = day.attended + day.absent
+    result.set(day.date, {
+      key: day.date,
+      items: [],
+      entries: byDate.get(day.date) ?? [],
+      counts: { attended: day.attended, absent: day.absent, unmarked: day.unmarked, upcoming: day.upcoming },
+      rate: marked ? day.attended / marked : null,
+    })
+  }
+  return result
 }
 
 const RATE_ATTENDED = 'rgb(var(--att-attended-rgb))'

@@ -102,7 +102,7 @@ import {
   onIonViewWillEnter,
 } from '@ionic/vue'
 import {
-  peopleOutline, ribbonOutline, calendarOutline, chevronDownOutline, addOutline, statsChartOutline,
+  peopleOutline, peopleCircleOutline, ribbonOutline, calendarOutline, chevronDownOutline, addOutline, statsChartOutline,
 } from 'ionicons/icons'
 import { usePrincipalStore } from '@/stores/principal'
 import { usePlatform } from '@/composables/usePlatform'
@@ -130,6 +130,9 @@ const PAGES: Record<string, PrincipalPageEntry> = {
     fullWidth: true,
     component: defineAsyncComponent(() => import('@/views/principal/DashboardPage.vue')),
   },
+  '/principal/collective': {
+    component: defineAsyncComponent(() => import('@/views/principal/CollectiveProfilePage.vue')),
+  },
   '/principal/members': {
     component: defineAsyncComponent(() => import('@/views/principal/MembersPage.vue')),
   },
@@ -147,6 +150,7 @@ const PAGES: Record<string, PrincipalPageEntry> = {
 // vue-router навигация, значит window.location уже верный).
 const activeSection = ref(window.location.pathname)
 
+const COLLECTIVE_PATH = '/principal/collective'
 const MEMBER_PROFILE_PREFIX = '/principal/members/'
 const memberProfilePage: PrincipalPageEntry = {
   component: defineAsyncComponent(() => import('@/views/principal/MemberProfilePage.vue')),
@@ -160,12 +164,17 @@ const profileMemberId = computed(() =>
 const currentPage = computed<PrincipalPageEntry | null>(() =>
   profileMemberId.value ? memberProfilePage : PAGES[activeSection.value] ?? null,
 )
-const pageProps = computed(() => (profileMemberId.value ? { memberId: profileMemberId.value } : {}))
+const pageProps = computed(() => {
+  if (profileMemberId.value) return { memberId: profileMemberId.value }
+  if (activeSection.value === COLLECTIVE_PATH) return { collectiveId: principal.activePrincipalCollectiveId }
+  return {}
+})
 const activeTab = computed(() => (profileMemberId.value ? '/principal/members' : activeSection.value))
 const fullWidth = computed(() => !!currentPage.value?.fullWidth)
 
 const TABS = [
   { key: '/principal/dashboard', label: 'Дашборд', icon: statsChartOutline },
+  { key: COLLECTIVE_PATH, label: 'Коллектив', icon: peopleCircleOutline },
   { key: '/principal/members', label: 'Участники', icon: peopleOutline },
   { key: '/principal/roles', label: 'Роли', icon: ribbonOutline },
   { key: '/principal/events', label: 'Мероприятия', icon: calendarOutline },

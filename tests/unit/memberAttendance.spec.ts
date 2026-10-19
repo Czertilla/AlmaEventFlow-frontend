@@ -1,10 +1,12 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, test } from 'vitest'
 import AttendanceHeatmap from '@/components/member/AttendanceHeatmap.vue'
-import type { AttendanceByMonth, MemberAttendanceItem } from '@/api/generated/almaEventFlow'
+import type {
+  AttendanceByMonth, CollectiveDay, CollectiveEventItem, MemberAttendanceItem,
+} from '@/api/generated/almaEventFlow'
 import {
-  dayKey, dayMarks, dayRateLabel, formatRate, groupByDay, isUnmarkedAttendance, monthLabels,
-  monthSeries, periodRange, rateColor, rateGradient, weekColumns, yearChips,
+  collectiveDays, dayKey, dayMarks, dayRateLabel, eventRateLabel, formatRate, groupByDay,
+  isUnmarkedAttendance, monthLabels, monthSeries, periodRange, rateColor, rateGradient, weekColumns, yearChips,
 } from '@/utils/memberAttendance'
 
 function item(date: string, outcome: MemberAttendanceItem['outcome'], id = date + outcome): MemberAttendanceItem {
@@ -287,5 +289,70 @@ describe('AttendanceHeatmap', () => {
 
     await wrapper.trigger('mouseleave')
     expect(wrapper.find('.hm-tip').exists()).toBe(false)
+  })
+})
+
+describe('collectiveDays', () => {
+  const day = (date: string, attended: number, absent: number, unmarked: number, upcoming = 0): CollectiveDay => ({
+    date, attended, absent, unmarked, upcoming,
+  })
+  const event = (id: string, date: string, attended: number, absent: number, unmarked = 0): CollectiveEventItem => ({
+    event_id: id, event_name: `Event ${id}`, date, status: 'active', type: null, attended, absent, unmarked, upcoming: 0,
+  })
+
+  test('a day is rated by the share of the declared roster that came, unmarked places left out', () => {
+    const days = collectiveDays(
+      [day('2026-03-02', 3, 1, 0), day('2026-03-03', 2, 0, 4), day('2026-03-04', 0, 0, 5), day('2026-03-05', 0, 6, 0)],
+      [event('a', '2026-03-02', 3, 1)],
+    )
+
+    expect(days.get('2026-03-02')!.rate).toBe(0.75)
+    expect(days.get('2026-03-03')!.rate).toBe(1)
+    expect(days.get('2026-03-04')!.rate).toBeNull()
+    expect(days.get('2026-03-05')!.rate).toBe(0)
+    expect(dayRateLabel(days.get('2026-03-02')!)).toBe('75% (3 из 4)')
+  })
+
+  test('unmarked places hatch a rated day, and a day with only unmarked ones stays neutral', () => {
+    const days = collectiveDays([day('2026-03-03', 2, 0, 4), day('2026-03-04', 0, 0, 5), day('2026-03-02', 3, 1, 0)], [])
+
+    expect(dayMarks(days.get('2026-03-03')!)).toEqual([{ key: 'rate', color: rateColor(1), hatch: true }])
+    expect(dayMarks(days.get('2026-03-04')!)).toEqual([{ key: 'unmarked', outcome: 'unmarked' }])
+    expect(dayMarks(days.get('2026-03-02')!)).toEqual([{ key: 'rate', color: rateColor(0.75), hatch: false }])
+  })
+
+  test('the events of a day are its entries, each with its own share', () => {
+    const days = collectiveDays(
+      [day('2026-03-02', 5, 3, 0)],
+      [event('a', '2026-03-02', 3, 1), event('b', '2026-03-02', 2, 2), event('c', '2026-03-09', 1, 0)],
+    )
+
+    expect(days.get('2026-03-02')!.entries).toEqual([
+      { id: 'a', label: 'Event a', detail: '3 из 4' },
+      { id: 'b', label: 'Event b', detail: '2 из 4' },
+    ])
+    expect(days.has('2026-03-09')).toBe(false)
+    expect(eventRateLabel(event('x', '2026-03-02', 0, 0, 3))).toBe('не отмечено')
+  })
+
+  test('the heatmap colours days of a collective and lists its events in the tip', async () => {
+    const days = collectiveDays(
+      [day('2026-03-02', 3, 1, 0), day('2026-03-03', 2, 0, 4)],
+      [event('a', '2026-03-02', 3, 1)],
+    )
+    const wrapper = mount(AttendanceHeatmap, {
+      props: { days, from: new Date(2026, 2, 1), to: new Date(2026, 2, 31), selected: null, weekStartsOn: 1 },
+    })
+    const cells = wrapper.findAll('button.hm-cell')
+
+    expect(cells).toHaveLength(2)
+    expect((cells[0].element as HTMLElement).style.getPropertyValue('--att-rate')).toBe(rateColor(0.75))
+    expect(cells[0].classes()).toContain('ui-att-rate')
+    expect(cells[1].classes()).toContain('ui-att-hatch')
+
+    await cells[0].trigger('mouseenter')
+    expect(wrapper.find('.hm-tip').text()).toContain('Event a')
+    expect(wrapper.find('.hm-tip').text()).toContain('3 из 4')
+    expect(wrapper.find('.hm-tip').text()).toContain('Присутствие: 75% (3 из 4)')
   })
 })

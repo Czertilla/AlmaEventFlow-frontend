@@ -10,7 +10,7 @@
               class="tb-seg"
               :class="`ui-att--${outcome}`"
               :style="{ flexGrow: row[outcome] }"
-              :title="`${outcomeLabels[outcome]}: ${row[outcome]}`"
+              :title="`${labels[outcome]}: ${row[outcome]}`"
             />
           </template>
         </span>
@@ -24,9 +24,12 @@
 import { computed } from 'vue'
 import type { AttendanceByType } from '@/api/generated/almaEventFlow'
 import { typeLabels } from '@/utils/eventLabels'
-import { OUTCOMES, outcomeLabels } from '@/utils/memberAttendance'
+import { OUTCOMES, outcomeLabels, type Outcome } from '@/utils/memberAttendance'
 
-const props = defineProps<{ groups: AttendanceByType[] }>()
+const props = withDefaults(defineProps<{
+  groups: AttendanceByType[]
+  labels?: Record<Outcome, string>
+}>(), { labels: () => outcomeLabels })
 
 const rows = computed(() =>
   props.groups.map((row) => {

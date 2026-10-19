@@ -52,9 +52,10 @@
       <strong class="hm-tip-title">{{ tip.title }}</strong>
       <span v-if="tip.rate" class="hm-tip-rate">Присутствие: {{ tip.rate }}</span>
       <ul class="hm-tip-list">
-        <li v-for="item in tip.items" :key="item.attendance_id" class="hm-tip-row">
-          <ion-icon :icon="outcomeIcons[item.outcome]" :class="`ui-att-ink--${item.outcome}`" />
-          <span class="hm-tip-name">{{ item.event_name }}</span>
+        <li v-for="entry in tip.entries" :key="entry.id" class="hm-tip-row">
+          <ion-icon v-if="entry.outcome" :icon="outcomeIcons[entry.outcome]" :class="`ui-att-ink--${entry.outcome}`" />
+          <span class="hm-tip-name">{{ entry.label }}</span>
+          <span v-if="entry.detail" class="hm-tip-detail">{{ entry.detail }}</span>
         </li>
       </ul>
       <span v-if="tip.more" class="hm-tip-more">и ещё {{ tip.more }}</span>
@@ -70,11 +71,12 @@ import { ru } from 'date-fns/locale'
 import type { MemberAttendanceItem } from '@/api/generated/almaEventFlow'
 import {
   dayKey, dayRateLabel, dayTitle, groupByDay, inRange, monthLabels, outcomeIcons,
-  outcomeLabels, rateColor, weekColumns, type DaySummary, type WeekStart,
+  outcomeLabels, rateColor, weekColumns, type DayEntry, type DaySummary, type WeekStart,
 } from '@/utils/memberAttendance'
 
 const props = defineProps<{
-  items: MemberAttendanceItem[]
+  items?: MemberAttendanceItem[]
+  days?: Map<string, DaySummary>
   from: Date
   to: Date
   selected: string | null
@@ -100,11 +102,11 @@ const tip = ref<{
   top: number
   title: string
   rate: string
-  items: MemberAttendanceItem[]
+  entries: DayEntry[]
   more: number
 } | null>(null)
 
-const days = computed(() => groupByDay(props.items))
+const daySummaries = computed(() => props.days ?? groupByDay(props.items ?? []))
 const todayKey = computed(() => dayKey(new Date()))
 
 const weeks = computed<Cell[][]>(() =>
@@ -115,7 +117,7 @@ const weeks = computed<Cell[][]>(() =>
         key,
         inRange: inRange(date, props.from, props.to),
         isToday: key === todayKey.value,
-        summary: days.value.get(key),
+        summary: daySummaries.value.get(key),
       }
     }),
   ),
@@ -173,8 +175,8 @@ function showTip(event: Event, cell: Cell) {
     top: box.top - rootBox.top - 8,
     title: dayTitle(cell.key),
     rate: dayRateLabel(summary),
-    items: summary.items.slice(0, TIP_ITEMS),
-    more: Math.max(summary.items.length - TIP_ITEMS, 0),
+    entries: summary.entries.slice(0, TIP_ITEMS),
+    more: Math.max(summary.entries.length - TIP_ITEMS, 0),
   }
 }
 
@@ -319,8 +321,17 @@ watch(() => [props.from.getTime(), props.to.getTime()], () => nextTick(scrollToT
 }
 
 .hm-tip-name {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hm-tip-detail {
+  margin-left: auto;
+  padding-left: 8px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ion-color-medium);
   white-space: nowrap;
 }
 
