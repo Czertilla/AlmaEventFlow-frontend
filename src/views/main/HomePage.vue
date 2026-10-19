@@ -210,6 +210,7 @@ import { IonPage, IonModal, IonHeader, IonToolbar, IonTitle, IonContent, IonButt
 import { useEventCalendarStore } from '@/stores/eventCalendar'
 import { usePrincipalStore } from '@/stores/principal'
 import { usePlatform } from '@/composables/usePlatform'
+import { useUrlState } from '@/composables/useUrlState'
 import { useCalendarSync } from '@/composables/useCalendarSync'
 import { useAttendancePending } from '@/composables/useAttendancePending'
 import { usePendingAttendance } from '@/composables/usePendingAttendance'
@@ -276,10 +277,23 @@ function eventsOptions(): AxiosRequestConfig | undefined {
 const STATUS_ACTIVE: EventStatusEnumV1 = 'active'
 
 // Состояние фильтров (UI вынесен в HomeFilters; здесь — источник для filteredEvents)
-const statusFilter = ref<EventStatusEnumV1 | 'all'>('active')
-const typeFilter = ref<EventTypeEnumV1 | 'all'>('all')
-const levelFilter = ref<EventLevelEnumV1 | 'all'>('all')
-const formatFilter = ref<EventFormatEnumV1 | 'all'>('all')
+const facetUrl = useUrlState({ status: 'active', type: 'all', level: 'all', format: 'all' })
+const statusFilter = computed({
+  get: () => facetUrl.status as EventStatusEnumV1 | 'all',
+  set: (value: EventStatusEnumV1 | 'all') => { facetUrl.status = value },
+})
+const typeFilter = computed({
+  get: () => facetUrl.type as EventTypeEnumV1 | 'all',
+  set: (value: EventTypeEnumV1 | 'all') => { facetUrl.type = value },
+})
+const levelFilter = computed({
+  get: () => facetUrl.level as EventLevelEnumV1 | 'all',
+  set: (value: EventLevelEnumV1 | 'all') => { facetUrl.level = value },
+})
+const formatFilter = computed({
+  get: () => facetUrl.format as EventFormatEnumV1 | 'all',
+  set: (value: EventFormatEnumV1 | 'all') => { facetUrl.format = value },
+})
 
 function matchesFacets(e: EventRead): boolean {
   if (typeFilter.value !== 'all' && e.type !== typeFilter.value) return false

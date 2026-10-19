@@ -93,6 +93,7 @@ import {
 import { useRouter } from 'vue-router'
 import { usePlatform } from '@/composables/usePlatform'
 import { syncAddressBar } from '@/utils/inPlaceNav'
+import { splitTarget } from '@/utils/urlState'
 import { adminNavigateKey } from '@/composables/useAdminNavigate'
 
 const { isDesktop } = usePlatform()
@@ -145,9 +146,15 @@ const personId = computed(() => {
 
 const title = computed(() => currentPage.value?.title ?? '')
 
-function navigate(path: string) {
+// target может нести query (`/admin/members?collective_id=...`): так одна страница
+// ведёт на другую с уже выставленным фильтром. Раздел тот же, а query другой --
+// пересоздаём страницу, иначе она не заметила бы нового фильтра.
+function navigate(target: string) {
+  const { path, search } = splitTarget(target)
+  const sameQuery = window.location.search === search
   activeSection.value = path
-  syncAddressBar(path)
+  syncAddressBar(path + search)
+  if (!sameQuery) remountTick.value++
 }
 provide(adminNavigateKey, navigate)
 
@@ -200,7 +207,7 @@ async function go(path: string) {
   if (!isDesktop.value) {
     await menuController.close('admin-menu').catch(() => {})
   }
-  if (activeSection.value === path) return
+  if (activeSection.value === path && !window.location.search) return
   if (path === '/') {
     // Выход из раздела -- отдельная route-запись (HomePage), здесь уместен
     // обычный push с историей назад.
@@ -309,7 +316,13 @@ async function go(path: string) {
 @media (max-width: 767px) {
   .admin-shell {
     flex-direction: column;
+    align-items: stretch;
     gap: 12px;
+    padding: 12px;
+  }
+
+  .admin-main {
+    width: 100%;
   }
 }
 

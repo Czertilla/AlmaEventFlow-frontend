@@ -7,6 +7,7 @@
       :subtitle-resource="(r) => ({ kind: 'collective', id: r.collective_id })"
       :sort-options="sortOptions"
       :filters="filters"
+      :row-links="rowLinks"
       :fetch-items="fetchItems"
       add-label="Добавить"
       @add="openCreate"
@@ -20,6 +21,7 @@
         :title="isCreating ? 'Создать роль' : 'Редактировать роль'"
         :fields="formFields"
         :item="editingItem"
+        :links="linksFor(rowLinks, editingItem)"
         :on-save="save"
         @close="editModal = false"
       />
@@ -29,6 +31,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { IonModal } from '@ionic/vue'
+import { peopleOutline, peopleCircleOutline } from 'ionicons/icons'
 import ResourceTable from '@/components/admin/ResourceTable.vue'
 import ResourceFormModal from '@/components/admin/ResourceFormModal.vue'
 import {
@@ -36,16 +39,24 @@ import {
   createRoleEventV1RolesPost,
   patchRoleEventV1RolesRoleIdPatch,
   deleteRoleEventV1RolesRoleIdDelete,
-  listCollectivesOrgV1CollectivesGet,
 } from '@/api/generated/almaEventFlow'
-import type { ColumnDef, SortOption, FilterDef } from '@/components/admin/ResourceTable.vue'
+import type { ColumnDef, SortOption, FilterDef, RowLink } from '@/components/admin/ResourceTable.vue'
 import { TIMESTAMP_FILTERS, TIMESTAMP_SORT_OPTIONS } from '@/utils/timestamps'
 import type { FormField } from '@/components/admin/ResourceFormModal.vue'
+import { linksFor } from '@/utils/adminLinks'
+import { withQuery } from '@/utils/urlState'
 
 const tableRef = ref()
 
 const filters: FilterDef[] = [
+  { key: 'collective_id', label: 'Коллектив', type: 'picker', picker: 'collective' },
+  { key: 'id', label: 'Роль', type: 'picker', picker: 'role' },
   ...TIMESTAMP_FILTERS,
+]
+
+const rowLinks: RowLink[] = [
+  { label: 'Участники', icon: peopleOutline, to: (r) => withQuery('/admin/members', { role_id: r.id }) },
+  { label: 'Коллектив', icon: peopleCircleOutline, to: (r) => withQuery('/admin/collectives', { id: r.collective_id }) },
 ]
 
 const sortOptions: SortOption[] = [
@@ -60,11 +71,7 @@ const columns: ColumnDef[] = [
 
 const formFields: FormField[] = [
   { key: 'name', label: 'Название', type: 'text', required: true },
-  {
-    key: 'collective_id', label: 'Коллектив', type: 'search', required: true,
-    fetchOptions: async (search) => (await listCollectivesOrgV1CollectivesGet({ search, limit: 20 })).data.items,
-    displayField: 'name',
-  },
+  { key: 'collective_id', label: 'Коллектив', type: 'search', required: true, picker: 'collective' },
 ]
 
 const editModal = ref(false)

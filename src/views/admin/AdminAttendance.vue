@@ -3,10 +3,12 @@
       ref="tableRef"
       :columns="columns"
       :get-label="(a) => a.member_id"
-      :label-resource="(a) => ({ kind: 'member', id: a.member_id })"
+      :label-resource="(a) => ({ kind: 'memberInCollective', id: a.member_id })"
       :get-subtitle="(a) => a.is_attended ? 'Присутствовал' : 'Отсутствовал'"
+      search-placeholder="ФИО, коллектив, мероприятие, комментарий или ID"
       :sort-options="sortOptions"
       :filters="filters"
+      :row-links="rowLinks"
       default-order="desc"
       default-sort="created_at"
       :fetch-items="fetchItems"
@@ -22,6 +24,7 @@
         :title="isCreating ? 'Создать запись' : 'Редактировать запись'"
         :fields="formFields"
         :item="editingItem"
+        :links="linksFor(rowLinks, editingItem)"
         :on-save="save"
         @close="editModal = false"
       />
@@ -31,6 +34,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { IonModal } from '@ionic/vue'
+import { peopleOutline, personAddOutline } from 'ionicons/icons'
 import ResourceTable from '@/components/admin/ResourceTable.vue'
 import ResourceFormModal from '@/components/admin/ResourceFormModal.vue'
 import {
@@ -38,18 +42,25 @@ import {
   createAttendanceEventV1AttendancesPost,
   patchAttendanceEventV1AttendancesAttendanceIdPatch,
   deleteAttendanceEventV1AttendancesAttendanceIdDelete,
-  getMembersEventV1MembersGet,
-  getParticipationsEventV1ParticipationsGet,
 } from '@/api/generated/almaEventFlow'
-import type { ColumnDef, SortOption, FilterDef } from '@/components/admin/ResourceTable.vue'
+import type { ColumnDef, SortOption, FilterDef, RowLink } from '@/components/admin/ResourceTable.vue'
 import { TIMESTAMP_FILTERS, TIMESTAMP_SORT_OPTIONS } from '@/utils/timestamps'
 import type { FormField } from '@/components/admin/ResourceFormModal.vue'
+import { linksFor } from '@/utils/adminLinks'
+import { withQuery } from '@/utils/urlState'
 
 const tableRef = ref()
 
+const yesNo = [{ value: 'true', label: 'Да' }, { value: 'false', label: 'Нет' }]
+
 const filters: FilterDef[] = [
-  { key: 'is_attended', label: 'Присутствие', type: 'select', options: [{ value: 'true', label: 'Да' }, { value: 'false', label: 'Нет' }] },
-  { key: 'is_verified', label: 'Заверено', type: 'select', options: [{ value: 'true', label: 'Да' }, { value: 'false', label: 'Нет' }] },
+  { key: 'collective_id', label: 'Коллектив', type: 'picker', picker: 'collective' },
+  { key: 'event_id', label: 'Мероприятие', type: 'picker', picker: 'event' },
+  { key: 'participation_id', label: 'Участие', type: 'picker', picker: 'participation' },
+  { key: 'member_id', label: 'Участник коллектива', type: 'picker', picker: 'member' },
+  { key: 'person_id', label: 'Персона', type: 'picker', picker: 'person' },
+  { key: 'is_attended', label: 'Присутствие', type: 'select', options: yesNo },
+  { key: 'is_verified', label: 'Заверено', type: 'select', options: yesNo },
   ...TIMESTAMP_FILTERS,
 ]
 
@@ -60,24 +71,21 @@ const sortOptions: SortOption[] = [
 ]
 
 const columns: ColumnDef[] = [
-  { key: 'member_id', label: 'Участник', resource: (a) => ({ kind: 'member', id: a.member_id }) },
+  { key: 'member_id', label: 'Участник', resource: (a) => ({ kind: 'memberInCollective', id: a.member_id }) },
   { key: 'participation_id', label: 'Участие', resource: (a) => ({ kind: 'participation', id: a.participation_id }) },
   { key: 'is_attended', label: 'Присутствие', render: (a) => a.is_attended ? 'Да' : 'Нет' },
   { key: 'is_verified', label: 'Заверено', render: (a) => a.is_verified ? 'Да' : 'Нет', hideMobile: true },
   { key: 'comment', label: 'Комментарий', hideMobile: true },
 ]
 
+const rowLinks: RowLink[] = [
+  { label: 'Участник', icon: personAddOutline, to: (a) => withQuery('/admin/members', { id: a.member_id }) },
+  { label: 'Участие', icon: peopleOutline, to: (a) => withQuery('/admin/participation', { id: a.participation_id }) },
+]
+
 const formFields: FormField[] = [
-  {
-    key: 'member_id', label: 'Участник', type: 'search', required: true,
-    fetchOptions: async (search) => (await getMembersEventV1MembersGet({ search, limit: 20 } as any)).data.items,
-    displayFn: (m: any) => m.person_id || m.id,
-  },
-  {
-    key: 'participation_id', label: 'Участие', type: 'search', required: true,
-    fetchOptions: async (search) => (await getParticipationsEventV1ParticipationsGet({ search, limit: 20 } as any)).data.items,
-    displayFn: (p: any) => `${p.collective_name || p.collective_id} · ${p.event_id?.slice(0, 8)}`,
-  },
+  { key: 'member_id', label: 'Участник', type: 'search', required: true, picker: 'member' },
+  { key: 'participation_id', label: 'Участие', type: 'search', required: true, picker: 'participation' },
   { key: 'is_attended', label: 'Присутствовал', type: 'checkbox' },
   { key: 'is_verified', label: 'Заверено', type: 'checkbox' },
   { key: 'comment', label: 'Комментарий', type: 'textarea' },

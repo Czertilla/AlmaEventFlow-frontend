@@ -7,6 +7,7 @@
         :fetch-items="fetchCollectives"
         :sort-options="sortOptions"
         :filters="filters"
+        :row-links="rowLinks"
         default-sort="name"
         add-label="Добавить"
         @add="openCreate"
@@ -20,6 +21,7 @@
         :title="isCreating ? 'Создать коллектив' : 'Редактировать коллектив'"
         :fields="formFields"
         :item="editingItem"
+        :links="linksFor(rowLinks, editingItem)"
         :on-save="saveCollective"
         @close="editModal = false"
       />
@@ -29,19 +31,31 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { IonModal } from '@ionic/vue'
+import { calendarOutline, checkmarkDoneOutline, peopleOutline, personAddOutline, ribbonOutline } from 'ionicons/icons'
 import ResourceTable from '@/components/admin/ResourceTable.vue'
 import ResourceFormModal from '@/components/admin/ResourceFormModal.vue'
 import { listCollectivesOrgV1CollectivesGet, createCollectiveOrgV1CollectivesPost, patchCollectiveOrgV1CollectivesCollectiveIdPatch, deleteCollectiveOrgV1CollectivesCollectiveIdDelete, listUniversitiesOrgV1UniversitiesGet } from '@/api/generated/almaEventFlow'
 import { searchPersonProfileV1PersonsGet } from '@/api/generated/almaEventFlow'
 import { getAddressesGeoV1AddressesGet } from '@/api/generated/almaEventFlow'
-import type { ColumnDef, SortOption, FilterDef } from '@/components/admin/ResourceTable.vue'
+import type { ColumnDef, SortOption, FilterDef, RowLink } from '@/components/admin/ResourceTable.vue'
 import { TIMESTAMP_FILTERS, TIMESTAMP_SORT_OPTIONS } from '@/utils/timestamps'
 import type { FormField } from '@/components/admin/ResourceFormModal.vue'
+import { linksFor } from '@/utils/adminLinks'
+import { withQuery } from '@/utils/urlState'
 
 const tableRef = ref()
 
 const filters: FilterDef[] = [
+  { key: 'id', label: 'Коллектив', type: 'picker', picker: 'collective' },
   ...TIMESTAMP_FILTERS,
+]
+
+const rowLinks: RowLink[] = [
+  { label: 'Участники', icon: personAddOutline, to: (c) => withQuery('/admin/members', { collective_id: c.id }) },
+  { label: 'Роли', icon: ribbonOutline, to: (c) => withQuery('/admin/roles', { collective_id: c.id }) },
+  { label: 'Участия', icon: peopleOutline, to: (c) => withQuery('/admin/participation', { collective_id: c.id }) },
+  { label: 'Мероприятия', icon: calendarOutline, to: (c) => withQuery('/admin/events', { participant_id: c.id }) },
+  { label: 'Посещаемость', icon: checkmarkDoneOutline, to: (c) => withQuery('/admin/attendance', { collective_id: c.id }) },
 ]
 
 const columns: ColumnDef[] = [

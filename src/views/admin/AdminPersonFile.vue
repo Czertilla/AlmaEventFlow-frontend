@@ -34,10 +34,7 @@
           <p v-if="!profileExists" class="hint">Профиль ещё не создан — заполните и сохраните.</p>
           <DateTimeField v-model="profile.birthdate" mode="date" label="Дата рождения" />
           <SearchPicker v-model="profile.workplace_id" label="Место работы" :fetch="searchOrgs" placeholder="Поиск организации…" />
-          <UiSelect v-model="profile.diet_id" label="Диета" placeholder="Не выбрано">
-            <ion-select-option :value="null">Не выбрано</ion-select-option>
-            <ion-select-option v-for="d in diets" :key="d.id" :value="d.id">{{ d.name }}</ion-select-option>
-          </UiSelect>
+          <UiSelect v-model="profile.diet_id" label="Диета" placeholder="Не выбрано" :options="dietOptions" />
           <ion-button expand="block" :disabled="savingProfile" @click="saveProfile">Сохранить</ion-button>
         </section>
 
@@ -59,9 +56,7 @@
         <section v-show="activeTab === 'contacts'" class="card">
           <div v-for="c in contacts" :key="c.id" class="contact">
             <div class="contact-row">
-              <UiSelect v-model="c.type" class="contact-type" label="Тип">
-                <ion-select-option v-for="[v, l] in contactTypeOptions" :key="v" :value="v">{{ l }}</ion-select-option>
-              </UiSelect>
+              <UiSelect v-model="c.type" class="contact-type" label="Тип" :options="CONTACT_TYPE_OPTIONS" />
               <UiInput v-model="c.value" class="contact-value" label="Значение" />
               <button type="button" class="ui-icon-btn contact-btn" :class="{ 'ui-icon-btn--active': c.is_main }" title="Основной" aria-label="Основной" @click="c.is_main = !c.is_main">★</button>
               <button type="button" class="ui-icon-btn ui-icon-btn--primary contact-btn" title="Сохранить" aria-label="Сохранить" @click="saveContact(c)"><ion-icon :icon="checkmarkOutline" /></button>
@@ -70,9 +65,7 @@
             <TimestampsMeta :created-at="c.created_at" :edited-at="c.edited_at" />
           </div>
           <div class="contact-row">
-            <UiSelect v-model="newContact.type" class="contact-type" label="Тип" placeholder="Выберите">
-              <ion-select-option v-for="[v, l] in contactTypeOptions" :key="v" :value="v">{{ l }}</ion-select-option>
-            </UiSelect>
+            <UiSelect v-model="newContact.type" class="contact-type" label="Тип" placeholder="Выберите" :options="CONTACT_TYPE_OPTIONS" />
             <UiInput v-model="newContact.value" class="contact-value" label="Новый контакт" />
             <button type="button" class="ui-icon-btn ui-icon-btn--primary contact-btn" title="Добавить" aria-label="Добавить контакт" :disabled="!newContact.type || !newContact.value" @click="addContact">
               <ion-icon :icon="addOutline" />
@@ -86,9 +79,10 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useAdminNavigate } from '@/composables/useAdminNavigate'
-import { IonButton, IonIcon, IonSpinner, IonSelectOption, IonToggle, toastController } from '@ionic/vue'
+import { IonButton, IonIcon, IonSpinner, IonToggle, toastController } from '@ionic/vue'
 import { arrowBackOutline, trashOutline, addOutline, checkmarkOutline } from 'ionicons/icons'
 import SearchPicker from '@/components/admin/SearchPicker.vue'
+import { optionsFromPairs, withAny } from '@/utils/selectOptions'
 import TimestampsMeta from '@/components/common/TimestampsMeta.vue'
 import DateTimeField from '@/components/common/DateTimeField.vue'
 import UiInput from '@/components/common/UiInput.vue'
@@ -151,7 +145,8 @@ const newContact = reactive({ type: '' as string, value: '', is_main: false })
 const contactTypeLabels: Record<string, string> = {
   email: 'Email', phone: 'Телефон', tg: 'Telegram', vk: 'VK', address: 'Адрес',
 }
-const contactTypeOptions = Object.entries(contactTypeLabels) as [string, string][]
+const CONTACT_TYPE_OPTIONS = optionsFromPairs(Object.entries(contactTypeLabels) as [string, string][])
+const dietOptions = computed(() => withAny<number | null>(diets.value.map((d) => ({ value: d.id, label: d.name })), null, 'Не выбрано'))
 
 const savingPerson = ref(false)
 const savingProfile = ref(false)

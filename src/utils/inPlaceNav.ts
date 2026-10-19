@@ -9,7 +9,8 @@
 // внутреннем переключении раздела панели (admin/principal). Единственный
 // надёжный способ вообще не запускать эту машинерию -- не отдавать смену
 // пути vue-router'у (и, значит, Ionic'у), а обновлять URL в обход обоих.
-export function syncAddressBar(path: string) {
-  if (window.location.pathname === path) return
-  window.history.replaceState(window.history.state, '', path)
+export function syncAddressBar(target: string) {
+  const current = `${window.location.pathname}${window.location.search}`
+  if (current === target) return
+  window.history.replaceState(window.history.state, '', target)
 }

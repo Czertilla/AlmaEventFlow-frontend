@@ -11,6 +11,12 @@
   <div v-if="item?.created_at" class="modal-meta">
     <TimestampsMeta :created-at="item.created_at" :edited-at="item.edited_at" />
   </div>
+  <div v-if="links?.length && item" class="modal-links">
+    <button v-for="link in links" :key="link.label" type="button" class="ui-chip modal-link" @click="followLink(link)">
+      <ion-icon v-if="link.icon" :icon="link.icon" />
+      {{ link.label }}
+    </button>
+  </div>
   <ion-content class="ion-padding">
     <div class="form-list">
       <template v-for="field in fields" :key="field.key">
@@ -44,11 +50,8 @@
           v-model="form[field.key]"
           :label="fieldLabel(field)"
           :placeholder="field.placeholder"
-        >
-          <ion-select-option v-for="opt in field.options || []" :key="opt.value" :value="opt.value">
-            {{ opt.label }}
-          </ion-select-option>
-        </UiSelect>
+          :options="field.options || []"
+        />
 
         <div v-else-if="field.type === 'map'" class="map-field">
           <p class="ui-field-title">{{ fieldLabel(field) }}</p>
@@ -67,17 +70,27 @@
           </div>
         </div>
 
-        <EntityPickerField
+        <MultiSearchField
+          v-else-if="field.type === 'multisearch'"
+          v-model="form[field.key]"
+          :label="fieldLabel(field)"
+          :placeholder="field.placeholder"
+          :fetch="choicesFor(field)"
+          :disabled="isBlocked(field)"
+          :hint="isBlocked(field) ? field.dependsHint : undefined"
+        />
+
+        <SearchPicker
           v-else-if="field.type === 'search'"
-          v-model:search="searchQuery[field.key]"
+          v-model="form[field.key]"
           :label="fieldLabel(field)"
           :placeholder="field.placeholder || 'Поиск…'"
-          :debounce="300"
-          :options="pickerOptions(field)"
-          :selected="selectedItem[field.key] ? { id: String(form[field.key]), name: getSelectedLabel(field) } : null"
-          @search="onSearch(field)"
-          @select="selectItem(field, $event.raw)"
-          @clear="clearSearch(field)"
+          :fetch="searchFor(field)"
+          :resource="resourceFor(field)"
+          :display-field="field.displayField"
+          :display-fn="field.displayFn"
+          :value-field="field.valueField"
+          :initial-label="initialLabel(field)"
         />
       </template>
     </div>
@@ -94,31 +107,51 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { IonButton, IonIcon, IonContent, IonToggle, IonSelectOption, IonSpinner } from '@ionic/vue'
+import { ref, reactive, onMounted, watch } from 'vue'
+import { IonButton, IonIcon, IonContent, IonToggle, IonSpinner, modalController } from '@ionic/vue'
 import { closeOutline } from 'ionicons/icons'
 import GeoMap from '@/components/geo/GeoMap.vue'
-import EntityPickerField from '@/components/common/EntityPickerField.vue'
+import MultiSearchField from '@/components/admin/MultiSearchField.vue'
+import SearchPicker from '@/components/admin/SearchPicker.vue'
 import UiInput from '@/components/common/UiInput.vue'
 import UiSelect from '@/components/common/UiSelect.vue'
 import UiTextarea from '@/components/common/UiTextarea.vue'
 import UuidBadge from '@/components/common/UuidBadge.vue'
 import TimestampsMeta from '@/components/common/TimestampsMeta.vue'
+import { useAdminNavigate } from '@/composables/useAdminNavigate'
+import { PICKERS, type PickerItem, type PickerName } from '@/utils/adminPickers'
+import type { ResourceKind } from '@/utils/resourceLabels'
 
 export interface FormField {
   key: string
   label: string
-  type: 'text' | 'email' | 'number' | 'checkbox' | 'select' | 'textarea' | 'search' | 'map'
+  type: 'text' | 'email' | 'number' | 'checkbox' | 'select' | 'textarea' | 'search' | 'multisearch' | 'map'
   required?: boolean
   maxLength?: number
   options?: { value: any; label: string }[]
   placeholder?: string
+  /** Готовый поиск по справочнику (см. utils/adminPickers): заменяет fetchOptions/displayField/resource */
+  picker?: PickerName
   fetchOptions?: (search: string) => Promise<any[]>
   displayField?: string
   /** Кастомная подпись для результатов поиска (например, ФИО из нескольких полей) */
   displayFn?: (opt: any) => string
   valueField?: string
+  /** Тип ресурса: имя выбранной записи берётся по id, а не ищется среди первых результатов поиска */
+  resource?: ResourceKind
+  /** Подпись выбранной записи, если она уже есть в самой редактируемой записи (адрес внутри локации) */
   initialSelected?: (item: any) => any | null
+  /** multisearch: варианты для добавления; вторым аргументом приходят текущие значения формы */
+  choices?: (search: string, form: Record<string, any>) => Promise<PickerItem[]>
+  /** multisearch: поле формы, без которого варианты не имеют смысла; при его смене в новой записи выбор сбрасывается */
+  dependsOn?: string
+  dependsHint?: string
+}
+
+export interface FormLink {
+  label: string
+  to: string
+  icon?: string
 }
 
 const props = defineProps<{
@@ -126,40 +159,81 @@ const props = defineProps<{
   fields: FormField[]
   item: any | null
   onSave: (data: any) => Promise<void>
+  links?: FormLink[]
 }>()
 
 defineEmits<{ close: [] }>()
+
+const navigate = useAdminNavigate()
 
 const saving = ref(false)
 const error = ref('')
 
 const form = reactive<Record<string, any>>({})
-const selectedItem = reactive<Record<string, any>>({})
-const searchQuery = reactive<Record<string, string>>({})
-const searchResults = reactive<Record<string, any[]>>({})
 
-function getOptionLabel(field: FormField, opt: any): string {
-  if (field.displayFn) return field.displayFn(opt)
-  const df = field.displayField || 'name'
-  return opt[df] || opt.id || String(opt)
+for (const field of props.fields) {
+  const parent = field.dependsOn
+  if (field.type !== 'multisearch' || !parent) continue
+  watch(
+    () => form[parent],
+    (now, before) => {
+      if (!props.item && before !== undefined && now !== before) form[field.key] = []
+    },
+  )
+}
+
+function choicesFor(field: FormField): (search: string) => Promise<PickerItem[]> {
+  return async (search) => (field.choices ? field.choices(search, form) : [])
+}
+
+function isBlocked(field: FormField): boolean {
+  return !!field.dependsOn && !form[field.dependsOn]
+}
+
+// Страница под модалкой пересоздаётся при переходе: уходить надо после того,
+// как модалка закрылась, иначе её оверлей остался бы висеть над новой страницей.
+async function followLink(link: FormLink) {
+  await modalController.dismiss().catch(() => false)
+  navigate(link.to)
 }
 
 function fieldLabel(field: FormField): string {
   return field.required ? `${field.label} *` : field.label
 }
 
-function pickerOptions(field: FormField) {
-  return (searchResults[field.key] ?? []).map((raw) => ({
-    id: String(raw[field.valueField || 'id']),
-    name: getOptionLabel(field, raw),
-    raw,
-  }))
+function searchFor(field: FormField): (search: string) => Promise<any[]> {
+  if (field.picker) return PICKERS[field.picker].search
+  return field.fetchOptions ?? (async () => [])
 }
 
-function getSelectedLabel(field: FormField): string {
-  const item = selectedItem[field.key]
-  if (!item) return ''
-  return getOptionLabel(field, item)
+// Ссылочные поля называются одинаково во всех сервисах, поэтому тип ресурса,
+// по которому берётся имя выбранной записи, выводится из ключа.
+const RESOURCE_BY_KEY: Record<string, ResourceKind> = {
+  collective_id: 'collective',
+  event_id: 'event',
+  person_id: 'person',
+  principal_id: 'person',
+  organizer_id: 'organization',
+  workplace_id: 'organization',
+  faculty_id: 'organization',
+  university_id: 'organization',
+  location_id: 'location',
+  address_id: 'address',
+  city_id: 'city',
+  member_id: 'memberInCollective',
+  participation_id: 'participation',
+  role_id: 'role',
+  group_id: 'group',
+}
+
+function resourceFor(field: FormField): ResourceKind | undefined {
+  return field.resource ?? (field.picker ? PICKERS[field.picker].kind : RESOURCE_BY_KEY[field.key])
+}
+
+function initialLabel(field: FormField): string | null {
+  const preset = props.item ? field.initialSelected?.(props.item) : null
+  if (!preset) return null
+  return field.displayFn ? field.displayFn(preset) : preset[field.displayField || 'name'] ?? null
 }
 
 onMounted(() => {
@@ -169,46 +243,14 @@ onMounted(() => {
     } else if (field.type === 'map') {
       form[field.key] = props.item?.[field.key] ?? null
     } else if (field.type === 'search') {
-      const val = props.item?.[field.key] ?? ''
-      form[field.key] = val
-      searchQuery[field.key] = ''
-      searchResults[field.key] = []
-      const preset = val && props.item ? field.initialSelected?.(props.item) : null
-      if (preset) {
-        selectedItem[field.key] = preset
-      } else if (val && field.fetchOptions) {
-        field.fetchOptions('').then((results) => {
-          const found = results.find((r: any) => (r[field.valueField || 'id']) === val)
-          if (found) selectedItem[field.key] = found
-        }).catch(() => {})
-      }
+      form[field.key] = props.item?.[field.key] ?? null
+    } else if (field.type === 'multisearch') {
+      form[field.key] = ((props.item?.[field.key] ?? []) as PickerItem[]).map((entry) => ({ id: entry.id, name: entry.name }))
     } else {
       form[field.key] = props.item?.[field.key] ?? ''
     }
   }
 })
-
-async function onSearch(field: FormField) {
-  const q = searchQuery[field.key] || ''
-  if (!field.fetchOptions) return
-  try {
-    searchResults[field.key] = await field.fetchOptions(q)
-  } catch {
-    searchResults[field.key] = []
-  }
-}
-
-function selectItem(field: FormField, opt: any) {
-  form[field.key] = opt[field.valueField || 'id']
-  selectedItem[field.key] = opt
-  searchQuery[field.key] = ''
-  searchResults[field.key] = []
-}
-
-function clearSearch(field: FormField) {
-  form[field.key] = ''
-  selectedItem[field.key] = null
-}
 
 async function submit() {
   saving.value = true
@@ -217,6 +259,10 @@ async function submit() {
     const data: Record<string, any> = {}
     for (const field of props.fields) {
       const val = form[field.key]
+      if (field.type === 'multisearch') {
+        data[field.key] = ((val ?? []) as PickerItem[]).map((entry) => entry.id)
+        continue
+      }
       if (field.required && (val === '' || val === undefined || val === null)) {
         error.value = `Поле "${field.label}" обязательно`
         saving.value = false
@@ -224,6 +270,8 @@ async function submit() {
       }
       if (val !== '' && val !== undefined && val !== null) {
         data[field.key] = val
+      } else if (field.type === 'search' && props.item?.[field.key]) {
+        data[field.key] = null
       }
     }
     await props.onSave(data)
@@ -245,6 +293,20 @@ async function submit() {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.modal-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 0 20px 10px;
+  background: var(--ion-card-background);
+}
+
+.modal-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .form-list {

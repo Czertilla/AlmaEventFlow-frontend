@@ -20,20 +20,37 @@
         </ion-buttons>
         <ion-title>
           <div class="collective-select collective-select--toolbar">
-            <select
+            <button
+              :ref="setCollectiveTrigger"
+              type="button"
               class="collective-select-input"
-              :value="principal.activePrincipalCollectiveId ?? ''"
-              @change="onCollectiveChange(($event.target as HTMLSelectElement).value)"
+              role="combobox"
+              aria-haspopup="listbox"
+              aria-label="Коллектив"
+              :aria-expanded="collectiveSelect.open.value"
+              :aria-controls="collectiveSelect.listboxId"
+              @click="collectiveSelect.toggle"
+              @keydown="collectiveSelect.onKeydown"
             >
-              <option v-for="c in principal.principalCollectives" :key="c.id" :value="c.id">
-                {{ c.name }}
-              </option>
-            </select>
+              {{ activeCollectiveName }}
+            </button>
             <ion-icon :icon="chevronDownOutline" class="collective-select-arrow" />
           </div>
         </ion-title>
       </ion-toolbar>
     </ion-header>
+    <UiSelectMenu
+      :open="collectiveSelect.open.value"
+      :anchor="collectiveAnchor"
+      :options="collectiveOptions"
+      :selected-index="collectiveSelect.selectedIndex.value"
+      :active-index="collectiveSelect.activeIndex.value"
+      :listbox-id="collectiveSelect.listboxId"
+      :min-width="240"
+      @choose="collectiveSelect.choose"
+      @hover="collectiveSelect.activeIndex.value = $event"
+      @close="collectiveSelect.closeMenu"
+    />
     <ion-content>
       <div class="principal-shell">
         <!-- Заголовок и навигация всегда в одной и той же колонке, независимо
@@ -52,19 +69,7 @@
 
           <div class="principal-top">
             <!-- Навигация по разделам панели -->
-            <nav class="principal-tabs">
-              <button
-                v-for="tab in TABS"
-                :key="tab.path"
-                type="button"
-                class="principal-tab"
-                :class="{ 'principal-tab--active': activeTab === tab.path }"
-                @click="goTab(tab.path)"
-              >
-                <ion-icon :icon="tab.icon" />
-                {{ tab.label }}
-              </button>
-            </nav>
+            <SlidingTabs :tabs="TABS" :model-value="activeTab" class="principal-tabs" @update:model-value="goTab" />
 
             <!-- Десктоп: кнопка добавления записи (регистрирует активная дочерняя страница) -->
             <button v-if="pageActions.addLabel && isDesktop" class="add-btn-desktop" @click="pageActions.onAdd?.()">
@@ -103,9 +108,14 @@ import { usePrincipalStore } from '@/stores/principal'
 import { usePlatform } from '@/composables/usePlatform'
 import { getCollectiveColor } from '@/utils/colors'
 import { syncAddressBar } from '@/utils/inPlaceNav'
+import { splitTarget } from '@/utils/urlState'
 import { principalPageActions as pageActions } from '@/composables/usePrincipalPageActions'
 import { principalNavigateKey, principalReturnTo } from '@/composables/usePrincipalNavigate'
 import AppFab from '@/components/common/AppFab.vue'
+import SlidingTabs from '@/components/common/SlidingTabs.vue'
+import UiSelectMenu from '@/components/common/UiSelectMenu.vue'
+import { useSelect } from '@/composables/useSelect'
+import type { SelectOption } from '@/utils/selectOptions'
 
 const principal = usePrincipalStore()
 const { isDesktop } = usePlatform()
@@ -155,17 +165,20 @@ const activeTab = computed(() => (profileMemberId.value ? '/principal/members' :
 const fullWidth = computed(() => !!currentPage.value?.fullWidth)
 
 const TABS = [
-  { path: '/principal/dashboard', label: 'Дашборд', icon: statsChartOutline },
-  { path: '/principal/members', label: 'Участники', icon: peopleOutline },
-  { path: '/principal/roles', label: 'Роли', icon: ribbonOutline },
-  { path: '/principal/events', label: 'Мероприятия', icon: calendarOutline },
+  { key: '/principal/dashboard', label: 'Дашборд', icon: statsChartOutline },
+  { key: '/principal/members', label: 'Участники', icon: peopleOutline },
+  { key: '/principal/roles', label: 'Роли', icon: ribbonOutline },
+  { key: '/principal/events', label: 'Мероприятия', icon: calendarOutline },
 ]
 
-function navigate(path: string) {
-  if (activeSection.value === path) return
+function navigate(target: string) {
+  const { path, search } = splitTarget(target)
+  const sameQuery = window.location.search === search
+  if (activeSection.value === path && sameQuery) return
   if (path.startsWith(MEMBER_PROFILE_PREFIX) && !profileMemberId.value) principalReturnTo.value = activeSection.value
   activeSection.value = path
-  syncAddressBar(path)
+  syncAddressBar(path + search)
+  if (!sameQuery) remountTick.value++
 }
 provide(principalNavigateKey, navigate)
 
@@ -198,6 +211,23 @@ const activeCollectiveName = computed(() =>
 
 function onCollectiveChange(id: string) {
   if (id) principal.setActivePrincipalCollective(id)
+}
+
+const collectiveOptions = computed<SelectOption<string>[]>(() =>
+  principal.principalCollectives.map((c) => ({ value: c.id, label: c.name })),
+)
+
+const collectiveSelect = useSelect<string>({
+  options: () => collectiveOptions.value,
+  value: () => principal.activePrincipalCollectiveId ?? undefined,
+  disabled: () => false,
+  onSelect: onCollectiveChange,
+})
+
+const collectiveAnchor = computed(() => collectiveSelect.triggerEl.value?.parentElement ?? null)
+
+function setCollectiveTrigger(el: unknown) {
+  collectiveSelect.triggerEl.value = el instanceof HTMLElement ? el : null
 }
 </script>
 
@@ -249,6 +279,7 @@ function onCollectiveChange(id: string) {
 
 .collective-select-input {
   appearance: none;
+  text-align: left;
   border: none;
   outline: none;
   background: transparent;
@@ -356,63 +387,8 @@ function onCollectiveChange(id: string) {
 }
 
 .principal-tabs {
-  display: flex;
-  gap: 4px;
-  background: var(--ion-card-background);
-  border-radius: 12px;
-  padding: 4px;
-  box-shadow: var(--ion-card-shadow);
-  overflow-x: auto;
-  scrollbar-width: none;
-  /* На границе горизонтальной прокрутки свайп иначе "перетекает" на страницу
-     целиком -- в Firefox это срабатывает как переход назад/вперёд по истории. */
-  overscroll-behavior-x: contain;
-}
-
-/* На мобильном вкладки часто не помещаются и скроллятся вбок (скроллбар
-   скрыт), но без подсказки последняя вкладка просто обрывается на границе
-   контейнера и выглядит как баг. Плавное затухание с правого края -- обычный
-   сигнал "тут ещё есть, крутани". Только на мобильном: на десктопе колонка
-   760px и вкладки почти никогда не переполняются, гасить там нечего. */
-@media (max-width: 767px) {
-  .principal-tabs {
-    -webkit-mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
-    mask-image: linear-gradient(to right, black calc(100% - 28px), transparent 100%);
-  }
-}
-
-.principal-tabs::-webkit-scrollbar {
-  display: none;
-}
-
-.principal-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 14px;
-  border: none;
-  border-radius: 9px;
-  background: transparent;
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-semibold);
-  color: var(--ion-color-medium);
-  text-decoration: none;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.principal-tab ion-icon {
-  font-size: var(--fs-lg);
-}
-
-.principal-tab:hover {
-  color: var(--ion-text-color);
-}
-
-.principal-tab--active {
-  background: rgba(var(--ion-color-primary-rgb), 0.1);
-  color: var(--ion-color-primary);
+  min-width: 0;
+  max-width: 100%;
 }
 
 .principal-main {

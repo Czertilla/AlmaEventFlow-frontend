@@ -15,21 +15,16 @@
         </div>
 
         <div class="ev-toolbar-actions">
-          <div class="ev-sort">
-            <ion-icon :icon="swapVerticalOutline" class="ev-sort-icon" />
-            <select v-model="sortKey" class="ev-sort-select" aria-label="Сортировка мероприятий">
-              <option value="date">По дате</option>
-              <option value="name">По названию</option>
-              <option value="status">По статусу</option>
-            </select>
+          <UiSelectPill v-if="isDesktop" v-model="sortKey" :options="SORT_OPTIONS" :icon="swapVerticalOutline" aria-label="Сортировка мероприятий" align="end">
             <button
-              class="ev-sort-dir"
+              type="button"
+              class="ui-icon-btn"
               :aria-label="sortOrder === 'asc' ? 'По возрастанию' : 'По убыванию'"
               @click="sortOrder = sortOrder === 'asc' ? 'desc' : 'asc'"
             >
               <ion-icon :icon="sortOrder === 'asc' ? arrowUpOutline : arrowDownOutline" />
             </button>
-          </div>
+          </UiSelectPill>
 
           <button v-if="roles.length" class="sort-btn" :title="rowSortMode === 'roles' ? 'Сортировка по ролям' : 'Сортировка по алфавиту'" @click="toggleRowSortMode">
             <ion-icon :icon="peopleOutline" />
@@ -251,7 +246,19 @@
 
     <!-- Мобильный FAB и модалка фильтров -- та же менюшка, что на главной
          странице (см. HomePage.vue), только с содержимым DashboardFilters. -->
-    <AppFab v-if="!isDesktop" :icon="optionsOutline" aria-label="Фильтры" @click="showFilterModal = true" />
+    <AppFab v-if="!isDesktop" secondary :icon="optionsOutline" aria-label="Фильтры" @click="showFilterModal = true" />
+    <SortFab
+      v-if="!isDesktop"
+      :model-value="sortKey"
+      :order="sortOrder"
+      :options="SORT_OPTIONS"
+      :stack="1"
+      label="Сортировка мероприятий"
+      @update:model-value="sortKey = $event as typeof sortKey"
+      @update:order="sortOrder = $event"
+    />
+
+    <EventCreateModal v-model:open="showCreateModal" @created="onEventCreated" />
 
     <ion-modal
       v-if="!isDesktop"
@@ -306,6 +313,11 @@ import LocationDisplay from '@/components/geo/LocationDisplay.vue'
 import EventAttendanceChip from '@/components/event/EventAttendanceChip.vue'
 import DashboardFilters from '@/components/event/DashboardFilters.vue'
 import AppFab from '@/components/common/AppFab.vue'
+import SortFab from '@/components/common/SortFab.vue'
+import EventCreateModal from '@/components/event/EventCreateModal.vue'
+import UiSelectPill from '@/components/common/UiSelectPill.vue'
+import type { SelectOption } from '@/utils/selectOptions'
+import { useLayoutAddButton } from '@/composables/usePrincipalPageActions'
 import { usePrincipalStore } from '@/stores/principal'
 import { useSettingsStore } from '@/stores/settings'
 import { formatDate } from '@/utils/date'
@@ -378,6 +390,11 @@ const activeFilter = ref<'all' | 'active' | 'inactive'>('active')
 
 // ---- Сортировка мероприятий (колонки) -- та же логика, что на principal/events,
 // но по умолчанию по возрастанию: сегодняшняя дата должна быть последней колонкой ----
+const SORT_OPTIONS: SelectOption<'date' | 'name' | 'status'>[] = [
+  { value: 'date', label: 'По дате' },
+  { value: 'name', label: 'По названию' },
+  { value: 'status', label: 'По статусу' },
+]
 const sortKey = ref<'date' | 'name' | 'status'>('date')
 const sortOrder = ref<'asc' | 'desc'>('asc')
 const STATUS_RANK: Record<EventStatusEnumV1, number> = {
@@ -1048,6 +1065,15 @@ async function loadDashboard(collectiveId: string) {
   await positionMatrixScroll()
 }
 
+const showCreateModal = ref(false)
+
+function onEventCreated() {
+  const collectiveId = principal.activePrincipalCollectiveId
+  if (collectiveId) loadDashboard(collectiveId)
+}
+
+useLayoutAddButton('Новое мероприятие', () => { showCreateModal.value = true })
+
 watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
   useCustomRange.value = false
   dateFrom.value = ''
@@ -1148,53 +1174,6 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-}
-
-.ev-sort {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 44px;
-  padding: 0 6px 0 12px;
-  border: 1.5px solid var(--ion-border-color);
-  border-radius: 12px;
-  background: var(--ion-card-background);
-}
-
-.ev-sort-icon {
-  font-size: var(--fs-xl);
-  color: var(--ion-color-medium);
-}
-
-.ev-sort-select {
-  border: none;
-  background: transparent;
-  font-size: var(--fs-md);
-  font-weight: var(--fw-medium);
-  color: var(--ion-text-color);
-  outline: none;
-  cursor: pointer;
-  padding: 0 4px;
-}
-
-.ev-sort-dir {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--ion-color-medium);
-  font-size: var(--fs-lg);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.ev-sort-dir:hover {
-  background: rgba(var(--ion-color-primary-rgb), 0.1);
-  color: var(--ion-color-primary);
 }
 
 .sort-btn {

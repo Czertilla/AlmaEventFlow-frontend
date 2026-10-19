@@ -1,96 +1,89 @@
 <template>
   <div class="resource-table">
-    <!-- Unified toolbar: search · filters · sort · add -->
-    <div class="rt-toolbar">
-      <div class="rt-search">
-        <ion-icon :icon="searchOutline" class="rt-search-icon" />
-        <input
-          v-model="query"
-          class="rt-search-input"
-          :placeholder="searchPlaceholder || 'Поиск...'"
-          @input="onSearchInput"
-        />
-        <button v-if="query" class="rt-search-clear" aria-label="Очистить" @click="clearSearch">
-          <ion-icon :icon="closeOutline" />
-        </button>
-      </div>
-
-      <div class="rt-toolbar-actions">
-        <button
-          v-if="filters.length"
-          class="rt-tool-btn"
-          :class="{ 'rt-tool-btn--active': filterOpen || activeFilterCount > 0 }"
-          @click="filterOpen = !filterOpen"
-        >
-          <ion-icon :icon="optionsOutline" />
-          <span class="rt-tool-btn-label">Фильтры</span>
-          <span v-if="activeFilterCount" class="rt-tool-badge">{{ activeFilterCount }}</span>
-        </button>
-
-        <div v-if="sortOptions.length" class="rt-sort">
-          <ion-icon :icon="swapVerticalOutline" class="rt-sort-icon" />
-          <select v-model="sortKey" class="rt-sort-select" @change="onSortChange">
-            <option v-for="opt in sortOptions" :key="opt.value" :value="opt.value">
-              {{ opt.label }}
-            </option>
-          </select>
-          <button
-            class="rt-sort-dir"
-            :aria-label="sortOrder === 'asc' ? 'По возрастанию' : 'По убыванию'"
-            @click="toggleOrder"
-          >
-            <ion-icon :icon="sortOrder === 'asc' ? arrowUpOutline : arrowDownOutline" />
+    <div ref="topEl" class="rt-top" :class="{ 'rt-top--hidden': barHidden, 'rt-top--raised': barRaised }">
+      <div class="rt-toolbar">
+        <div class="rt-search">
+          <ion-icon :icon="searchOutline" class="rt-search-icon" />
+          <input
+            v-model="query"
+            class="rt-search-input"
+            :placeholder="searchPlaceholder"
+            @input="onSearchInput"
+          />
+          <button v-if="query" class="rt-search-clear" aria-label="Очистить" @click="clearSearch">
+            <ion-icon :icon="closeOutline" />
           </button>
         </div>
 
-        <ion-button
-          v-if="addLabel"
-          fill="solid"
-          color="primary"
-          class="add-btn-desktop"
-          @click="$emit('add')"
-          mode="md"
-        >
-          <ion-icon :icon="addOutline" slot="start" />
-          {{ addLabel }}
-        </ion-button>
-      </div>
-    </div>
+        <div v-if="isDesktop" class="rt-toolbar-actions">
+          <button
+            v-if="filters.length"
+            class="rt-tool-btn"
+            :class="{ 'rt-tool-btn--active': filterOpen || activeFilters.length > 0 }"
+            :aria-expanded="filterOpen"
+            @click="filterOpen = !filterOpen"
+          >
+            <ion-icon :icon="optionsOutline" />
+            <span class="rt-tool-btn-label">Фильтры</span>
+            <span v-if="activeFilters.length" class="rt-tool-badge">{{ activeFilters.length }}</span>
+          </button>
 
-    <!-- Filter panel -->
-    <div v-if="filters.length && filterOpen" class="rt-filter-panel">
-      <div v-for="f in filters" :key="f.key" class="rt-filter-field">
-        <UiNativeSelect
-          v-if="f.type === 'select'"
-          :model-value="filterValues[f.key]"
-          :label="f.label"
-          @update:model-value="filterValues[f.key] = $event; applyFilters()"
-        >
-          <option value="">Любой</option>
-          <option v-for="opt in f.options || []" :key="String(opt.value)" :value="opt.value">
-            {{ opt.label }}
-          </option>
-        </UiNativeSelect>
-        <label v-else-if="f.type === 'toggle'" class="ui-toggle-row">
-          <span>{{ f.label }}</span>
-          <ion-toggle
-            :checked="filterValues[f.key] === true"
+          <UiSelectPill
+            v-if="sortOptions.length"
+            v-model="sortKey"
+            :options="sortOptions"
+            :icon="swapVerticalOutline"
+            aria-label="Сортировка"
+            align="end"
+            @update:model-value="onSortChange"
+          >
+            <button
+              type="button"
+              class="ui-icon-btn"
+              :aria-label="sortOrder === 'asc' ? 'По возрастанию' : 'По убыванию'"
+              @click="toggleOrder"
+            >
+              <ion-icon :icon="sortOrder === 'asc' ? arrowUpOutline : arrowDownOutline" />
+            </button>
+          </UiSelectPill>
+
+          <ion-button
+            v-if="addLabel"
+            fill="solid"
+            color="primary"
+            class="add-btn-desktop"
+            @click="$emit('add')"
             mode="md"
-            @ion-change="onToggleFilter(f.key, $event)"
-          />
-        </label>
-        <DateTimeField
-          v-else-if="f.type === 'date'"
-          v-model="filterValues[f.key]"
-          mode="date"
-          :label="f.label"
-          @change="applyFilters"
+          >
+            <ion-icon :icon="addOutline" slot="start" />
+            {{ addLabel }}
+          </ion-button>
+        </div>
+      </div>
+
+      <div v-if="isDesktop && filters.length && filterOpen" class="rt-filter-panel">
+        <ResourceFilterFields
+          :filters="filters"
+          :values="filterValues"
+          :active-count="activeFilters.length"
+          @set="setFilter"
+          @reset="resetFilters"
         />
       </div>
-      <button v-if="activeFilterCount" class="rt-filter-reset" @click="resetFilters">
-        <ion-icon :icon="closeOutline" />
-        Сбросить
-      </button>
+
+      <div v-if="activeFilters.length && (!isDesktop || !filterOpen)" class="rt-active-filters">
+        <button
+          v-for="f in activeFilters"
+          :key="f.key"
+          type="button"
+          class="ui-chip ui-chip--active rt-active-chip"
+          :aria-label="`Убрать фильтр: ${f.label}`"
+          @click="setFilter(f.key, f.type === 'toggle' ? false : '')"
+        >
+          <span class="rt-active-chip-text">{{ f.label }}: {{ activeValueLabel(f) }}</span>
+          <ion-icon :icon="closeOutline" />
+        </button>
+      </div>
     </div>
 
     <!-- Скелетон вместо спиннера на пустом месте: форма будущих строк/карточек
@@ -141,6 +134,7 @@
     <div v-else-if="!items.length" class="state-box">
       <ion-icon :icon="searchOutline" size="large" />
       <p>Ничего не найдено</p>
+      <ion-button v-if="activeFilters.length || query" fill="outline" @click="resetAll">Сбросить фильтры</ion-button>
     </div>
 
     <div v-else class="table-container">
@@ -167,15 +161,20 @@
               <template v-else>{{ getCellValue(item, col) }}</template>
             </td>
             <td class="actions-cell" @click.stop>
-              <ion-button
-                v-if="extraAction && (!extraAction.visible || extraAction.visible(item))"
-                fill="clear"
-                size="small"
-                :title="extraAction.title"
-                @click="$emit('extra', item)"
-              >
-                <ion-icon :icon="extraAction.icon" />
-              </ion-button>
+              <RowActionsMenu v-if="rowActions(item).length > 1" :actions="rowActions(item)" />
+              <template v-else>
+                <button
+                  v-for="action in rowActions(item)"
+                  :key="action.label"
+                  type="button"
+                  class="ui-icon-btn"
+                  :title="action.label"
+                  :aria-label="action.label"
+                  @click="action.run()"
+                >
+                  <ion-icon :icon="action.icon" />
+                </button>
+              </template>
               <ion-button fill="clear" size="small" @click="$emit('edit', item)">
                 <ion-icon :icon="pencilOutline" />
               </ion-button>
@@ -201,10 +200,22 @@
           </div>
           <div class="mobile-card-meta">
             <span v-for="col in mobileMetaColumns" :key="col.key" class="mobile-meta-item">
-              {{ col.label }}:
+              <span class="mobile-meta-label">{{ col.label }}:</span>
               <ResourcePreview v-if="col.resource" v-bind="col.resource(item)" />
               <template v-else>{{ getCellValue(item, col) }}</template>
             </span>
+          </div>
+          <div v-if="rowLinks.length" class="mobile-card-links" @click.stop>
+            <button
+              v-for="link in rowLinks"
+              :key="link.label"
+              type="button"
+              class="ui-chip mobile-link"
+              @click="followLink(link, item)"
+            >
+              <ion-icon :icon="link.icon || linkOutline" />
+              {{ link.label }}
+            </button>
           </div>
           <div class="mobile-card-actions" @click.stop>
             <ion-button
@@ -233,6 +244,56 @@
     </ion-infinite-scroll>
 
     <AppFab v-if="addLabel" :icon="addOutline" :aria-label="addLabel" @click="$emit('add')" />
+    <AppFab
+      v-if="hasSheet"
+      :secondary="!!addLabel"
+      :tucked="barHidden && !filterOpen"
+      :badge="activeFilters.length"
+      :icon="optionsOutline"
+      aria-label="Фильтры"
+      @click="filterOpen = true"
+    />
+    <SortFab
+      v-if="hasSortFab"
+      :model-value="sortKey"
+      :order="sortOrder"
+      :options="sortOptions"
+      :secondary="!!addLabel || hasSheet"
+      :stack="addLabel && hasSheet ? 1 : 0"
+      :tucked="barHidden"
+      @update:model-value="onSortSelect"
+      @update:order="onOrderSelect"
+    />
+
+    <ion-modal
+      v-if="hasSheet"
+      :is-open="filterOpen"
+      :initial-breakpoint="0.6"
+      :breakpoints="[0, 0.6, 1]"
+      @ion-modal-did-dismiss="filterOpen = false"
+    >
+      <ion-header>
+        <ion-toolbar>
+          <ion-title>Фильтры</ion-title>
+          <ion-buttons slot="end">
+            <ion-button aria-label="Закрыть" @click="filterOpen = false">
+              <ion-icon slot="icon-only" :icon="closeOutline" />
+            </ion-button>
+          </ion-buttons>
+        </ion-toolbar>
+      </ion-header>
+      <ion-content class="ion-padding">
+        <div class="rt-sheet-body">
+          <ResourceFilterFields
+            :filters="filters"
+            :values="filterValues"
+            :active-count="activeFilters.length"
+            @set="setFilter"
+            @reset="resetFilters"
+          />
+        </div>
+      </ion-content>
+    </ion-modal>
 
     <ion-alert
       :is-open="deleteAlert.open"
@@ -245,22 +306,29 @@
 </template>
 
 <script setup lang="ts">
-import UiNativeSelect from '@/components/common/UiNativeSelect.vue'
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import {
-  IonButton, IonIcon, IonAlert, IonToggle,
+  IonButton, IonIcon, IonAlert, IonModal, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons,
   IonInfiniteScroll, IonInfiniteScrollContent,
 } from '@ionic/vue'
 import {
-  pencilOutline, trashOutline, addOutline,
+  pencilOutline, trashOutline, addOutline, linkOutline,
   arrowUpOutline, arrowDownOutline, swapVerticalOutline,
   alertCircleOutline, searchOutline, optionsOutline, closeOutline,
 } from 'ionicons/icons'
 import type { AxiosResponse } from 'axios'
 import AppFab from '@/components/common/AppFab.vue'
+import SortFab from '@/components/common/SortFab.vue'
+import ResourceFilterFields from '@/components/admin/ResourceFilterFields.vue'
 import ResourcePreview from '@/components/common/ResourcePreview.vue'
-import DateTimeField from '@/components/common/DateTimeField.vue'
-import type { ResourceKind } from '@/utils/resourceLabels'
+import RowActionsMenu, { type RowAction } from '@/components/admin/RowActionsMenu.vue'
+import UiSelectPill from '@/components/common/UiSelectPill.vue'
+import { useAdminNavigate } from '@/composables/useAdminNavigate'
+import { useHideOnScroll } from '@/composables/useHideOnScroll'
+import { usePlatform } from '@/composables/usePlatform'
+import { PICKERS, type PickerName } from '@/utils/adminPickers'
+import { resolveResourceLabel, type ResourceKind } from '@/utils/resourceLabels'
+import { patchQuery, readQuery } from '@/utils/urlState'
 
 export interface ColumnDef {
   key: string
@@ -287,8 +355,21 @@ export interface ExtraAction {
 export interface FilterDef {
   key: string
   label: string
-  type: 'select' | 'toggle' | 'date'
+  type: 'select' | 'toggle' | 'date' | 'picker'
   options?: { value: any; label: string }[]
+  /** Подпись пустого значения у select (по умолчанию «Любой») */
+  anyLabel?: string
+  /** Параметры запроса, которые добавляются, пока фильтр не выбран (например, показать и неактивных) */
+  anyParams?: Record<string, any>
+  /** picker: справочник, по записи которого фильтруем (см. utils/adminPickers) */
+  picker?: PickerName
+}
+
+/** Переход со строки на другой раздел админки с уже выставленным фильтром */
+export interface RowLink {
+  label: string
+  icon?: string
+  to: (item: any) => string
 }
 
 const props = withDefaults(defineProps<{
@@ -308,13 +389,18 @@ const props = withDefaults(defineProps<{
   pageSize?: number
   extraAction?: ExtraAction
   filters?: FilterDef[]
+  rowLinks?: RowLink[]
+  /** Поиск, сортировка и фильтры дублируются в адресной строке (q, sort, order, <ключ фильтра>) */
+  urlSync?: boolean
 }>(), {
-  searchPlaceholder: 'Поиск...',
+  searchPlaceholder: 'Поиск или ID',
   defaultSort: '',
   defaultOrder: 'asc' as const,
   pageSize: 20,
   sortOptions: () => [],
   filters: () => [],
+  rowLinks: () => [],
+  urlSync: true,
 })
 
 const emit = defineEmits<{
@@ -324,9 +410,30 @@ const emit = defineEmits<{
   extra: [item: any]
 }>()
 
-const query = ref('')
-const sortKey = ref(props.defaultSort || '')
-const sortOrder = ref<'asc' | 'desc'>(props.defaultOrder || 'asc')
+const navigate = useAdminNavigate()
+const { isDesktop } = usePlatform()
+const topEl = ref<HTMLElement | null>(null)
+const { hidden: barHidden, raised: barRaised } = useHideOnScroll(topEl, () => !isDesktop.value)
+const URL_PATH = window.location.pathname
+const URL_KEYS = ['q', 'sort', 'order', ...props.filters.map((f) => f.key)]
+
+function emptyFilterValue(f: FilterDef): string | boolean {
+  return f.type === 'toggle' ? false : ''
+}
+
+function filterFromUrl(f: FilterDef, raw: string | null): string | boolean {
+  if (raw === null) return emptyFilterValue(f)
+  return f.type === 'toggle' ? raw === 'true' : raw
+}
+
+const initial = props.urlSync ? readQuery() : new URLSearchParams()
+const query = ref(initial.get('q') ?? '')
+const sortKey = ref(initial.get('sort') ?? (props.defaultSort || ''))
+const sortOrder = ref<'asc' | 'desc'>(
+  initial.get('order') === 'asc' || initial.get('order') === 'desc'
+    ? (initial.get('order') as 'asc' | 'desc')
+    : props.defaultOrder || 'asc',
+)
 const page = ref(0)
 const limit = computed(() => props.pageSize || 20)
 const items = ref<any[]>([])
@@ -335,21 +442,22 @@ const loading = ref(false)
 const error = ref('')
 const deleteAlert = ref<{ open: boolean; item: any }>({ open: false, item: null })
 
-const filterOpen = ref(false)
 const filterValues = reactive<Record<string, any>>({})
-for (const f of props.filters) filterValues[f.key] = f.type === 'toggle' ? false : ''
+for (const f of props.filters) filterValues[f.key] = filterFromUrl(f, initial.get(f.key))
+
+function isActive(f: FilterDef): boolean {
+  const v = filterValues[f.key]
+  return f.type === 'toggle' ? v === true : v !== '' && v !== null && v !== undefined
+}
+
+const activeFilters = computed(() => props.filters.filter((f) => isActive(f)))
+const filterOpen = ref(isDesktop.value && activeFilters.value.length > 0)
+const hasSheet = computed(() => !isDesktop.value && props.filters.length > 0)
+const hasSortFab = computed(() => !isDesktop.value && props.sortOptions.length > 0)
 
 const hasMore = computed(() => items.value.length < total.value)
 const visibleColumns = computed(() => props.columns)
 const mobileMetaColumns = computed(() => props.columns.filter(c => !c.hideMobile))
-
-const activeFilterCount = computed(() =>
-  props.filters.reduce((n, f) => {
-    const v = filterValues[f.key]
-    const set = f.type === 'toggle' ? v === true : v !== '' && v !== null && v !== undefined
-    return n + (set ? 1 : 0)
-  }, 0),
-)
 
 const deleteAlertButtons = [
   { text: 'Отмена', role: 'cancel' },
@@ -363,6 +471,30 @@ function getCellValue(item: any, col: ColumnDef): string {
   return String(val)
 }
 
+const pickerLabels = reactive<Record<string, string>>({})
+
+watch(
+  () => props.filters.map((f) => (f.type === 'picker' ? filterValues[f.key] : '')),
+  () => {
+    for (const f of props.filters) {
+      const id = filterValues[f.key]
+      if (f.type !== 'picker' || !f.picker || !id || pickerLabels[`${f.key}:${id}`]) continue
+      resolveResourceLabel(PICKERS[f.picker].kind, id).then((label) => {
+        if (label) pickerLabels[`${f.key}:${id}`] = label
+      })
+    }
+  },
+  { immediate: true },
+)
+
+function activeValueLabel(f: FilterDef): string {
+  const v = filterValues[f.key]
+  if (f.type === 'toggle') return 'да'
+  if (f.type === 'select') return f.options?.find((o) => String(o.value) === String(v))?.label ?? String(v)
+  if (f.type === 'picker') return pickerLabels[`${f.key}:${v}`] ?? '…'
+  return String(v)
+}
+
 // Ширины скелетон-строк слегка отличаются -- иначе ряд одинаковых полосок
 // читается как явная заглушка, а не намёк на будущий текст разной длины.
 const SKELETON_WIDTHS = ['72%', '55%', '84%', '48%', '65%', '90%']
@@ -372,6 +504,23 @@ function skeletonWidth(n: number): string {
 
 function confirmDelete(item: any) {
   deleteAlert.value = { open: true, item }
+}
+
+function followLink(link: RowLink, item: any) {
+  navigate(link.to(item))
+}
+
+function rowActions(item: any): RowAction[] {
+  const actions: RowAction[] = props.rowLinks.map((link) => ({
+    label: link.label,
+    icon: link.icon || linkOutline,
+    run: () => followLink(link, item),
+  }))
+  const extra = props.extraAction
+  if (extra && (!extra.visible || extra.visible(item))) {
+    actions.push({ label: extra.title, icon: extra.icon, run: () => emit('extra', item) })
+  }
+  return actions
 }
 
 function toggleSort(key: string) {
@@ -385,6 +534,16 @@ function toggleSort(key: string) {
 }
 
 function onSortChange() {
+  reload()
+}
+
+function onSortSelect(key: string) {
+  sortKey.value = key
+  reload()
+}
+
+function onOrderSelect(order: 'asc' | 'desc') {
+  sortOrder.value = order
   reload()
 }
 
@@ -404,18 +563,19 @@ function clearSearch() {
   reload()
 }
 
-function onToggleFilter(key: string, ev: CustomEvent) {
-  filterValues[key] = !!(ev.detail as { checked: boolean }).checked
-  applyFilters()
-}
-
-function applyFilters() {
+function setFilter(key: string, value: any) {
+  filterValues[key] = value
   reload()
 }
 
 function resetFilters() {
-  for (const f of props.filters) filterValues[f.key] = f.type === 'toggle' ? false : ''
+  for (const f of props.filters) filterValues[f.key] = emptyFilterValue(f)
   reload()
+}
+
+function resetAll() {
+  query.value = ''
+  resetFilters()
 }
 
 function buildParams(): Record<string, any> {
@@ -430,9 +590,29 @@ function buildParams(): Record<string, any> {
       if (v === true) params[f.key] = true
     } else if (v !== '' && v !== null && v !== undefined) {
       params[f.key] = v
+    } else if (f.anyParams) {
+      Object.assign(params, f.anyParams)
     }
   }
   return params
+}
+
+function syncUrl() {
+  if (!props.urlSync) return
+  const values: Record<string, string> = {
+    q: query.value,
+    sort: sortKey.value !== (props.defaultSort || '') ? sortKey.value : '',
+    order: sortOrder.value !== (props.defaultOrder || 'asc') ? sortOrder.value : '',
+  }
+  for (const f of props.filters) {
+    const v = filterValues[f.key]
+    if (f.type === 'toggle') {
+      if (v === true) values[f.key] = 'true'
+    } else if (v !== '' && v !== null && v !== undefined) {
+      values[f.key] = String(v)
+    }
+  }
+  patchQuery(URL_KEYS, values, URL_PATH)
 }
 
 // reload() resets to the first page; loadMore() appends the next page (infinite scroll)
@@ -454,6 +634,7 @@ async function loadData(append = false) {
 
 function reload() {
   page.value = 0
+  syncUrl()
   return loadData(false)
 }
 
@@ -474,7 +655,13 @@ defineExpose({ loadData: reload })
 <style scoped>
 .resource-table {
   position: relative;
+  min-width: 0;
+  max-width: 100%;
   min-height: 200px;
+}
+
+.table-container {
+  overflow-x: auto;
 }
 
 /* ── Unified toolbar ── */
@@ -490,8 +677,8 @@ defineExpose({ loadData: reload })
   position: relative;
   display: flex;
   align-items: center;
-  flex: 1;
-  min-width: 220px;
+  flex: 1 1 220px;
+  min-width: 0;
 }
 
 .rt-search-icon {
@@ -542,8 +729,10 @@ defineExpose({ loadData: reload })
 
 .rt-toolbar-actions {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  min-width: 0;
 }
 
 .rt-tool-btn {
@@ -587,56 +776,9 @@ defineExpose({ loadData: reload })
   padding: 0 5px;
   border-radius: 9px;
   background: var(--ion-color-primary);
-  color: #fff;
+  color: var(--ion-color-primary-contrast);
   font-size: var(--fs-2xs);
   font-weight: var(--fw-bold);
-}
-
-.rt-sort {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  height: 44px;
-  padding: 0 6px 0 12px;
-  border: 1.5px solid var(--ion-border-color);
-  border-radius: 12px;
-  background: var(--ion-card-background);
-}
-
-.rt-sort-icon {
-  font-size: var(--fs-xl);
-  color: var(--ion-color-medium);
-}
-
-.rt-sort-select {
-  border: none;
-  background: transparent;
-  font-size: var(--fs-md);
-  font-weight: var(--fw-medium);
-  color: var(--ion-text-color);
-  outline: none;
-  cursor: pointer;
-  padding: 0 4px;
-}
-
-.rt-sort-dir {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border: none;
-  border-radius: 8px;
-  background: transparent;
-  color: var(--ion-color-medium);
-  font-size: var(--fs-lg);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.rt-sort-dir:hover {
-  background: rgba(var(--ion-color-primary-rgb), 0.1);
-  color: var(--ion-color-primary);
 }
 
 .add-btn-desktop {
@@ -647,10 +789,6 @@ defineExpose({ loadData: reload })
 
 /* ── Filter panel ── */
 .rt-filter-panel {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: 14px;
   padding: 16px;
   margin-bottom: 16px;
   border: 1.5px solid var(--ion-border-color);
@@ -659,32 +797,25 @@ defineExpose({ loadData: reload })
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05);
 }
 
-.rt-filter-field {
+.rt-active-filters {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 6px;
-  min-width: 160px;
+  margin: -4px 0 14px;
 }
 
-.rt-filter-reset {
+.rt-active-chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 40px;
-  padding: 0 14px;
-  border: 1.5px solid var(--ion-border-color);
-  border-radius: 10px;
-  background: transparent;
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-semibold);
-  color: var(--ion-color-medium);
-  cursor: pointer;
-  transition: all 0.15s;
+  max-width: 100%;
 }
 
-.rt-filter-reset:hover {
-  border-color: var(--ion-color-danger);
-  color: var(--ion-color-danger);
+.rt-active-chip-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ── Empty / Error / Loading states ── */
@@ -696,6 +827,7 @@ defineExpose({ loadData: reload })
   padding: 64px 16px;
   gap: 14px;
   color: var(--ion-color-medium);
+  text-align: center;
 }
 
 .state-box p {
@@ -773,10 +905,18 @@ defineExpose({ loadData: reload })
   background: var(--ion-color-light-tint, #f1f3f5);
 }
 
-.actions-cell {
-  width: 100px;
+.resource-desktop-table .actions-cell {
+  width: 1%;
+  max-width: none;
+  overflow: visible;
+  text-overflow: clip;
   text-align: right;
   white-space: nowrap;
+}
+
+.actions-cell .ui-icon-btn {
+  display: inline-flex;
+  vertical-align: middle;
 }
 
 /* ── Mobile cards ── */
@@ -784,15 +924,18 @@ defineExpose({ loadData: reload })
   display: flex;
   flex-direction: column;
   gap: 10px;
+  min-width: 0;
 }
 
 .mobile-card {
+  min-width: 0;
   background: var(--ion-card-background, #fff);
   border-radius: 12px;
   padding: 14px 16px;
   cursor: pointer;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
   transition: box-shadow 0.15s, transform 0.12s;
+  overflow-wrap: anywhere;
 }
 
 .mobile-card:active {
@@ -804,6 +947,7 @@ defineExpose({ loadData: reload })
   display: flex;
   flex-direction: column;
   gap: 2px;
+  min-width: 0;
   margin-bottom: 8px;
 }
 
@@ -821,16 +965,33 @@ defineExpose({ loadData: reload })
 .mobile-card-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 6px 10px;
+  min-width: 0;
   font-size: var(--fs-sm);
   color: var(--ion-color-medium);
 }
 
 .mobile-meta-item {
-  white-space: nowrap;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0 4px;
+  max-width: 100%;
   background: var(--ion-color-step-50, #f8f9fa);
   padding: 2px 8px;
   border-radius: 6px;
+}
+
+.mobile-card-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.mobile-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .mobile-card-actions {
@@ -843,6 +1004,51 @@ defineExpose({ loadData: reload })
 }
 
 /* ── Responsive ── */
+@media (max-width: 767px) {
+  .rt-top {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: -12px -12px 0;
+    padding: 12px 12px 10px;
+    background: var(--ion-background-color);
+    transition: transform 0.25s ease, box-shadow 0.2s ease;
+  }
+
+  .rt-top--hidden {
+    transform: translateY(-100%);
+    pointer-events: none;
+  }
+
+  .rt-top--raised {
+    box-shadow: 0 8px 12px -10px rgba(0, 0, 0, 0.4);
+  }
+
+  .rt-toolbar,
+  .rt-active-filters {
+    margin: 0;
+  }
+
+  .rt-toolbar {
+    flex-wrap: nowrap;
+  }
+
+  .rt-search {
+    flex: 1 1 0;
+  }
+
+  .resource-table {
+    padding-bottom: 88px;
+  }
+
+  .rt-sheet-body {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+}
+
 @media (min-width: 768px) {
   .resource-desktop-table {
     display: table;
