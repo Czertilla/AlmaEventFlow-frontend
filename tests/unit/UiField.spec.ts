@@ -3,8 +3,6 @@ import { afterEach, describe, expect, test } from 'vitest'
 import { defineComponent, h, ref } from 'vue'
 import UiField from '@/components/common/UiField.vue'
 import UiInput from '@/components/common/UiInput.vue'
-import UiNativeSelect from '@/components/common/UiNativeSelect.vue'
-import UiSelect from '@/components/common/UiSelect.vue'
 import UiTextarea from '@/components/common/UiTextarea.vue'
 
 const mounted: ReturnType<typeof mount>[] = []
@@ -231,61 +229,5 @@ describe('UiTextarea', () => {
     expect(model.value).toBe('Строка')
     expect(wrapper.get('textarea').attributes('rows')).toBe('2')
     expect(wrapper.get('.ui-field-counter').text()).toBe('6 / 1024')
-  })
-})
-
-describe('UiNativeSelect', () => {
-  test('emits the value of the option with its original type', async () => {
-    const emitted: unknown[] = []
-    const wrapper = track(
-      mount(
-        defineComponent({
-          setup: () => () =>
-            h(
-              UiNativeSelect,
-              { modelValue: 1, label: 'Уровень', 'onUpdate:modelValue': (value: unknown) => emitted.push(value) },
-              () => [h('option', { value: 1 }, 'Один'), h('option', { value: 2 }, 'Два')],
-            ),
-        }),
-        { attachTo: document.body, global: { stubs } },
-      ),
-    )
-
-    const select = wrapper.get('select')
-    expect((select.element as HTMLSelectElement).value).toBe('1')
-    ;(select.element as HTMLSelectElement).value = '2'
-    await select.trigger('change')
-
-    expect(emitted).toEqual([2])
-    expect(wrapper.get('.ui-field').classes()).toContain('ui-field--float')
-  })
-})
-
-describe('UiSelect', () => {
-  const IonSelect = defineComponent({
-    name: 'IonSelect',
-    props: { value: [String, Number], placeholder: String, interface: String },
-    emits: ['ion-change'],
-    setup: (props, { slots }) => () =>
-      h('div', { class: 'ion-select', 'data-value': props.value, 'data-interface': props.interface }, slots.default?.()),
-  })
-
-  test('the label is always on the border, the popover is the default interface and the change reaches the model', async () => {
-    const emitted: unknown[] = []
-    const wrapper = track(
-      mount(UiSelect, {
-        props: { modelValue: 'draft', label: 'Статус', 'onUpdate:modelValue': (value: unknown) => emitted.push(value) },
-        attachTo: document.body,
-        global: { stubs: { IonSelect, IonIcon: true } },
-      }),
-    )
-
-    expect(wrapper.get('.ui-field').classes()).toContain('ui-field--float')
-    expect(wrapper.get('.ion-select').attributes('data-value')).toBe('draft')
-    expect(wrapper.get('.ion-select').attributes('data-interface')).toBe('popover')
-
-    wrapper.getComponent(IonSelect).vm.$emit('ion-change', { detail: { value: 'active' } })
-
-    expect(emitted).toEqual(['active'])
   })
 })

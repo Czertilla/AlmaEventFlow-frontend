@@ -1,4 +1,5 @@
 import { mount } from '@vue/test-utils'
+import { nextTick } from 'vue'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import EntityPickerField from '@/components/common/EntityPickerField.vue'
 
@@ -18,6 +19,14 @@ function picker(props: Record<string, unknown> = {}) {
   })
   mounted.push(wrapper)
   return wrapper
+}
+
+function items(): string[] {
+  return [...document.body.querySelectorAll('.ui-option')].map((node) => node.textContent?.trim() ?? '')
+}
+
+function row(index: number): HTMLElement {
+  return document.body.querySelectorAll<HTMLElement>('.ui-option')[index]!
 }
 
 beforeEach(() => {
@@ -57,17 +66,58 @@ describe('EntityPickerField', () => {
     expect(wrapper.emitted('search')).toHaveLength(1)
   })
 
-  test('options are listed and picking one emits it', async () => {
+  test('options float over the page and picking one emits it', async () => {
     const options = [
       { id: '1', name: 'Университет' },
       { id: '2', name: 'Колледж' },
     ]
     const wrapper = picker({ options })
+    await nextTick()
 
-    expect(wrapper.findAll('.ui-menu-item').map((item) => item.text())).toEqual(['Университет', 'Колледж'])
-    await wrapper.findAll('.ui-menu-item')[1]!.trigger('click')
+    expect(wrapper.find('.ui-menu').exists()).toBe(false)
+    expect(items()).toEqual(['Университет', 'Колледж'])
+    await row(1).dispatchEvent(new MouseEvent('click', { bubbles: true }))
 
     expect(wrapper.emitted('select')).toEqual([[options[1]]])
+  })
+
+  test('arrows move through the options and Enter picks the active one', async () => {
+    const options = [
+      { id: '1', name: 'Университет' },
+      { id: '2', name: 'Колледж' },
+    ]
+    const wrapper = picker({ options })
+    const input = wrapper.get('input')
+
+    await input.trigger('keydown', { key: 'Enter' })
+    expect(wrapper.emitted('select')).toBeUndefined()
+
+    await input.trigger('keydown', { key: 'ArrowDown' })
+    await input.trigger('keydown', { key: 'ArrowDown' })
+    expect(row(1).classList).toContain('ui-option--active')
+    await input.trigger('keydown', { key: 'Enter' })
+
+    expect(wrapper.emitted('select')).toEqual([[options[1]]])
+  })
+
+  test('Escape and a press outside close the list, typing or focus brings it back', async () => {
+    const wrapper = picker({ options: [{ id: '1', name: 'Университет' }] })
+    const input = wrapper.get('input')
+    await nextTick()
+    expect(items()).toHaveLength(1)
+
+    await input.trigger('keydown', { key: 'Escape' })
+    expect(items()).toHaveLength(0)
+
+    await input.trigger('focus')
+    expect(items()).toHaveLength(1)
+
+    document.body.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    await nextTick()
+    expect(items()).toHaveLength(0)
+
+    await input.setValue('Кол')
+    expect(items()).toHaveLength(1)
   })
 
   test('a selected value replaces the search and can be cleared', async () => {
@@ -81,7 +131,10 @@ describe('EntityPickerField', () => {
     expect(wrapper.emitted('clear')).toHaveLength(1)
   })
 
-  test('an empty list shows no menu', () => {
-    expect(picker().find('.ui-menu').exists()).toBe(false)
+  test('an empty list shows no menu', async () => {
+    picker()
+    await nextTick()
+
+    expect(items()).toHaveLength(0)
   })
 })

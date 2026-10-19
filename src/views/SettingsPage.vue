@@ -33,15 +33,12 @@
                 <span class="settings-row-label">Анимации</span>
                 <span class="settings-row-hint">Переходы и эффекты. «Авто» учитывает системную экономию движения</span>
               </div>
-              <ion-select
-                :value="settings.animations"
-                interface="popover"
-                @ion-change="settings.animations = $event.detail.value"
-              >
-                <ion-select-option value="auto">Авто</ion-select-option>
-                <ion-select-option value="on">Включены</ion-select-option>
-                <ion-select-option value="off">Выключены</ion-select-option>
-              </ion-select>
+              <UiSelectPill
+                v-model="settings.animations"
+                :options="ANIMATION_OPTIONS"
+                aria-label="Анимации"
+                align="end"
+              />
             </div>
           </div>
         </div>
@@ -56,15 +53,12 @@
               <div class="settings-row-text">
                 <span class="settings-row-label">Формат даты</span>
               </div>
-              <ion-select
-                :value="settings.dateFormat"
-                interface="popover"
-                @ion-change="settings.dateFormat = $event.detail.value"
-              >
-                <ion-select-option value="DD.MM.YYYY">DD.MM.YYYY</ion-select-option>
-                <ion-select-option value="YYYY-MM-DD">YYYY-MM-DD</ion-select-option>
-                <ion-select-option value="MM/DD/YYYY">MM/DD/YYYY</ion-select-option>
-              </ion-select>
+              <UiSelectPill
+                v-model="settings.dateFormat"
+                :options="DATE_FORMAT_OPTIONS"
+                aria-label="Формат даты"
+                align="end"
+              />
             </div>
             <div class="settings-divider" />
             <div class="settings-row">
@@ -74,14 +68,12 @@
               <div class="settings-row-text">
                 <span class="settings-row-label">Первый день недели</span>
               </div>
-              <ion-select
-                :value="settings.firstDayOfWeek"
-                interface="popover"
-                @ion-change="settings.firstDayOfWeek = $event.detail.value"
-              >
-                <ion-select-option value="monday">Понедельник</ion-select-option>
-                <ion-select-option value="sunday">Воскресенье</ion-select-option>
-              </ion-select>
+              <UiSelectPill
+                v-model="settings.firstDayOfWeek"
+                :options="WEEK_START_OPTIONS"
+                aria-label="Первый день недели"
+                align="end"
+              />
             </div>
           </div>
         </div>
@@ -139,16 +131,33 @@
 
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { useSettingsStore } from '@/stores/settings'
+import { useSettingsStore, type Animations, type DateFormat, type FirstDayOfWeek } from '@/stores/settings'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBackButton,
-  IonToggle, IonSelect, IonSelectOption, IonIcon,
+  IonToggle, IonIcon,
 } from '@ionic/vue'
 import {
   moonOutline, calendarOutline, todayOutline, calendarNumberOutline,
   chevronForwardOutline, notificationsOutline, sparklesOutline,
 } from 'ionicons/icons'
 import { usePlatform } from '@/composables/usePlatform'
+import UiSelectPill from '@/components/common/UiSelectPill.vue'
+import type { SelectOption } from '@/utils/selectOptions'
+
+const ANIMATION_OPTIONS: SelectOption<Animations>[] = [
+  { value: 'auto', label: 'Авто' },
+  { value: 'on', label: 'Включены' },
+  { value: 'off', label: 'Выключены' },
+]
+const DATE_FORMAT_OPTIONS: SelectOption<DateFormat>[] = [
+  { value: 'DD.MM.YYYY', label: 'DD.MM.YYYY' },
+  { value: 'YYYY-MM-DD', label: 'YYYY-MM-DD' },
+  { value: 'MM/DD/YYYY', label: 'MM/DD/YYYY' },
+]
+const WEEK_START_OPTIONS: SelectOption<FirstDayOfWeek>[] = [
+  { value: 'monday', label: 'Понедельник' },
+  { value: 'sunday', label: 'Воскресенье' },
+]
 
 const router = useRouter()
 const settings = useSettingsStore()
@@ -252,10 +261,15 @@ const apiVersion = __API_VERSION__
 }
 
 /* Селекты не должны сжиматься — иначе текст переносится по буквам */
-.settings-row ion-select {
+.settings-row .ui-select-pill {
   flex-shrink: 0;
   min-width: 150px;
   max-width: 180px;
+}
+
+.settings-row .ui-select-pill-btn {
+  flex: 1;
+  justify-content: space-between;
 }
 
 .settings-divider {

@@ -56,24 +56,16 @@
 
     <div class="filters-divider" />
     <div class="facet-filters">
-      <UiNativeSelect v-model="type" class="facet-field" label="Тип">
-        <option value="all">Любой</option>
-        <option v-for="[v, l] in typeOptions" :key="v" :value="v">{{ l }}</option>
-      </UiNativeSelect>
-      <UiNativeSelect v-model="level" class="facet-field" label="Уровень">
-        <option value="all">Любой</option>
-        <option v-for="[v, l] in levelOptions" :key="v" :value="v">{{ l }}</option>
-      </UiNativeSelect>
-      <UiNativeSelect v-model="format" class="facet-field" label="Формат">
-        <option value="all">Любой</option>
-        <option v-for="[v, l] in formatOptions" :key="v" :value="v">{{ l }}</option>
-      </UiNativeSelect>
+      <UiSelect v-model="type" class="facet-field" label="Тип" :options="TYPE_OPTIONS" />
+      <UiSelect v-model="level" class="facet-field" label="Уровень" :options="LEVEL_OPTIONS" />
+      <UiSelect v-model="format" class="facet-field" label="Формат" :options="FORMAT_OPTIONS" />
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import UiNativeSelect from '@/components/common/UiNativeSelect.vue'
+import UiSelect from '@/components/common/UiSelect.vue'
+import { optionsFromPairs, withAny } from '@/utils/selectOptions'
 import { usePrincipalStore } from '@/stores/principal'
 import { getCollectiveColor } from '@/utils/colors'
 import { typeOptions, levelOptions, formatOptions } from '@/utils/eventLabels'
@@ -86,6 +78,10 @@ defineProps<{
 }>()
 
 const status = defineModel<EventStatusEnumV1 | 'all'>('status', { required: true })
+const TYPE_OPTIONS = withAny<EventTypeEnumV1 | 'all'>(optionsFromPairs(typeOptions), 'all')
+const LEVEL_OPTIONS = withAny<EventLevelEnumV1 | 'all'>(optionsFromPairs(levelOptions), 'all')
+const FORMAT_OPTIONS = withAny<EventFormatEnumV1 | 'all'>(optionsFromPairs(formatOptions), 'all')
+
 const type = defineModel<EventTypeEnumV1 | 'all'>('type', { required: true })
 const level = defineModel<EventLevelEnumV1 | 'all'>('level', { required: true })
 const format = defineModel<EventFormatEnumV1 | 'all'>('format', { required: true })
