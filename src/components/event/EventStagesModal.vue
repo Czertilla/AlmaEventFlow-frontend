@@ -16,7 +16,7 @@
           <div v-for="n in 2" :key="n" class="skeleton stage-skeleton" aria-busy="true" />
         </template>
         <template v-else>
-          <p v-if="stageForms.length === 0" class="card-empty">Этапов пока нет — добавьте первый.</p>
+          <p v-if="stageForms.length === 0" class="card-empty">Этапов пока нет</p>
           <StageFields
             v-for="(s, i) in stageForms"
             :key="s.id ?? `new-${i}`"

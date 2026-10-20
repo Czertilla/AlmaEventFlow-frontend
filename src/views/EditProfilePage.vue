@@ -20,9 +20,9 @@
             </UiInput>
             <UiInput
               v-model="email"
-              label="Email"
+              label="Электронная почта"
               type="email"
-              :hint="emailChanged ? 'После смены email потребуется повторное подтверждение адреса.' : ''"
+              :hint="emailChanged ? 'После смены почты адрес нужно будет подтвердить заново.' : ''"
             >
               <template #prefix><ion-icon :icon="mailOutline" /></template>
             </UiInput>
@@ -37,7 +37,6 @@
                 v-model="password"
                 label="Новый пароль"
                 autocomplete="new-password"
-                placeholder="Оставьте пустым, чтобы не менять"
               />
               <PasswordStrengthMeter :password="password" />
             </div>
@@ -47,7 +46,7 @@
                 v-model="currentPassword"
                 label="Текущий пароль"
                 autocomplete="current-password"
-                hint="Для смены пароля подтвердите текущий. Остальные сеансы будут завершены."
+                help="После смены пароля остальные сеансы будут завершены."
               />
             </template>
           </div>
@@ -59,10 +58,9 @@
             <div class="telegram-row">
               <ion-icon :icon="paperPlaneOutline" class="telegram-icon" />
               <div class="telegram-text">
-                <span class="telegram-title">Привязать аккаунт</span>
-                <span class="field-hint">
-                  Откроет бота в Telegram — там достаточно нажать «Старт». После
-                  этого можно будет входить на сайт через Telegram.
+                <span class="telegram-title">
+                  Вход через Telegram
+                  <HelpTip text="Откроется бот в Telegram: нажмите в нём «Старт». После этого на сайт можно входить через Telegram." />
                 </span>
               </div>
               <button
@@ -100,6 +98,7 @@ import { useAuthStore } from '@/stores/auth'
 import { usePlatform } from '@/composables/usePlatform'
 import { validatePassword } from '@/utils/password'
 import PasswordStrengthMeter from '@/components/common/PasswordStrengthMeter.vue'
+import HelpTip from '@/components/common/HelpTip.vue'
 import PasswordField from '@/components/common/PasswordField.vue'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons,
@@ -265,12 +264,6 @@ async function handleSave() {
   gap: 6px;
 }
 
-.field-hint {
-  font-size: var(--fs-xs);
-  color: var(--ion-color-medium);
-  padding: 0 4px;
-}
-
 .telegram-row {
   display: flex;
   align-items: center;
@@ -292,6 +285,9 @@ async function handleSave() {
 }
 
 .telegram-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: var(--fs-lg);
   font-weight: var(--fw-semibold);
   color: var(--ion-text-color);

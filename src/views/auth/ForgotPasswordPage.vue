@@ -8,7 +8,7 @@
             <img src="/aef.svg" class="logo-img" alt="Alma Event Flow" />
           </div>
           <h1>Восстановление пароля</h1>
-          <p class="auth-subtitle">Укажите email — мы пришлём ссылку для сброса</p>
+          <p class="auth-subtitle">Пришлём ссылку для сброса пароля</p>
         </div>
 
         <div class="auth-card">
@@ -19,7 +19,7 @@
                   <ion-icon :icon="mailOutline" />
                 </div>
                 <p class="auth-done-text">
-                  Если аккаунт с таким email существует, на него отправлено письмо
+                  Если аккаунт с такой почтой существует, мы отправили на неё письмо
                   со ссылкой для восстановления пароля.
                 </p>
                 <router-link to="/auth/login" class="auth-btn auth-btn--link">
@@ -28,7 +28,7 @@
               </div>
 
               <div v-else key="form" class="auth-form">
-                <UiInput v-model="email" label="Email" type="email" :invalid="!!error && !email" @keyup.enter="handleSubmit">
+                <UiInput v-model="email" label="Электронная почта" type="email" :invalid="!!error && !email" @keyup.enter="handleSubmit">
                   <template #prefix><ion-icon :icon="personOutline" /></template>
                 </UiInput>
 
@@ -79,7 +79,7 @@ onIonViewDidLeave(() => {
 async function handleSubmit() {
   error.value = ''
   if (!email.value) {
-    error.value = 'Введите email'
+    error.value = 'Укажите электронную почту'
     return
   }
   loading.value = true

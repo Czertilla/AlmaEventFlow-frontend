@@ -47,8 +47,8 @@ const filters: FilterDef[] = [
 ]
 
 const columns: ColumnDef[] = [
-  { key: 'username', label: 'Username', sortable: true },
-  { key: 'email', label: 'Email', sortable: true },
+  { key: 'username', label: 'Имя пользователя', sortable: true },
+  { key: 'email', label: 'Электронная почта', sortable: true },
   { key: 'is_active', label: 'Активен', render: (u) => u.is_active ? 'Да' : 'Нет', sortable: true },
   { key: 'is_superuser', label: 'Админ', render: (u) => u.is_superuser ? 'Да' : 'Нет' },
   { key: 'is_verified', label: 'Верифицирован', render: (u) => u.is_verified ? 'Да' : 'Нет' },
@@ -56,7 +56,7 @@ const columns: ColumnDef[] = [
 
 const baseSortOptions: SortOption[] = [
   { value: 'username', label: 'Имени' },
-  { value: 'email', label: 'Email' },
+  { value: 'email', label: 'Электронной почте' },
   { value: 'is_active', label: 'Активности' },
   { value: 'is_verified', label: 'Верификации' },
   { value: 'is_superuser', label: 'Роли' },
@@ -65,8 +65,8 @@ const baseSortOptions: SortOption[] = [
 const sortOptions: SortOption[] = [...baseSortOptions, ...TIMESTAMP_SORT_OPTIONS]
 
 const editFields: FormField[] = [
-  { key: 'username', label: 'Username', type: 'text', required: true },
-  { key: 'email', label: 'Email', type: 'email', required: true },
+  { key: 'username', label: 'Имя пользователя', type: 'text', required: true },
+  { key: 'email', label: 'Электронная почта', type: 'email', required: true },
   { key: 'is_active', label: 'Активен', type: 'checkbox' },
   { key: 'is_superuser', label: 'Администратор', type: 'checkbox' },
   { key: 'is_verified', label: 'Верифицирован', type: 'checkbox' },

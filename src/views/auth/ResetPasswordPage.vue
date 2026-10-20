@@ -8,7 +8,6 @@
             <img src="/aef.svg" class="logo-img" alt="Alma Event Flow" />
           </div>
           <h1>Новый пароль</h1>
-          <p class="auth-subtitle">Задайте новый пароль для своего аккаунта</p>
         </div>
 
         <div class="auth-card">
@@ -198,12 +197,6 @@ async function handleSubmit() {
   font-weight: var(--fw-bold);
   margin: 0 0 4px;
   color: var(--ion-text-color);
-}
-
-.auth-subtitle {
-  font-size: var(--fs-md);
-  color: var(--ion-color-medium);
-  margin: 0;
 }
 
 .auth-card {

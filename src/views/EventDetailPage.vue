@@ -197,7 +197,6 @@
                       v-model="addMemberSel[p.participationId]"
                       class="add-attendance-select"
                       label="Добавить участника"
-                      placeholder="Выберите участника"
                       :options="memberOptions(p)"
                     />
                     <ion-button size="small" :disabled="!addMemberSel[p.participationId]" @click="addAttendance(p)">
@@ -279,7 +278,6 @@
               v-if="joinableCollectives.length > 1"
               v-model="joinForm.collectiveId"
               label="Коллектив"
-              placeholder="Выберите коллектив"
               :options="joinableCollectiveOptions"
             />
             <div v-else class="form-field">

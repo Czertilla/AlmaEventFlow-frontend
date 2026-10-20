@@ -65,8 +65,8 @@
           </dl>
           <div v-else class="profile-cta">
             <p class="profile-hint">
-              Профиль ещё не заполнен. Укажите, как вас зовут, где вы учитесь и как с вами связаться:
-              так вас увидят руководители коллективов.
+              Профиль ещё не заполнен
+              <HelpTip text="Руководители ваших коллективов видят имя, учёбу и контакты, которые вы укажете." />
             </p>
             <button type="button" class="ui-btn ui-btn--primary ui-btn--sm" @click="router.push('/profile/data')">
               Заполнить профиль
@@ -140,6 +140,7 @@ import { usePrincipalStore } from '@/stores/principal'
 import { useMyProfileStore } from '@/stores/myProfile'
 import { useSettingsStore } from '@/stores/settings'
 import { usePlatform } from '@/composables/usePlatform'
+import HelpTip from '@/components/common/HelpTip.vue'
 import UuidBadge from '@/components/common/UuidBadge.vue'
 import TimestampsMeta from '@/components/common/TimestampsMeta.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
@@ -368,6 +369,10 @@ async function handleLogout() {
   margin: 0;
   font-size: var(--fs-sm);
   color: var(--ion-color-medium);
+}
+
+.profile-hint .ui-help-wrap {
+  margin-left: 6px;
 }
 
 .profile-skeleton {

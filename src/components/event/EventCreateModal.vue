@@ -98,7 +98,7 @@
             </template>
 
             <p v-if="isJoinMode" class="form-hint">
-              Будет создано участие коллектива в существующем мероприятии — заполните только список участников.
+              Коллектив присоединится к существующему мероприятию: укажите только участников.
             </p>
           </div>
 
@@ -150,7 +150,10 @@
 
             <!-- План: либо одно время начала, либо подробные этапы -->
             <div class="form-field">
-              <p class="ui-field-title">План мероприятия</p>
+              <p class="ui-field-title">
+                План мероприятия
+                <HelpTip text="«Указать время» создаст один этап «Начало» с этим временем. «Расписать этапы» позволяет задать несколько этапов." />
+              </p>
               <div class="ui-chips">
                 <button
                   type="button"
@@ -172,10 +175,7 @@
 
               <template v-if="planMode === 'time'">
                 <DateTimeField v-model="startTime" mode="time" label="Время начала" />
-                <p class="form-hint">
-                  Будет создан один этап «Начало» с указанным временем.
-                  <span v-if="startTime && !form.date" class="form-hint-warn">Сначала укажите дату мероприятия.</span>
-                </p>
+                <p v-if="startTime && !form.date" class="form-hint form-hint-warn">Сначала укажите дату мероприятия.</p>
               </template>
             </div>
 
@@ -212,7 +212,7 @@
             </div>
             <div v-else class="participants-editor">
               <div class="participants-editor-head">
-                <span class="participants-editor-title">Тонкая настройка состава</span>
+                <span class="participants-editor-title">Состав</span>
                 <button class="link-btn" @click="cancelParticipantsEdit">Отменить</button>
               </div>
               <ion-searchbar v-model="memberSearch" placeholder="Поиск участника..." class="member-search" />
@@ -276,6 +276,7 @@ import { useEntityPicker } from '@/composables/useEntityPicker'
 import LocationField from '@/components/geo/LocationField.vue'
 import DateTimeField from '@/components/common/DateTimeField.vue'
 import EntityPickerField from '@/components/common/EntityPickerField.vue'
+import HelpTip from '@/components/common/HelpTip.vue'
 import StageFields from '@/components/event/StageFields.vue'
 import UiField from '@/components/common/UiField.vue'
 import UiInput from '@/components/common/UiInput.vue'

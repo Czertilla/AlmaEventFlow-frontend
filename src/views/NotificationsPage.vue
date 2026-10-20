@@ -12,15 +12,6 @@
       <div class="notif-page">
         <h1 v-if="isDesktop" class="page-title">Уведомления</h1>
 
-        <div class="notif-intro">
-          <ion-icon :icon="informationCircleOutline" />
-          <p>
-            Выберите, как получать уведомления. Email — гарантированный канал и
-            всегда включён. Можно подключить несколько устройств: каждый браузер
-            подписывается на push отдельно.
-          </p>
-        </div>
-
         <div v-if="store.loading" class="notif-empty">
           <ion-spinner name="crescent" />
         </div>
@@ -33,7 +24,13 @@
         <template v-else>
           <!-- Способы доставки -->
           <div class="notif-section">
-            <h3 class="notif-section-title">Способы доставки</h3>
+            <h3 class="notif-section-title">
+              Способы доставки
+              <HelpTip>
+                <p>Электронная почта — гарантированный канал, она всегда включена.</p>
+                <p>Push подключается на каждом устройстве отдельно: в каждом браузере его нужно включить.</p>
+              </HelpTip>
+            </h3>
             <div class="notif-card">
               <template v-for="(t, i) in store.transports" :key="t.type">
                 <div v-if="i > 0" class="notif-divider" />
@@ -66,7 +63,7 @@
                 <div class="notif-row-text">
                   <span class="notif-row-label">Это устройство</span>
                   <span class="notif-row-hint">
-                    {{ thisBrowserClient ? 'Push включён на этом устройстве' : 'Push не подключён' }}
+                    {{ thisBrowserClient ? 'Push включён' : 'Push не подключён' }}
                   </span>
                 </div>
                 <ion-button
@@ -90,12 +87,12 @@
               </div>
             </div>
             <p v-if="!webpushAvailable" class="notif-foot-hint">
-              Web Push сейчас недоступен на сервере (не настроены VAPID-ключи).
+              Push-уведомления сейчас недоступны.
             </p>
           </div>
           <div v-else class="notif-section">
             <p class="notif-foot-hint">
-              Этот браузер не поддерживает web-push. Уведомления придут на email.
+              Браузер не поддерживает push. Уведомления придут на почту.
             </p>
           </div>
 
@@ -132,8 +129,7 @@
                   <ion-icon :icon="paperPlaneOutline" />
                 </div>
                 <div class="notif-row-text">
-                  <span class="notif-row-label">Отправить тест</span>
-                  <span class="notif-row-hint">Проверьте доставку по включённым каналам</span>
+                  <span class="notif-row-label">Отправить тестовое уведомление</span>
                 </div>
                 <ion-icon :icon="chevronForwardOutline" class="notif-row-arrow" />
               </button>
@@ -152,10 +148,11 @@ import {
   IonButton, IonIcon, IonSpinner, IonToggle, toastController, onIonViewWillEnter,
 } from '@ionic/vue'
 import {
-  informationCircleOutline, notificationsOutline, mailOutline, trashOutline,
+  notificationsOutline, mailOutline, trashOutline,
   phonePortraitOutline, desktopOutline, paperPlaneOutline, chevronForwardOutline,
   chatbubbleEllipsesOutline, flashOutline,
 } from 'ionicons/icons'
+import HelpTip from '@/components/common/HelpTip.vue'
 import { useNotificationsStore } from '@/stores/notifications'
 import { useSettingsStore } from '@/stores/settings'
 import { usePlatform } from '@/composables/usePlatform'
@@ -202,7 +199,7 @@ function iconStyle(type: TransportType): Record<string, string> {
 }
 
 function transportHint(t: TransportInfo): string {
-  if (t.type === 'email') return 'Гарантированный канал · всегда включён'
+  if (t.type === 'email') return 'Всегда включена'
   if (!t.available) return 'Сейчас недоступен'
   if (t.requires_client) return 'Push на подключённые устройства'
   return ''
@@ -317,28 +314,6 @@ onIonViewWillEnter(reload)
   color: var(--ion-text-color);
 }
 
-.notif-intro {
-  display: flex;
-  gap: 12px;
-  padding: 14px 16px;
-  background: var(--ion-card-background);
-  border-radius: 16px;
-  box-shadow: var(--ion-card-shadow);
-}
-
-.notif-intro ion-icon {
-  font-size: var(--fs-2xl);
-  color: var(--ion-color-primary);
-  flex-shrink: 0;
-}
-
-.notif-intro p {
-  margin: 0;
-  font-size: var(--fs-sm);
-  line-height: 1.5;
-  color: var(--ion-color-medium);
-}
-
 .notif-section {
   display: flex;
   flex-direction: column;
@@ -346,6 +321,9 @@ onIonViewWillEnter(reload)
 }
 
 .notif-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
   padding: 0 4px;
   font-size: var(--fs-sm);

@@ -8,7 +8,6 @@
             <img src="/aef.svg" class="logo-img" alt="Alma Event Flow" />
           </div>
           <h1>Alma Event Flow</h1>
-          <p class="auth-subtitle">Создайте новую учётную запись</p>
         </div>
 
         <div class="auth-card">
@@ -30,7 +29,7 @@
             <form class="auth-form" @submit.prevent="handleRegister">
               <UiInput
                 v-model="email"
-                label="Email"
+                label="Электронная почта"
                 type="email"
                 name="email"
                 autocomplete="username"
@@ -42,7 +41,7 @@
 
               <UiInput
                 v-model="username"
-                label="Username"
+                label="Имя пользователя"
                 name="nickname"
                 autocomplete="nickname"
                 :error="usernameColor === 'danger' && usernameStatus ? usernameStatus : errors.username"
@@ -177,14 +176,14 @@ function validate() {
   errors.confirmPassword = ''
 
   if (!email.value) {
-    errors.email = 'Введите email'
+    errors.email = 'Укажите электронную почту'
     valid = false
   } else if (!/\S+@\S+\.\S+/.test(email.value)) {
-    errors.email = 'Некорректный email'
+    errors.email = 'Некорректный адрес почты'
     valid = false
   }
   if (!username.value) {
-    errors.username = 'Введите username'
+    errors.username = 'Укажите имя пользователя'
     valid = false
   } else if (username.value.length < 3) {
     errors.username = 'Минимум 3 символа'
@@ -217,10 +216,10 @@ function onUsernameInput() {
     try {
       const res = await checkUsernameUserV1UsersCheckUsernameGet(username.value)
       if (res.data.exists) {
-        usernameStatus.value = 'Username занят'
+        usernameStatus.value = 'Имя пользователя занято'
         usernameColor.value = 'danger'
       } else {
-        usernameStatus.value = 'Username свободен'
+        usernameStatus.value = 'Имя пользователя свободно'
         usernameColor.value = 'success'
       }
     } catch {
@@ -314,12 +313,6 @@ async function handleRegister() {
   font-weight: var(--fw-bold);
   margin: 0 0 4px;
   color: var(--ion-text-color);
-}
-
-.auth-subtitle {
-  font-size: var(--fs-md);
-  color: var(--ion-color-medium);
-  margin: 0;
 }
 
 .auth-card {

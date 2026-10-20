@@ -62,7 +62,7 @@ import type { GeoResult } from '@/composables/useGeoSearch'
 
 withDefaults(
   defineProps<{ modelValue: AddressRead | null; label?: string; placeholder?: string }>(),
-  { label: 'Адрес', placeholder: 'Начните вводить адрес…' },
+  { label: 'Адрес', placeholder: 'Улица и дом' },
 )
 const emit = defineEmits<{ 'update:modelValue': [value: AddressRead | null] }>()
 

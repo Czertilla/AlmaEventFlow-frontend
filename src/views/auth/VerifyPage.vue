@@ -7,7 +7,7 @@
           <div class="auth-logo">
             <ion-icon :icon="mailUnreadOutline" />
           </div>
-          <h1>Подтверждение email</h1>
+          <h1>Подтверждение почты</h1>
           <p class="auth-subtitle">Мы отправили письмо на <strong>{{ email }}</strong></p>
         </div>
 
@@ -17,7 +17,7 @@
               <div class="verify-icon">
                 <ion-icon :icon="mailOpenOutline" />
               </div>
-              <p class="verify-text">Перейдите по ссылке в письме, чтобы подтвердить свой email адрес.</p>
+              <p class="verify-text">Перейдите по ссылке из письма, чтобы подтвердить адрес.</p>
 
               <div class="verify-timer" :class="{ 'verify-timer--active': remaining > 0 }">
                 <template v-if="remaining > 0">

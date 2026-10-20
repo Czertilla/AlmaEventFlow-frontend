@@ -12,17 +12,6 @@
       <div class="calsub-page">
         <h1 v-if="isDesktop" class="page-title">Календарные подписки</h1>
 
-        <div class="calsub-intro">
-          <ion-icon :icon="informationCircleOutline" />
-          <p>
-            Подключите расписание мероприятий к Google Calendar, Apple Calendar,
-            Outlook и другим календарям. Создайте подписку и добавьте ссылку как
-            подписку по URL: для Google — ссылка <code>https</code>, для Apple —
-            <code>webcal</code>. Цвет задаётся в самом календаре — для разных
-            коллективов создавайте отдельные подписки.
-          </p>
-        </div>
-
         <div v-if="store.loading" class="calsub-empty">
           <ion-spinner name="crescent" />
         </div>
@@ -44,7 +33,7 @@
                   </div>
                   <div class="calsub-row-text">
                     <span class="calsub-row-label">{{ feed.title }}</span>
-                    <span class="calsub-row-hint">{{ typeLabel(feed.type) }}</span>
+                    <span v-if="typeLabel(feed.type) !== feed.title" class="calsub-row-hint">{{ typeLabel(feed.type) }}</span>
                   </div>
                   <ion-button
                     size="small"
@@ -59,9 +48,15 @@
           </div>
 
           <div class="calsub-section">
-            <h3 class="calsub-section-title">Мои подписки</h3>
+            <h3 class="calsub-section-title">
+              Мои подписки
+              <HelpTip>
+                <p>Добавьте ссылку подписки в календарь как «подписку по URL». Для Google Calendar нужна ссылка https, для Apple Calendar — webcal.</p>
+                <p>Цвет задаётся в самом календаре, поэтому для разных коллективов создавайте отдельные подписки.</p>
+              </HelpTip>
+            </h3>
             <div v-if="!store.subscriptions.length" class="calsub-empty">
-              Пока нет подписок. Создайте одну из доступных календарей выше.
+              Подписок пока нет
             </div>
             <div v-else class="calsub-card">
               <template v-for="(sub, i) in store.subscriptions" :key="sub.id">
@@ -102,13 +97,13 @@
                   </template>
                   <div v-else class="calsub-url-hint">
                     <ion-icon :icon="lockClosedOutline" />
-                    Ссылка показывается один раз. Сбросьте токен, чтобы получить новую.
+                    Ссылка показывается один раз. Чтобы получить новую, сбросьте её.
                   </div>
 
                   <div class="calsub-actions">
                     <ion-button fill="outline" size="small" @click="onRotate(sub)">
                       <ion-icon slot="start" :icon="refreshOutline" />
-                      Сбросить токен
+                      Сбросить ссылку
                     </ion-button>
                     <ion-button fill="clear" color="danger" size="small" @click="onDelete(sub)">
                       <ion-icon slot="start" :icon="trashOutline" />
@@ -132,10 +127,11 @@ import {
   IonButton, IonIcon, IonSpinner, toastController, onIonViewWillEnter,
 } from '@ionic/vue'
 import {
-  informationCircleOutline, copyOutline, refreshOutline, trashOutline,
+  copyOutline, refreshOutline, trashOutline,
   lockClosedOutline, peopleOutline, personOutline, ribbonOutline,
   calendarOutline,
 } from 'ionicons/icons'
+import HelpTip from '@/components/common/HelpTip.vue'
 import { useCalendarSubscriptionsStore } from '@/stores/calendarSubscriptions'
 import { useSettingsStore } from '@/stores/settings'
 import { usePlatform } from '@/composables/usePlatform'
@@ -238,7 +234,7 @@ async function onCreate(feed: FeedDescriptor) {
 
 async function onRotate(sub: SubscriptionRead) {
   const ok = await confirmAction(
-    'Сбросить токен?',
+    'Сбросить ссылку?',
     'Старая ссылка перестанет работать. Календари с прежней ссылкой нужно будет переподключить.',
   )
   if (!ok) return
@@ -246,7 +242,7 @@ async function onRotate(sub: SubscriptionRead) {
     const created = await store.rotate(sub.id)
     await copy(created.feed_url)
   } catch {
-    await toast('Не удалось сбросить токен', 'danger')
+    await toast('Не удалось сбросить ссылку', 'danger')
   }
 }
 
@@ -286,28 +282,6 @@ onIonViewWillEnter(() => store.refresh())
   color: var(--ion-text-color);
 }
 
-.calsub-intro {
-  display: flex;
-  gap: 12px;
-  padding: 14px 16px;
-  background: var(--ion-card-background);
-  border-radius: 16px;
-  box-shadow: var(--ion-card-shadow);
-}
-
-.calsub-intro ion-icon {
-  font-size: var(--fs-2xl);
-  color: var(--ion-color-primary);
-  flex-shrink: 0;
-}
-
-.calsub-intro p {
-  margin: 0;
-  font-size: var(--fs-sm);
-  line-height: 1.5;
-  color: var(--ion-color-medium);
-}
-
 .calsub-section {
   display: flex;
   flex-direction: column;
@@ -315,6 +289,9 @@ onIonViewWillEnter(() => store.refresh())
 }
 
 .calsub-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
   padding: 0 4px;
   font-size: var(--fs-sm);

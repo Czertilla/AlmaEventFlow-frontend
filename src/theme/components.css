@@ -391,11 +391,13 @@ input.ui-field-control {
   max-width: calc(100% - 2 * var(--field-pad-x) - 28px);
 }
 
-.ui-field--suffix .ui-field-label {
+.ui-field--suffix .ui-field-label,
+.ui-field--help .ui-field-label {
   max-width: calc(100% - 2 * var(--field-pad-x) - 34px);
 }
 
-.ui-field--prefix.ui-field--suffix .ui-field-label {
+.ui-field--prefix.ui-field--suffix .ui-field-label,
+.ui-field--prefix.ui-field--help .ui-field-label {
   max-width: calc(100% - 2 * var(--field-pad-x) - 62px);
 }
 
@@ -496,6 +498,9 @@ input.ui-field-control {
 }
 
 .ui-field-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0 0 6px;
   color: var(--ion-text-color);
   font-size: var(--fs-sm);
@@ -570,6 +575,75 @@ input.ui-field-control {
 .ui-icon-btn:disabled {
   opacity: 0.5;
   cursor: default;
+}
+
+.ui-help-wrap {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: middle;
+}
+
+.ui-help {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: var(--border-w) solid currentColor;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ion-color-medium);
+  font-size: var(--fs-xs);
+  font-weight: var(--fw-semibold);
+  line-height: 1;
+  cursor: pointer;
+  transition: background 0.12s, color 0.12s;
+}
+
+.ui-help::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+}
+
+.ui-help:hover,
+.ui-help:focus-visible,
+.ui-help--open {
+  background: rgba(var(--ion-color-primary-rgb), 0.12);
+  color: var(--ion-color-primary);
+  outline: none;
+}
+
+.ui-help-tip {
+  display: block;
+  width: max-content;
+  max-width: min(300px, calc(100vw - 16px));
+  padding: 10px 12px;
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-regular);
+  line-height: 1.45;
+}
+
+.ui-help-tip p {
+  margin: 0;
+}
+
+.ui-help-tip p + p {
+  margin-top: 6px;
+}
+
+.ui-field-help {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  padding-right: 10px;
+}
+
+.ui-field-help:empty {
+  display: none;
 }
 
 .ui-chips {
@@ -740,6 +814,9 @@ ion-content::part(scroll)::-webkit-scrollbar-thumb {
 }
 
 .ui-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin: 0;
   font-size: var(--fs-lg);
   font-weight: var(--fw-semibold);

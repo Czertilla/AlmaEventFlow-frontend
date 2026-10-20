@@ -2,6 +2,9 @@
   <ion-modal :is-open="isOpen" @ion-modal-did-dismiss="$emit('close')">
     <ion-header>
       <ion-toolbar>
+        <ion-buttons slot="start" class="pending-help">
+          <HelpTip text="Отметьте присутствие на каждом мероприятии. Кнопка «Готово» станет активной, когда неотмеченных не останется." />
+        </ion-buttons>
         <ion-title>Требуют отметки</ion-title>
         <ion-buttons slot="end">
           <ion-button aria-label="Закрыть" @click="$emit('close')">
@@ -22,10 +25,6 @@
       </div>
 
       <div v-else class="pending-list">
-        <p class="pending-hint">
-          Отметьте присутствие на каждом мероприятии. Кнопка «Готово» станет
-          активной, когда не останется неотмеченных.
-        </p>
         <EventPreview
           v-for="event in events"
           :key="event.id"
@@ -61,6 +60,7 @@ import {
   IonIcon, IonContent, IonFooter,
 } from '@ionic/vue'
 import { closeOutline, checkmarkCircleOutline } from 'ionicons/icons'
+import HelpTip from '@/components/common/HelpTip.vue'
 import EventPreview, { type CollectiveAttendanceItem } from './EventPreview.vue'
 import type { EventRead } from '@/api/generated/almaEventFlow'
 import type { EventAttendanceItem } from '@/stores/eventCalendar'
@@ -114,10 +114,8 @@ function itemsFor(eventId: string): CollectiveAttendanceItem[] {
   gap: 4px;
 }
 
-.pending-hint {
-  margin: 0 0 8px;
-  font-size: var(--fs-sm);
-  color: var(--ion-color-medium);
+.pending-help {
+  padding-left: 12px;
 }
 
 .pending-footer {

@@ -8,12 +8,16 @@
       autocomplete="off"
       placeholder="Например, Актовый зал"
       :hint="nameHint"
+      help="Название нужно, если вы ставите точку на карте. Для адреса без названия будет использован сам адрес."
     />
 
     <AddressSearchSelect v-model="address" label="Адрес" />
 
     <div class="lcf-field">
-      <p class="ui-field-title">{{ address ? 'Уточнить место на карте' : 'Точка на карте' }}</p>
+      <p class="ui-field-title">
+        {{ address ? 'Уточнить место на карте' : 'Точка на карте' }}
+        <HelpTip :text="mapHelp" />
+      </p>
       <GeoMap
         pickable
         :markers="addressMarker ? [addressMarker] : []"
@@ -24,7 +28,6 @@
       />
       <div class="lcf-map-foot">
         <span v-if="spot" class="lcf-coords">{{ spot.lat.toFixed(5) }}, {{ spot.lon.toFixed(5) }}</span>
-        <span v-else class="lcf-hint lcf-hint--flush">{{ mapHint }}</span>
         <button v-if="spot" type="button" class="lcf-link" @click="spot = null">Сбросить точку</button>
       </div>
     </div>
@@ -44,6 +47,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { IonSpinner } from '@ionic/vue'
 import GeoMap from './GeoMap.vue'
 import type { GeoPoint, MapMarker } from './GeoMap.vue'
+import HelpTip from '@/components/common/HelpTip.vue'
 import UiInput from '@/components/common/UiInput.vue'
 import AddressSearchSelect from './AddressSearchSelect.vue'
 import { createLocationGeoV1LocationsPost } from '@/api/generated/almaEventFlow'
@@ -69,14 +73,10 @@ const addressMarker = computed<MapMarker | null>(() => {
 })
 const mapCenter = computed<GeoPoint | undefined>(() => address.value?.spot ?? spot.value ?? undefined)
 
-const nameHint = computed(() =>
-  spot.value
-    ? 'Обязательно, если уточняете точку на карте.'
-    : 'Необязательно — без названия будет использован сам адрес.',
-)
-const mapHint = computed(() =>
+const nameHint = computed(() => (spot.value && !name.value.trim() ? 'Для точки на карте нужно название' : undefined))
+const mapHelp = computed(() =>
   address.value
-    ? 'Нажмите на карту, чтобы уточнить точное место (необязательно).'
+    ? 'Нажмите на карту, чтобы уточнить точное место. Это необязательно.'
     : 'Нажмите на карту, чтобы поставить точку.',
 )
 
@@ -126,17 +126,6 @@ async function submit() {
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-
-.lcf-hint {
-  margin: 0;
-  font-size: var(--fs-xs);
-  line-height: 1.45;
-  color: var(--ion-color-medium);
-}
-
-.lcf-hint--flush {
-  margin: 0;
 }
 
 .lcf-link {

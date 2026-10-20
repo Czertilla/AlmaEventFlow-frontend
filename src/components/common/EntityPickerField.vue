@@ -1,13 +1,14 @@
 <template>
   <div class="epf">
-    <UiField v-if="selected" :label="label" float>
+    <UiField v-if="selected" :label="label" float :hint="hint" :help="help">
       <template v-if="icon" #prefix><ion-icon :icon="icon" /></template>
       <span class="ui-field-value">
         <span v-if="loading" class="skeleton skeleton--text epf-skeleton" aria-busy="true" />
         <template v-else>{{ selected.name }}</template>
       </span>
       <template #suffix>
-        <button type="button" class="ui-icon-btn ui-icon-btn--danger" :aria-label="clearLabel" @click="emit('clear')">
+        <ion-icon v-if="locked" :icon="lockClosedOutline" class="epf-lock" aria-label="Заполнено автоматически" />
+        <button v-else type="button" class="ui-icon-btn ui-icon-btn--danger" :aria-label="clearLabel" @click="emit('clear')">
           <ion-icon :icon="closeOutline" />
         </button>
       </template>
@@ -21,6 +22,7 @@
           autocomplete="off"
           :disabled="disabled"
           :hint="hint"
+          :help="help"
           role="combobox"
           aria-autocomplete="list"
           :aria-expanded="listOpen"
@@ -51,7 +53,7 @@
 <script setup lang="ts" generic="T extends PickerOption">
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { IonIcon } from '@ionic/vue'
-import { closeOutline, searchOutline } from 'ionicons/icons'
+import { closeOutline, lockClosedOutline, searchOutline } from 'ionicons/icons'
 import UiField from '@/components/common/UiField.vue'
 import UiInput from '@/components/common/UiInput.vue'
 import UiSelectMenu from '@/components/common/UiSelectMenu.vue'
@@ -73,8 +75,14 @@ const props = withDefaults(
     loading?: boolean
     disabled?: boolean
     hint?: string
+    help?: string
+    /** Выбранное нельзя убрать: его задаёт другое поле */
+    locked?: boolean
   }>(),
-  { placeholder: 'Начните вводить название', clearLabel: 'Убрать', icon: undefined, debounce: 400, loading: false, disabled: false, hint: undefined },
+  {
+    placeholder: 'Поиск…', clearLabel: 'Убрать', icon: undefined, debounce: 400,
+    loading: false, disabled: false, hint: undefined, help: undefined, locked: false,
+  },
 )
 
 const emit = defineEmits<{
@@ -137,5 +145,10 @@ onBeforeUnmount(() => clearTimeout(timer))
 .epf-skeleton {
   width: 55%;
   height: 14px;
+}
+
+.epf-lock {
+  font-size: var(--fs-lg);
+  color: var(--ion-color-medium);
 }
 </style>

@@ -77,7 +77,7 @@
       </span>
       <span class="grl-text">
         <span class="grl-title">Только текстом «{{ query.trim() }}»</span>
-        <span class="grl-sub">Без карты: адрес можно скопировать или найти в картах</span>
+        <span class="grl-sub">Без привязки к карте</span>
       </span>
     </li>
   </ul>

@@ -8,6 +8,7 @@
     :disabled="disabled"
     :error="error"
     :hint="hint"
+    :help="help"
     :success="success"
     :counter="counterText"
     :for-id="id"
@@ -42,6 +43,7 @@ const props = defineProps<{
   disabled?: boolean
   error?: string
   hint?: string
+  help?: string
   success?: string
   counter?: boolean
   maxlength?: number

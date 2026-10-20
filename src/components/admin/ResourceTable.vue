@@ -297,8 +297,7 @@
 
     <ion-alert
       :is-open="deleteAlert.open"
-      header="Подтверждение"
-      message="Вы уверены, что хотите удалить этот элемент?"
+      header="Удалить запись?"
       :buttons="deleteAlertButtons"
       @ion-alert-did-dismiss="deleteAlert.open = false"
     />

@@ -8,6 +8,7 @@
     :invalid="!!error"
     :error="typeof error === 'string' ? error : undefined"
     :hint="hint"
+    :help="help"
     @update:model-value="emit('update:modelValue', $event)"
     @keyup.enter="emit('enter')"
   >
@@ -48,6 +49,7 @@ defineProps<{
   autocomplete?: string
   error?: boolean | string
   hint?: string
+  help?: string
 }>()
 
 const emit = defineEmits<{ 'update:modelValue': [value: string]; enter: [] }>()

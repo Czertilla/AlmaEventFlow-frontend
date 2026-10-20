@@ -59,10 +59,12 @@
           <ion-button size="small" fill="outline" @click="createLocationAtPoint">Новое место здесь</ion-button>
           <ion-button size="small" fill="clear" color="medium" @click="pickedPoint = null">Отмена</ion-button>
         </div>
-        <p v-else class="map-hint">
-          Введите запрос — найденные адреса и места появятся на карте. Без запроса показываются объекты в видимой
-          области. Клик по метке открывает форму редактирования, клик по свободному месту — создание нового объекта.
-        </p>
+        <div v-else class="map-help">
+          <HelpTip>
+            <p>Найденные по запросу адреса и места появятся на карте. Без запроса показаны объекты в видимой области.</p>
+            <p>Клик по метке открывает форму редактирования, клик по свободному месту создаёт новый объект.</p>
+          </HelpTip>
+        </div>
       </div>
 
     <ion-modal :is-open="addressModal" @ion-modal-did-dismiss="addressModal = false">
@@ -93,6 +95,7 @@ import { computed, ref, watch } from 'vue'
 import { IonSegment, IonSegmentButton, IonModal, IonSearchbar, IonButton } from '@ionic/vue'
 import ResourceTable from '@/components/admin/ResourceTable.vue'
 import ResourceFormModal from '@/components/admin/ResourceFormModal.vue'
+import HelpTip from '@/components/common/HelpTip.vue'
 import GeoMap from '@/components/geo/GeoMap.vue'
 import type { GeoPoint, MapMarker, MapBBox } from '@/components/geo/GeoMap.vue'
 import { locationMarker, useGeoSearch } from '@/composables/useGeoSearch'
@@ -355,10 +358,8 @@ function afterMapEdit() {
   overflow: hidden;
 }
 
-.map-hint {
+.map-help {
   margin: 8px 4px 0;
-  font-size: var(--fs-sm);
-  color: var(--ion-color-medium);
 }
 
 .map-search {

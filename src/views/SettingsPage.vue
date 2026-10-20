@@ -20,7 +20,6 @@
               </div>
               <div class="settings-row-text">
                 <span class="settings-row-label">Тёмная тема</span>
-                <span class="settings-row-hint">Переключение светлой и тёмной палитры</span>
               </div>
               <ion-toggle :checked="settings.theme === 'dark'" @ion-change="settings.toggleTheme()" />
             </div>
@@ -30,8 +29,10 @@
                 <ion-icon :icon="sparklesOutline" />
               </div>
               <div class="settings-row-text">
-                <span class="settings-row-label">Анимации</span>
-                <span class="settings-row-hint">Переходы и эффекты. «Авто» учитывает системную экономию движения</span>
+                <span class="settings-row-label">
+                  Анимации
+                  <HelpTip text="«Авто» следует системной настройке экономии движения." />
+                </span>
               </div>
               <UiSelectPill
                 v-model="settings.animations"
@@ -39,6 +40,17 @@
                 aria-label="Анимации"
                 align="end"
               />
+            </div>
+            <div class="settings-divider" />
+            <div class="settings-row">
+              <div class="settings-row-icon" style="background: rgba(255, 184, 0, 0.12); color: #D49A00;">
+                <ion-icon :icon="helpCircleOutline" />
+              </div>
+              <div class="settings-row-text">
+                <span class="settings-row-label">Подсказки</span>
+                <span class="settings-row-hint">Кнопки «?» с пояснениями</span>
+              </div>
+              <ion-toggle :checked="settings.showHints" aria-label="Подсказки" @ion-change="settings.showHints = $event.detail.checked" />
             </div>
           </div>
         </div>
@@ -87,7 +99,6 @@
               </div>
               <div class="settings-row-text">
                 <span class="settings-row-label">Способы доставки</span>
-                <span class="settings-row-hint">Email, web-push и другие каналы уведомлений</span>
               </div>
               <ion-icon :icon="chevronForwardOutline" class="settings-row-arrow" />
             </button>
@@ -103,7 +114,6 @@
               </div>
               <div class="settings-row-text">
                 <span class="settings-row-label">Календарные подписки</span>
-                <span class="settings-row-hint">Подключение расписания к внешним календарям (ICS)</span>
               </div>
               <ion-icon :icon="chevronForwardOutline" class="settings-row-arrow" />
             </button>
@@ -138,9 +148,10 @@ import {
 } from '@ionic/vue'
 import {
   moonOutline, calendarOutline, todayOutline, calendarNumberOutline,
-  chevronForwardOutline, notificationsOutline, sparklesOutline,
+  chevronForwardOutline, helpCircleOutline, notificationsOutline, sparklesOutline,
 } from 'ionicons/icons'
 import { usePlatform } from '@/composables/usePlatform'
+import HelpTip from '@/components/common/HelpTip.vue'
 import UiSelectPill from '@/components/common/UiSelectPill.vue'
 import type { SelectOption } from '@/utils/selectOptions'
 
@@ -236,6 +247,9 @@ const apiVersion = __API_VERSION__
 }
 
 .settings-row-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-size: var(--fs-lg);
   font-weight: var(--fw-medium);
   color: var(--ion-text-color);

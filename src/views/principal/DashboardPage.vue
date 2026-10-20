@@ -85,7 +85,7 @@
       </div>
       <div v-else-if="!filteredEvents.length || !filteredMembers.length" class="page-state dash-narrow">
         <ion-icon :icon="gridOutline" />
-        <p>Нет данных для отображения -- измените фильтры или дождитесь мероприятий/участников</p>
+        <p>Нет данных для отображения</p>
       </div>
 
       <template v-else>
@@ -212,7 +212,7 @@
                         v-else
                         class="matrix-add-btn"
                         :disabled="isPending(cell.pendingKey)"
-                        title="Нет данных об участии -- создать отметку"
+                        title="Создать отметку"
                         @click.stop="onCreateCell(filteredEvents[i], row.member)"
                       >
                         <span v-if="isPending(cell.pendingKey)" class="matrix-cell-spinner" />
@@ -638,7 +638,7 @@ function buildCellInfo(a: AttendanceRead | undefined, participationId: string | 
     const pendingKey = participationId ? `create:${participationId}:${memberId}` : ''
     return {
       attendance: undefined,
-      title: participationId ? 'Нет данных об участии -- нажмите на кнопку, чтобы создать отметку' : 'Нет данных об участии',
+      title: participationId ? 'Создать отметку' : 'Нет данных об участии',
       hasComment: false,
       verified: false,
       unmarked: false,
@@ -972,7 +972,7 @@ async function onCreateCell(event: EventRead, member: MemberRead) {
   if (!participationId) return
   const ok = await confirmAction(
     'Создать отметку присутствия?',
-    `У «${displayName(member)}» нет записи об участии в «${event.name}». Создать отметку?`,
+    `У «${displayName(member)}» нет записи об участии в «${event.name}».`,
     'Создать',
     'confirm',
   )

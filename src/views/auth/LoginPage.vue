@@ -8,7 +8,6 @@
             <img src="/aef.svg" class="logo-img" alt="Alma Event Flow" />
           </div>
           <h1>Alma Event Flow</h1>
-          <p class="auth-subtitle">Войдите в свою учётную запись</p>
         </div>
 
         <div class="auth-card">
@@ -21,7 +20,7 @@
             <div class="auth-form">
               <UiInput
                 v-model="username"
-                label="Email"
+                label="Электронная почта"
                 type="email"
                 name="email"
                 autocomplete="username"
@@ -231,12 +230,6 @@ async function handleTelegramAuth(user: TelegramWidgetUser) {
   font-weight: var(--fw-bold);
   margin: 0 0 4px;
   color: var(--ion-text-color);
-}
-
-.auth-subtitle {
-  font-size: var(--fs-md);
-  color: var(--ion-color-medium);
-  margin: 0;
 }
 
 .auth-card {

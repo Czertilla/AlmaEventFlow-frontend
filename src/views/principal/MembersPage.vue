@@ -45,6 +45,9 @@
     <ion-modal :is-open="sortOpen" @ion-modal-did-dismiss="sortOpen = false">
       <ion-header>
         <ion-toolbar>
+          <ion-buttons v-if="sortMode === 'roles'" slot="start" class="sort-help">
+            <HelpTip text="Перетащите роли, чтобы задать порядок участников. Порядок сохраняется для этого коллектива." />
+          </ion-buttons>
           <ion-title>Сортировка по ролям</ion-title>
           <ion-buttons slot="end">
             <ion-button aria-label="Закрыть" @click="sortOpen = false">
@@ -59,7 +62,6 @@
           <ion-segment-button value="alpha"><ion-label>По алфавиту</ion-label></ion-segment-button>
         </ion-segment>
         <template v-if="sortMode === 'roles'">
-          <p class="form-hint">Перетащите роли, чтобы задать порядок участников. Настройка сохраняется для этого коллектива.</p>
           <ion-reorder-group :disabled="false" @ionItemReorder="handleReorder">
             <ion-item v-for="roleId in roleOrder" :key="roleId" lines="full">
               <ion-label>{{ roleName(roleId) }}</ion-label>
@@ -68,7 +70,6 @@
           </ion-reorder-group>
           <p v-if="!roleOrder.length" class="form-hint">Роли ещё не созданы.</p>
         </template>
-        <p v-else class="form-hint">Участники отсортированы по фамилии.</p>
       </ion-content>
     </ion-modal>
 
@@ -111,6 +112,7 @@ import {
   getMyCollectiveMembersEventV1MeCollectivesCollectiveIdMembersGet,
   getMyCollectiveRolesEventV1MeCollectivesCollectiveIdRolesGet,
 } from '@/api/generated/almaEventFlow'
+import HelpTip from '@/components/common/HelpTip.vue'
 import MemberDeleteAlert from '@/components/member/MemberDeleteAlert.vue'
 import MemberEditorModal from '@/components/member/MemberEditorModal.vue'
 import { resolvePersonName, shortId } from '@/utils/names'
@@ -414,6 +416,10 @@ useLayoutAddButton('Добавить участника', openAdd)
   margin: 4px 0 0;
   font-size: var(--fs-xs);
   color: var(--ion-color-medium);
+}
+
+.sort-help {
+  padding-left: 12px;
 }
 
 </style>

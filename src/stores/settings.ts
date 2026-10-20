@@ -38,6 +38,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const dateFormat = ref<DateFormat>(loadSetting<DateFormat>('dateFormat', 'DD.MM.YYYY'))
   const firstDayOfWeek = ref<FirstDayOfWeek>(loadSetting<FirstDayOfWeek>('firstDayOfWeek', 'monday'))
   const animations = ref<Animations>(loadSetting<Animations>('animations', 'auto'))
+  const showHints = ref<boolean>(loadSetting<boolean>('showHints', true))
   const systemReducedMotion = ref(reducedMotionQuery?.matches ?? false)
 
   reducedMotionQuery?.addEventListener('change', (e) => {
@@ -73,6 +74,7 @@ export const useSettingsStore = defineStore('settings', () => {
   watch(dateFormat, (val) => saveSetting('dateFormat', val))
   watch(firstDayOfWeek, (val) => saveSetting('firstDayOfWeek', val))
   watch(animations, (val) => saveSetting('animations', val))
+  watch(showHints, (val) => saveSetting('showHints', val))
   watch(animationsEnabled, applyAnimations, { immediate: true })
 
   return {
@@ -80,6 +82,7 @@ export const useSettingsStore = defineStore('settings', () => {
     dateFormat,
     firstDayOfWeek,
     animations,
+    showHints,
     animationsEnabled,
     toggleTheme,
     applyTheme,

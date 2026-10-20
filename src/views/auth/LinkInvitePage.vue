@@ -8,7 +8,6 @@
             <img src="/aef.svg" class="logo-img" alt="Alma Event Flow" />
           </div>
           <h1>Привязка профиля</h1>
-          <p class="auth-subtitle">Вы уже вошли в аккаунт — подтвердите привязку профиля по этой ссылке</p>
         </div>
 
         <div class="auth-card">
@@ -188,12 +187,6 @@ async function handleLink() {
   font-weight: var(--fw-bold);
   margin: 0 0 4px;
   color: var(--ion-text-color);
-}
-
-.auth-subtitle {
-  font-size: var(--fs-md);
-  color: var(--ion-color-medium);
-  margin: 0;
 }
 
 .auth-card {

@@ -31,7 +31,6 @@
         class="comment-editor-input"
         rows="4"
         maxlength="512"
-        placeholder="Напишите комментарий..."
         :readonly="!!verified"
       />
       <div class="comment-editor-footer">

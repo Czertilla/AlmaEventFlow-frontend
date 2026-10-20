@@ -10,13 +10,15 @@
       'ui-field--disabled': disabled,
       'ui-field--prefix': !!$slots.prefix,
       'ui-field--suffix': !!$slots.suffix,
+      'ui-field--help': !!help,
     }"
-    @focusin="focused = true"
+    @focusin="onFocusIn"
     @focusout="onFocusOut"
   >
     <div class="ui-field-box">
       <span v-if="$slots.prefix" class="ui-field-prefix"><slot name="prefix" /></span>
       <div class="ui-field-main"><slot /></div>
+      <span v-if="help" class="ui-field-help"><HelpTip :text="help" /></span>
       <span v-if="$slots.suffix" class="ui-field-suffix"><slot name="suffix" /></span>
       <label v-if="label" class="ui-field-label" :for="forId">{{ label }}</label>
       <fieldset class="ui-field-outline" aria-hidden="true">
@@ -37,6 +39,7 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import HelpTip from '@/components/common/HelpTip.vue'
 
 const props = defineProps<{
   label?: string
@@ -46,6 +49,7 @@ const props = defineProps<{
   disabled?: boolean
   error?: string
   hint?: string
+  help?: string
   success?: string
   counter?: string
   forId?: string
@@ -57,6 +61,10 @@ const focused = ref(false)
 const floated = computed(() => !!props.float || !!props.filled || focused.value)
 const isInvalid = computed(() => !!props.invalid || !!props.error)
 const message = computed(() => props.error || props.success || props.hint || '')
+
+function onFocusIn(event: FocusEvent) {
+  if (!(event.target as HTMLElement).closest('.ui-field-help')) focused.value = true
+}
 
 function onFocusOut(event: FocusEvent) {
   const next = event.relatedTarget as Node | null

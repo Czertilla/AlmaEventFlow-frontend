@@ -63,7 +63,7 @@
           />
           <div class="map-field-coords">
             <span v-if="form[field.key]">{{ form[field.key].lat.toFixed(5) }}, {{ form[field.key].lon.toFixed(5) }}</span>
-            <span v-else class="map-field-hint">Нажмите на карту, чтобы указать точку</span>
+            <span v-else class="map-field-hint">Точка не выбрана</span>
             <ion-button v-if="form[field.key]" fill="clear" size="small" @click="form[field.key] = null">
               Очистить
             </ion-button>

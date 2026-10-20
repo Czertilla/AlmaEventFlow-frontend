@@ -27,7 +27,7 @@
       <!-- Профиль -->
       <section v-show="activeTab === 'profile'" class="card">
         <TimestampsMeta :created-at="profileMeta.created_at" :edited-at="profileMeta.edited_at" />
-        <p v-if="!profileExists" class="hint">Профиль ещё не создан — заполните и сохраните.</p>
+        <p v-if="!profileExists" class="hint">Профиль ещё не создан.</p>
         <DateTimeField v-model="profile.birthdate" mode="date" label="Дата рождения" />
         <SearchPicker v-model="profile.workplace_id" label="Место работы" :fetch="searchOrgs" placeholder="Поиск организации…" />
         <UiSelect v-model="profile.diet_id" label="Диета" placeholder="Не выбрано" :options="dietOptions" />
@@ -37,7 +37,7 @@
       <!-- Студент -->
       <section v-show="activeTab === 'student'" class="card">
         <TimestampsMeta :created-at="studentMeta.created_at" :edited-at="studentMeta.edited_at" />
-        <p v-if="!studentExists" class="hint">Студенческая карточка не создана — заполните и сохраните.</p>
+        <p v-if="!studentExists" class="hint">Студенческая карточка не создана.</p>
         <p v-if="!profileExists" class="hint hint--warn">Сначала создайте профиль.</p>
         <UiInput v-model="student.student_id" label="Студенческий билет" />
         <SearchPicker v-model="student.group_id" label="Группа" :fetch="searchGroups" :numeric="true" placeholder="Поиск группы…" />
