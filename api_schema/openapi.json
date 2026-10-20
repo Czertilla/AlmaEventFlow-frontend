@@ -2,7 +2,7 @@
     "openapi": "3.1.0",
     "info": {
         "title": "Alma Event Flow",
-        "version": "0.4.5-beta"
+        "version": "0.5.0-beta"
     },
     "paths": {
         "/event/v1/attendances": {
@@ -28298,6 +28298,829 @@
                 ]
             }
         },
+        "/profile/v2/diets": {
+            "post": {
+                "tags": [
+                    "reference"
+                ],
+                "summary": "Resolve Diet",
+                "description": "Finds the record by its name, whatever the case and spacing, or makes it.\n\nEvery endpoint of this router works so: what several profiles share is\nlooked up first and added only when it is missing.",
+                "operationId": "resolve_diet_profile_v2_diets_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DietReference"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DietRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/profile/v2/student-degrees": {
+            "post": {
+                "tags": [
+                    "reference"
+                ],
+                "summary": "Resolve Student Degree",
+                "operationId": "resolve_student_degree_profile_v2_student_degrees_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DegreeReference"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StudentDegreeRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/profile/v2/student-groups": {
+            "post": {
+                "tags": [
+                    "reference"
+                ],
+                "summary": "Resolve Student Group",
+                "description": "A group is the same one when its faculty and name are.",
+                "operationId": "resolve_student_group_profile_v2_student_groups_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/StudentGroupReference"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StudentGroupRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "STUDENT_DEGREE_NOT_FOUND",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "STUDENT_DEGREE_NOT_FOUND": {
+                                        "summary": "STUDENT_DEGREE_NOT_FOUND",
+                                        "value": {
+                                            "detail": "STUDENT_DEGREE_NOT_FOUND"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/profile/v2/universities": {
+            "post": {
+                "tags": [
+                    "reference"
+                ],
+                "summary": "Resolve University",
+                "operationId": "resolve_university_profile_v2_universities_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReferenceName"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrganizationRefRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/profile/v2/faculties": {
+            "post": {
+                "tags": [
+                    "reference"
+                ],
+                "summary": "Resolve Faculty",
+                "description": "A faculty is the same one when its university and name are.",
+                "operationId": "resolve_faculty_profile_v2_faculties_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/FacultyReference"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrganizationRefRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "UNIVERSITY_NOT_FOUND",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "UNIVERSITY_NOT_FOUND": {
+                                        "summary": "UNIVERSITY_NOT_FOUND",
+                                        "value": {
+                                            "detail": "UNIVERSITY_NOT_FOUND"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/profile/v2/organizations": {
+            "post": {
+                "tags": [
+                    "reference"
+                ],
+                "summary": "Resolve Organization",
+                "description": "For a workplace: an organization, or a university, with that name.",
+                "operationId": "resolve_organization_profile_v2_organizations_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/ReferenceName"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/OrganizationRefRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/profile/v2/account-links/history": {
+            "get": {
+                "tags": [
+                    "account-link"
+                ],
+                "summary": "Get Account Link History",
+                "description": "Who linked, moved or unlinked which account, how and when; newest first.\n\n`person_id` matches a change that took the person from an account or gave\nit to one.",
+                "operationId": "get_account_link_history_profile_v2_account_links_history_get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "order_by",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Comma-separated fields, prefix a field with `-` for descending order. Allowed: created_at, action, source.",
+                            "default": "-created_at",
+                            "title": "Order By"
+                        },
+                        "description": "Comma-separated fields, prefix a field with `-` for descending order. Allowed: created_at, action, source."
+                    },
+                    {
+                        "name": "search",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Search"
+                        }
+                    },
+                    {
+                        "name": "user_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "User Id"
+                        }
+                    },
+                    {
+                        "name": "person_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Person Id"
+                        }
+                    },
+                    {
+                        "name": "actor_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Actor Id"
+                        }
+                    },
+                    {
+                        "name": "action",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/PersonLinkAction"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Action"
+                        }
+                    },
+                    {
+                        "name": "source",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "$ref": "#/components/schemas/PersonLinkSource"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Source"
+                        }
+                    },
+                    {
+                        "name": "created_at__gte",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "date-time"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Created At  Gte"
+                        }
+                    },
+                    {
+                        "name": "created_at__lte",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "date-time"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Created At  Lte"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 0,
+                            "title": "Page"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
+                            "exclusiveMinimum": 0,
+                            "default": 10,
+                            "title": "Limit"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PageV1_AccountLinkChangeRead_"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/user/v1/auth/jwt/login": {
             "post": {
                 "tags": [
@@ -30816,6 +31639,83 @@
     },
     "components": {
         "schemas": {
+            "AccountLinkChangeRead": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "user_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "User Id",
+                        "description": "The account whose link changed."
+                    },
+                    "old_person_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Old Person Id",
+                        "description": "The person the account stood for before, none when it had no one."
+                    },
+                    "new_person_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "New Person Id",
+                        "description": "The person the account stands for after, none when it has no one."
+                    },
+                    "action": {
+                        "$ref": "#/components/schemas/PersonLinkAction"
+                    },
+                    "source": {
+                        "$ref": "#/components/schemas/PersonLinkSource"
+                    },
+                    "actor_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Actor Id",
+                        "description": "The account that made the change, none when the system did."
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "user_id",
+                    "old_person_id",
+                    "new_person_id",
+                    "action",
+                    "source",
+                    "actor_id",
+                    "created_at"
+                ],
+                "title": "AccountLinkChangeRead"
+            },
             "AddressCascadeCreate": {
                 "properties": {
                     "house": {
@@ -32995,6 +33895,21 @@
                 ],
                 "title": "ContactType"
             },
+            "DegreeReference": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 32,
+                        "minLength": 1,
+                        "title": "Name"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name"
+                ],
+                "title": "DegreeReference"
+            },
             "DietCreate": {
                 "properties": {
                     "name": {
@@ -33107,6 +34022,21 @@
                     "name"
                 ],
                 "title": "DietRead"
+            },
+            "DietReference": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "minLength": 1,
+                        "title": "Name"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name"
+                ],
+                "title": "DietReference"
             },
             "EntityFeature": {
                 "properties": {
@@ -33968,6 +34898,27 @@
                     "name"
                 ],
                 "title": "FacultyRead"
+            },
+            "FacultyReference": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "minLength": 1,
+                        "title": "Name"
+                    },
+                    "university_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "University Id"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name",
+                    "university_id"
+                ],
+                "title": "FacultyReference"
             },
             "FeedDescriptor": {
                 "properties": {
@@ -35616,6 +36567,7 @@
                     "is_main": {
                         "type": "boolean",
                         "title": "Is Main",
+                        "description": "The main contact of its type. Exactly one of a type is main: the first one marked, else the first of that type.",
                         "default": false
                     }
                 },
@@ -36228,6 +37180,30 @@
                 "type": "object",
                 "title": "OrganizationPatchData"
             },
+            "OrganizationRefRead": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "type": {
+                        "type": "string",
+                        "title": "Type"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "name",
+                    "type"
+                ],
+                "title": "OrganizationRefRead"
+            },
             "OrganizationTypeEnum": {
                 "type": "string",
                 "enum": [
@@ -36237,6 +37213,26 @@
                     "collective"
                 ],
                 "title": "OrganizationTypeEnum"
+            },
+            "PageV1_AccountLinkChangeRead_": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/AccountLinkChangeRead"
+                        },
+                        "type": "array",
+                        "title": "Items"
+                    },
+                    "pagination": {
+                        "$ref": "#/components/schemas/PaginationV1"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "items",
+                    "pagination"
+                ],
+                "title": "PageV1[AccountLinkChangeRead]"
             },
             "PageV1_AddressRead_": {
                 "properties": {
@@ -37278,6 +38274,15 @@
                 ],
                 "title": "PersonItemRead"
             },
+            "PersonLinkAction": {
+                "type": "string",
+                "enum": [
+                    "linked",
+                    "replaced",
+                    "unlinked"
+                ],
+                "title": "PersonLinkAction"
+            },
             "PersonLinkRequest": {
                 "properties": {
                     "person_id": {
@@ -37291,6 +38296,17 @@
                     "person_id"
                 ],
                 "title": "PersonLinkRequest"
+            },
+            "PersonLinkSource": {
+                "type": "string",
+                "enum": [
+                    "own_profile",
+                    "invite",
+                    "admin",
+                    "person_deleted",
+                    "bootstrap"
+                ],
+                "title": "PersonLinkSource"
             },
             "PersonPatchData": {
                 "properties": {
@@ -37836,6 +38852,21 @@
                     "used_at"
                 ],
                 "title": "RecentLocationRead"
+            },
+            "ReferenceName": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 128,
+                        "minLength": 1,
+                        "title": "Name"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name"
+                ],
+                "title": "ReferenceName"
             },
             "RewardPutData": {
                 "properties": {
@@ -38747,6 +39778,39 @@
                     "grade"
                 ],
                 "title": "StudentGroupRead"
+            },
+            "StudentGroupReference": {
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "maxLength": 32,
+                        "minLength": 1,
+                        "title": "Name"
+                    },
+                    "degree_id": {
+                        "type": "integer",
+                        "title": "Degree Id"
+                    },
+                    "faculty_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Faculty Id"
+                    },
+                    "grade": {
+                        "type": "integer",
+                        "maximum": 12.0,
+                        "minimum": 1.0,
+                        "title": "Grade"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "name",
+                    "degree_id",
+                    "faculty_id",
+                    "grade"
+                ],
+                "title": "StudentGroupReference"
             },
             "StudentPatchData": {
                 "properties": {
