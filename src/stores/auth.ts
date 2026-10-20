@@ -26,6 +26,8 @@ import type {
 // 'unknown': бэкенд не ответил про сессию (сеть, 5xx) -- её нельзя ни считать, ни сбрасывать
 export type RefreshOutcome = 'signed-in' | 'signed-out' | 'unknown'
 
+const LINK_POLL_MS = [200, 400, 800, 1200]
+
 export const useAuthStore = defineStore('auth', () => {
   const user = ref<UserRead | null>(null)
   const accessToken = ref<string | null>(getAccessToken())
@@ -82,6 +84,15 @@ export const useAuthStore = defineStore('auth', () => {
     return 'signed-in'
   }
 
+  async function refreshWhenLinked(personId: string): Promise<RefreshOutcome> {
+    for (let attempt = 0; attempt <= LINK_POLL_MS.length; attempt++) {
+      if (attempt > 0) await new Promise((resolve) => setTimeout(resolve, LINK_POLL_MS[attempt - 1]))
+      await fetchUser()
+      if (user.value?.person_id === personId) break
+    }
+    return tryRefresh()
+  }
+
   async function fetchUser() {
     try {
       const response = await usersCurrentUserUserV1UsersMeGet()
@@ -132,6 +143,7 @@ export const useAuthStore = defineStore('auth', () => {
     login,
     loginWithTelegram,
     tryRefresh,
+    refreshWhenLinked,
     fetchUser,
     register,
     updateProfile,

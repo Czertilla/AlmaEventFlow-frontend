@@ -105,6 +105,54 @@ describe('tryRefresh', () => {
   })
 })
 
+describe('refreshWhenLinked', () => {
+  function accountSeen(personIds: (string | null)[]) {
+    const queue = [...personIds]
+    stub = stubBackend((config) => {
+      if (config.url === REFRESH) return signedIn
+      if (config.url === ME) return { status: 200, data: { id: 'u1', person_id: queue.length > 1 ? queue.shift() : queue[0] } }
+      return { status: 200 }
+    })
+    return useAuthStore()
+  }
+  const urls = () => stub.calls.map((call) => call.url)
+
+  test('asks for the account first and refreshes at once when it already has the person', async () => {
+    const auth = accountSeen(['p1'])
+
+    expect(await auth.refreshWhenLinked('p1')).toBe('signed-in')
+
+    expect(urls()).toEqual([ME, REFRESH, ME])
+    expect(auth.user?.person_id).toBe('p1')
+  })
+
+  test('waits for the account to catch up before the token is refreshed', async () => {
+    const auth = accountSeen([null, null, 'p1'])
+    const outcome = auth.refreshWhenLinked('p1')
+
+    await vi.advanceTimersByTimeAsync(0)
+    expect(urls()).toEqual([ME])
+
+    await vi.advanceTimersByTimeAsync(200)
+    expect(stub.to(REFRESH)).toHaveLength(0)
+
+    await vi.advanceTimersByTimeAsync(400)
+    expect(await outcome).toBe('signed-in')
+    expect(urls()).toEqual([ME, ME, ME, REFRESH, ME])
+  })
+
+  test('refreshes anyway after a short wait when the account never shows the person', async () => {
+    const auth = accountSeen([null])
+    const outcome = auth.refreshWhenLinked('p1')
+
+    await vi.advanceTimersByTimeAsync(3000)
+
+    expect(await outcome).toBe('signed-in')
+    expect(stub.to(ME)).toHaveLength(6)
+    expect(stub.to(REFRESH)).toHaveLength(1)
+  })
+})
+
 describe('the response interceptor', () => {
   test('replays a request that got a 401 with the refreshed token', async () => {
     const replies: Reply[] = [{ status: 401 }, { status: 200, data: { ok: true } }]

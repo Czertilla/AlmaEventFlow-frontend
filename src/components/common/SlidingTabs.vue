@@ -13,12 +13,17 @@
       type="button"
       role="tab"
       class="sliding-tab"
-      :class="{ 'sliding-tab--active': modelValue === tab.key }"
+      :class="{
+        'sliding-tab--active': modelValue === tab.key,
+        'sliding-tab--invalid': tab.invalid,
+        'sliding-tab--shake': shake?.includes(tab.key),
+      }"
       :aria-selected="modelValue === tab.key"
       @click="emit('update:modelValue', tab.key)"
     >
       <ion-icon v-if="tab.icon" :icon="tab.icon" />
       {{ tab.label }}
+      <span v-if="tab.badge" class="sliding-tab-badge" :aria-label="`Изменено: ${tab.badge}`">{{ tab.badge }}</span>
     </button>
   </nav>
 </template>
@@ -31,11 +36,17 @@ export interface SlidingTab {
   key: string
   label: string
   icon?: string
+  /** Число рядом с названием, например сколько полей изменено */
+  badge?: number
+  /** Вкладка требует внимания: подписана красным */
+  invalid?: boolean
 }
 
 const props = defineProps<{
   tabs: SlidingTab[]
   modelValue: string
+  /** Вкладки, которые сейчас вздрагивают */
+  shake?: string[]
 }>()
 
 const emit = defineEmits<{ 'update:modelValue': [key: string] }>()
@@ -170,9 +181,45 @@ watch(() => props.modelValue, measure, { flush: 'post' })
   color: var(--ion-color-primary);
 }
 
+.sliding-tab--invalid,
+.sliding-tab--invalid:hover,
+.sliding-tab--invalid.sliding-tab--active {
+  color: var(--ion-color-danger);
+}
+
+.sliding-tab-badge {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: var(--ion-color-primary);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-bold);
+  line-height: 18px;
+  color: var(--ion-color-primary-contrast);
+  text-align: center;
+}
+
+.sliding-tab--invalid .sliding-tab-badge {
+  background: var(--ion-color-danger);
+}
+
+.sliding-tab--shake {
+  animation: sliding-tab-shake 0.5s;
+}
+
+@keyframes sliding-tab-shake {
+  0%, 100% { transform: translateX(0); }
+  15%, 45%, 75% { transform: translateX(-4px); }
+  30%, 60%, 90% { transform: translateX(4px); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sliding-tabs-pill--animated {
     transition: none;
+  }
+
+  .sliding-tab--shake {
+    animation: none;
   }
 }
 </style>
