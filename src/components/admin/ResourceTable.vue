@@ -330,6 +330,7 @@ import UiSelectPill from '@/components/common/UiSelectPill.vue'
 import { useAdminNavigate } from '@/composables/useAdminNavigate'
 import { useHideOnScroll } from '@/composables/useHideOnScroll'
 import { usePlatform } from '@/composables/usePlatform'
+import { useSettingsStore } from '@/stores/settings'
 import { PICKERS, type PickerName } from '@/utils/adminPickers'
 import { resolveResourceLabel, type ResourceKind } from '@/utils/resourceLabels'
 import { patchQuery, readQuery } from '@/utils/urlState'
@@ -417,7 +418,8 @@ const emit = defineEmits<{
 const navigate = useAdminNavigate()
 const { isDesktop } = usePlatform()
 const topEl = ref<HTMLElement | null>(null)
-const { hidden: barHidden, raised: barRaised } = useHideOnScroll(topEl)
+const settings = useSettingsStore()
+const { hidden: barHidden, raised: barRaised } = useHideOnScroll(topEl, () => settings.collapseOnScroll)
 const URL_PATH = window.location.pathname
 const URL_KEYS = ['q', 'sort', 'order', ...props.filters.map((f) => f.key)]
 

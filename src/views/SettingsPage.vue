@@ -52,6 +52,19 @@
               </div>
               <ion-toggle :checked="settings.showHints" aria-label="Подсказки" @ion-change="settings.showHints = $event.detail.checked" />
             </div>
+            <div class="settings-divider" />
+            <div class="settings-row">
+              <div class="settings-row-icon" style="background: rgba(var(--ion-color-primary-rgb), 0.1); color: #6C63FF;">
+                <ion-icon :icon="swapVerticalOutline" />
+              </div>
+              <div class="settings-row-text">
+                <span class="settings-row-label">
+                  Сворачивать панели при прокрутке
+                  <HelpTip text="Недельный календарь на главной и строка поиска в списках прячутся при прокрутке вниз и возвращаются при прокрутке вверх. Выключите, чтобы они всегда оставались на экране." />
+                </span>
+              </div>
+              <ion-toggle :checked="settings.collapseOnScroll" aria-label="Сворачивать панели при прокрутке" @ion-change="settings.collapseOnScroll = $event.detail.checked" />
+            </div>
           </div>
         </div>
 
@@ -148,7 +161,7 @@ import {
 } from '@ionic/vue'
 import {
   moonOutline, calendarOutline, todayOutline, calendarNumberOutline,
-  chevronForwardOutline, helpCircleOutline, notificationsOutline, sparklesOutline,
+  chevronForwardOutline, helpCircleOutline, notificationsOutline, sparklesOutline, swapVerticalOutline,
 } from 'ionicons/icons'
 import { usePlatform } from '@/composables/usePlatform'
 import HelpTip from '@/components/common/HelpTip.vue'

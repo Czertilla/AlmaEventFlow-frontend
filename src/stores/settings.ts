@@ -39,6 +39,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const firstDayOfWeek = ref<FirstDayOfWeek>(loadSetting<FirstDayOfWeek>('firstDayOfWeek', 'monday'))
   const animations = ref<Animations>(loadSetting<Animations>('animations', 'auto'))
   const showHints = ref<boolean>(loadSetting<boolean>('showHints', true))
+  const collapseOnScroll = ref<boolean>(loadSetting<boolean>('collapseOnScroll', true))
   const systemReducedMotion = ref(reducedMotionQuery?.matches ?? false)
 
   reducedMotionQuery?.addEventListener('change', (e) => {
@@ -66,15 +67,13 @@ export const useSettingsStore = defineStore('settings', () => {
     theme.value = theme.value === 'light' ? 'dark' : 'light'
   }
 
-  watch(theme, (val) => {
-    applyTheme(val)
-    saveSetting('theme', val)
-  }, { immediate: true })
-
+  watch(theme, applyTheme, { immediate: true })
+  watch(theme, (val) => saveSetting('theme', val))
   watch(dateFormat, (val) => saveSetting('dateFormat', val))
   watch(firstDayOfWeek, (val) => saveSetting('firstDayOfWeek', val))
   watch(animations, (val) => saveSetting('animations', val))
   watch(showHints, (val) => saveSetting('showHints', val))
+  watch(collapseOnScroll, (val) => saveSetting('collapseOnScroll', val))
   watch(animationsEnabled, applyAnimations, { immediate: true })
 
   return {
@@ -83,6 +82,7 @@ export const useSettingsStore = defineStore('settings', () => {
     firstDayOfWeek,
     animations,
     showHints,
+    collapseOnScroll,
     animationsEnabled,
     toggleTheme,
     applyTheme,

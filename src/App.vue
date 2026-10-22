@@ -28,6 +28,7 @@ import { useSettingsStore } from '@/stores/settings'
 import { usePrincipalStore } from '@/stores/principal'
 import { useEventCalendarStore } from '@/stores/eventCalendar'
 import { usePlatform } from '@/composables/usePlatform'
+import { useSettingsSync } from '@/composables/useSettingsSync'
 import { isNavigating } from '@/composables/useNavigationProgress'
 import { changelogAfterUpdate, checkForNewVersion } from '@/utils/changelogVersion'
 import BackendStatusBanner from '@/components/layout/BackendStatusBanner.vue'
@@ -40,6 +41,8 @@ const settings = useSettingsStore()
 const principal = usePrincipalStore()
 const calendar = useEventCalendarStore()
 const { isDesktop } = usePlatform()
+
+useSettingsSync()
 
 onMounted(() => {
   settings.applyTheme(settings.theme)

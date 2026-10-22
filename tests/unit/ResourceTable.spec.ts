@@ -1,4 +1,5 @@
 import { flushPromises, mount, type VueWrapper } from '@vue/test-utils'
+import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import { defineComponent, h, nextTick } from 'vue'
 import { adminNavigateKey } from '@/composables/useAdminNavigate'
@@ -96,6 +97,7 @@ async function ready(props: Record<string, unknown> = {}) {
 const firstRow = (wrapper: VueWrapper) => wrapper.get('.resource-desktop-table tbody tr .actions-cell')
 
 beforeEach(() => {
+  setActivePinia(createPinia())
   fetchItems.mockReset()
   fetchItems.mockResolvedValue({ data: { items: ITEMS, pagination: { total: ITEMS.length } } })
   navigate.mockReset()
@@ -130,6 +132,28 @@ describe('ResourceTable search bar', () => {
     expect(wrapper.get('.rt-top').classes()).toContain('rt-top--hidden')
 
     await scrollTo(150)
+    expect(wrapper.get('.rt-top').classes()).not.toContain('rt-top--hidden')
+  })
+
+  test('stays on screen when the person switched collapsing off', async () => {
+    const { useSettingsStore } = await import('@/stores/settings')
+    useSettingsStore().collapseOnScroll = false
+    const scroller = document.createElement('div')
+    const content = document.createElement('ion-content') as HTMLElement & { getScrollElement: () => Promise<HTMLElement> }
+    content.getScrollElement = () => Promise.resolve(scroller)
+    document.body.appendChild(content)
+    const wrapper = mount(ResourceTable, {
+      props: { columns: COLUMNS, getLabel: (item: { name: string }) => item.name, getSubtitle: () => '', fetchItems, urlSync: false },
+      attachTo: content,
+      global: { stubs, provide: { [adminNavigateKey as symbol]: navigate } },
+    })
+    mounted.push(wrapper)
+    await flushPromises()
+
+    scroller.scrollTop = 400
+    scroller.dispatchEvent(new Event('scroll'))
+    await nextTick()
+
     expect(wrapper.get('.rt-top').classes()).not.toContain('rt-top--hidden')
   })
 })
