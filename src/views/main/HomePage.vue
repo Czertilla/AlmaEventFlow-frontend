@@ -385,7 +385,7 @@ const EVENTS_PAGE_SIZE = 10
 
 // Окно событий вокруг даты: прошлое (<=) и будущее (>=) с серверным фильтром по
 // коллективам; дедуп + сортировка + признаки "есть ли ещё" -- общая логика с
-// дашбордом (матрицей), см. utils/eventWindow.
+// «Участиями» (матрицей), см. utils/eventWindow.
 async function fetchEventWindow(anchorStr: string): Promise<EventWindow<EventRead>> {
   const [pastResp, futureResp] = await Promise.all([
     getEventsEventV1EventsGet({ date__lte: anchorStr, order_by: '-date', limit: EVENTS_PAGE_SIZE }, eventsOptions()),
@@ -485,7 +485,7 @@ async function loadMoreDown(): Promise<boolean> {
 // догружается заранее. Начальная загрузка (initLoad/reloadEventsForFilter)
 // эту функцию больше не вызывает: там достаточно одного окна вокруг текущей
 // даты (fetchEventWindow) + бесшовной подгрузки по достижении края списка
-// (loadMoreUp/loadMoreDown) — тот же принцип, что и в матрице дашборда
+// (loadMoreUp/loadMoreDown) — тот же принцип, что и в матрице «Участий»
 // (см. DashboardPage.vue/positionMatrixScroll + loadMorePast/loadMoreFuture).
 async function checkCalendarFill() {
   for (let i = 0; i < 20; i++) {

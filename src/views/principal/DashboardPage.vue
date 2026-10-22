@@ -1015,7 +1015,7 @@ async function loadLocations(eventList: EventRead[]) {
     try {
       const res = await getLocationGeoV1LocationsLocationIdGet(id)
       locationsById[id] = res.data
-    } catch { /* локация не критична для дашборда */ }
+    } catch { /* локация не критична для страницы */ }
   }))
 }
 
@@ -1097,7 +1097,7 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
   padding-bottom: 32px;
 }
 
-/* Дашборд full-width (см. PrincipalLayout PAGES) только ради таблицы -- сам
+/* Страница «Участия» full-width (см. PrincipalLayout PAGES) только ради таблицы -- сам
    тулбар/фильтры/легенда держат ту же колонку 760px, что и остальные
    страницы панели (.principal-main). Матрица (.matrix-shell) сюда намеренно
    не входит. */
@@ -1270,7 +1270,7 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
 
 /* Пагинация страниц окна -- листает мероприятия целыми порциями, а не
    доливает их бесконечно. Раньше стрелки лежали поверх таблицы по краям
-   (position: absolute, left/right: -14px) -- на full-width дашборде это
+   (position: absolute, left/right: -14px) -- на full-width странице это
    съезжало почти к самому краю экрана и норовило вылезти за него, особенно
    на мобильном. Теперь обычный тулбар-ряд над таблицей, тот же язык кнопок,
    что и .sort-btn. */

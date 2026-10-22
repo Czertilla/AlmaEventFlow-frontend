@@ -145,7 +145,7 @@ const props = defineProps<{ memberId: string }>()
 
 const MEMBERS_PATH = '/principal/members'
 const DASHBOARD_PATH = '/principal/dashboard'
-const COLLECTIVE_PATH = '/principal/collective'
+const ATTENDANCES_PATH = '/principal/attendances'
 
 const router = useRouter()
 const panelNavigate = inject(principalNavigateKey, null)
@@ -247,7 +247,7 @@ async function loadRoles(collectiveId: string) {
   }
 }
 
-const RETURN_PATHS = [DASHBOARD_PATH, COLLECTIVE_PATH]
+const RETURN_PATHS = [DASHBOARD_PATH, ATTENDANCES_PATH]
 
 const backPath = computed(() => {
   const from = principalReturnTo.value
@@ -258,7 +258,7 @@ const showBack = computed(() => !!panelNavigate || isDesktop.value)
 const backLabel = computed(() => {
   if (!panelNavigate) return 'Назад'
   if (backPath.value === DASHBOARD_PATH) return 'Дашборд'
-  return backPath.value === COLLECTIVE_PATH ? 'Коллектив' : 'Участники'
+  return backPath.value === ATTENDANCES_PATH ? 'Участия' : 'Участники'
 })
 
 function goBack() {
@@ -274,7 +274,7 @@ function openEvent(eventId: string) {
 function openCollective() {
   const id = profile.value?.member.collective_id
   if (!id) return
-  if (panelNavigate && principal.principalCollectiveIds.has(id)) panelNavigate(COLLECTIVE_PATH)
+  if (panelNavigate && principal.principalCollectiveIds.has(id)) panelNavigate(DASHBOARD_PATH)
   else router.push(`/collective/${id}`)
 }
 

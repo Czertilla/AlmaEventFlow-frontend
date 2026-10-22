@@ -54,7 +54,7 @@
     <ion-content>
       <div class="principal-shell">
         <!-- Заголовок и навигация всегда в одной и той же колонке, независимо
-             от fullWidth страницы -- иначе на дашборде (full-width) они
+             от fullWidth страницы -- иначе на странице участий (full-width) они
              растягивались на всю ширину, а на остальных страницах панели
              оставались в узкой колонке, и панель навигации визуально «плавала». -->
         <div class="principal-top-col">
@@ -102,7 +102,7 @@ import {
   onIonViewWillEnter,
 } from '@ionic/vue'
 import {
-  peopleOutline, peopleCircleOutline, ribbonOutline, calendarOutline, chevronDownOutline, addOutline, statsChartOutline,
+  peopleOutline, ribbonOutline, calendarOutline, chevronDownOutline, addOutline, statsChartOutline, gridOutline,
 } from 'ionicons/icons'
 import { usePrincipalStore } from '@/stores/principal'
 import { usePlatform } from '@/composables/usePlatform'
@@ -125,13 +125,16 @@ interface PrincipalPageEntry {
   component: ReturnType<typeof defineAsyncComponent>
 }
 
+const DASHBOARD_PATH = '/principal/dashboard'
+const ATTENDANCES_PATH = '/principal/attendances'
+
 const PAGES: Record<string, PrincipalPageEntry> = {
-  '/principal/dashboard': {
+  [DASHBOARD_PATH]: {
+    component: defineAsyncComponent(() => import('@/views/principal/CollectiveProfilePage.vue')),
+  },
+  [ATTENDANCES_PATH]: {
     fullWidth: true,
     component: defineAsyncComponent(() => import('@/views/principal/DashboardPage.vue')),
-  },
-  '/principal/collective': {
-    component: defineAsyncComponent(() => import('@/views/principal/CollectiveProfilePage.vue')),
   },
   '/principal/members': {
     component: defineAsyncComponent(() => import('@/views/principal/MembersPage.vue')),
@@ -150,7 +153,6 @@ const PAGES: Record<string, PrincipalPageEntry> = {
 // vue-router навигация, значит window.location уже верный).
 const activeSection = ref(window.location.pathname)
 
-const COLLECTIVE_PATH = '/principal/collective'
 const MEMBER_PROFILE_PREFIX = '/principal/members/'
 const memberProfilePage: PrincipalPageEntry = {
   component: defineAsyncComponent(() => import('@/views/principal/MemberProfilePage.vue')),
@@ -166,15 +168,15 @@ const currentPage = computed<PrincipalPageEntry | null>(() =>
 )
 const pageProps = computed(() => {
   if (profileMemberId.value) return { memberId: profileMemberId.value }
-  if (activeSection.value === COLLECTIVE_PATH) return { collectiveId: principal.activePrincipalCollectiveId }
+  if (activeSection.value === DASHBOARD_PATH) return { collectiveId: principal.activePrincipalCollectiveId }
   return {}
 })
 const activeTab = computed(() => (profileMemberId.value ? '/principal/members' : activeSection.value))
 const fullWidth = computed(() => !!currentPage.value?.fullWidth)
 
 const TABS = [
-  { key: '/principal/dashboard', label: 'Дашборд', icon: statsChartOutline },
-  { key: COLLECTIVE_PATH, label: 'Коллектив', icon: peopleCircleOutline },
+  { key: DASHBOARD_PATH, label: 'Дашборд', icon: statsChartOutline },
+  { key: ATTENDANCES_PATH, label: 'Участия', icon: gridOutline },
   { key: '/principal/members', label: 'Участники', icon: peopleOutline },
   { key: '/principal/roles', label: 'Роли', icon: ribbonOutline },
   { key: '/principal/events', label: 'Мероприятия', icon: calendarOutline },
@@ -196,10 +198,10 @@ const goTab = navigate
 // PrincipalLayout монтируется один раз на весь /principal/* (см. коммент выше),
 // а ion-router-outlet по умолчанию кэширует уже посещённые страницы и не
 // размонтирует их при переходе на другую -- поэтому обычный onMounted у
-// дочерних страниц (Дашборд/Участники/...) срабатывает только один раз за всё
+// дочерних страниц (Дашборд/Участия/...) срабатывает только один раз за всё
 // время жизни вкладки браузера, а не при каждом возврате в раздел. Если данные
 // изменили на другой странице (например, отметили посещаемость мероприятия) и
-// вернулись назад -- дашборд показывал бы старые данные. Форсируем
+// вернулись назад -- страница «Участия» показывала бы старые данные. Форсируем
 // пересоздание активной дочерней страницы при каждом реальном возврате в
 // раздел (см. :key ниже) -- тот же приём, что onIonViewWillEnter на HomePage,
 // но здесь применяется на уровне лэйаута, а не отдельной страницы.

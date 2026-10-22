@@ -487,7 +487,7 @@ function openMember(memberId: string) {
   router.push(`/member/${memberId}`)
 }
 
-// Дашборд руководителя переходит сюда с ?member=&collective= для конкретной
+// Страница «Участия» руководителя переходит сюда с ?member=&collective= для конкретной
 // ячейки посещения -- разворачиваем нужный коллектив, прокручиваем к строке
 // этого участника и подсвечиваем её на пару секунд.
 const highlightedAttendanceId = ref<string | null>(null)

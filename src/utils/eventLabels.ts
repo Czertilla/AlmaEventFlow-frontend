@@ -37,7 +37,7 @@ export function statusLabel(status: EventStatusEnumV1 | null | undefined): strin
 }
 
 // Те же оттенки, что и в COLLECTIVE_COLORS (@/utils/colors), без красного
-// (занят под danger/archived) -- для колонок дашборда руководителя.
+// (занят под danger/archived) -- для колонок «Участий» руководителя.
 const typeColors: Record<EventTypeEnumV1, string> = {
   rehearsal: '#6C63FF', competition: '#FF6B9D', concert: '#00D9A6',
   festival: '#FFB800', play: '#7C3AED', performance: '#06B6D4',

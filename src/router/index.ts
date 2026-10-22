@@ -43,6 +43,10 @@ const appRoutes: Array<RouteRecordRaw> = [
     redirect: '/principal/dashboard',
   },
   {
+    path: '/principal/collective',
+    redirect: '/principal/dashboard',
+  },
+  {
     path: '/principal/:pathMatch(.*)*',
     component: () => import('@/components/layout/PrincipalLayout.vue'),
     meta: { auth: true, principal: true },
