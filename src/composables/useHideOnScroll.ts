@@ -8,7 +8,7 @@ function isTyping(host: HTMLElement | null): boolean {
   return !!host && !!focused && host.contains(focused) && (focused instanceof HTMLInputElement || focused instanceof HTMLTextAreaElement)
 }
 
-export function useHideOnScroll(host: Ref<HTMLElement | null>, active: () => boolean) {
+export function useHideOnScroll(host: Ref<HTMLElement | null>, active: () => boolean = () => true) {
   const hidden = ref(false)
   const raised = ref(false)
   let scroller: HTMLElement | null = null

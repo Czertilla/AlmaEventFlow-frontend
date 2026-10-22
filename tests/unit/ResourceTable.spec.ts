@@ -107,11 +107,66 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
+describe('ResourceTable search bar', () => {
+  test('hides on the way down and comes back on the way up on a desktop too', async () => {
+    const scroller = document.createElement('div')
+    const content = document.createElement('ion-content') as HTMLElement & { getScrollElement: () => Promise<HTMLElement> }
+    content.getScrollElement = () => Promise.resolve(scroller)
+    document.body.appendChild(content)
+    const wrapper = mount(ResourceTable, {
+      props: { columns: COLUMNS, getLabel: (item: { name: string }) => item.name, getSubtitle: () => '', fetchItems, urlSync: false },
+      attachTo: content,
+      global: { stubs, provide: { [adminNavigateKey as symbol]: navigate } },
+    })
+    mounted.push(wrapper)
+    await flushPromises()
+    const scrollTo = async (top: number) => {
+      scroller.scrollTop = top
+      scroller.dispatchEvent(new Event('scroll'))
+      await nextTick()
+    }
+
+    await scrollTo(200)
+    expect(wrapper.get('.rt-top').classes()).toContain('rt-top--hidden')
+
+    await scrollTo(150)
+    expect(wrapper.get('.rt-top').classes()).not.toContain('rt-top--hidden')
+  })
+})
+
 describe('ResourceTable row actions', () => {
   test('edit and delete are always buttons of their own, whatever else the row offers', async () => {
     const wrapper = await ready({ rowLinks: LINKS, extraAction: EXTRA })
 
-    expect(firstRow(wrapper).findAll('.ion-button')).toHaveLength(2)
+    const cell = firstRow(wrapper)
+
+    expect(cell.findAll('button[aria-label="Редактировать"]')).toHaveLength(1)
+    expect(cell.findAll('button[aria-label="Удалить"]')).toHaveLength(1)
+  })
+
+  test('every action of a row is one family of buttons in one row, so they stand on one level', async () => {
+    const wrapper = await ready({ rowLinks: [LINKS[0]] })
+    const cell = firstRow(wrapper)
+    const buttons = cell.findAll('button')
+
+    expect(buttons.map((button) => button.attributes('aria-label'))).toEqual(['Участия', 'Редактировать', 'Удалить'])
+    expect(buttons.every((button) => button.classes().includes('ui-icon-btn'))).toBe(true)
+    expect(cell.find('.ion-button').exists()).toBe(false)
+    expect(cell.get('button[aria-label="Редактировать"]').classes()).toContain('ui-icon-btn--primary')
+    expect(cell.get('button[aria-label="Удалить"]').classes()).toContain('ui-icon-btn--delete')
+    expect(cell.findAll('.row-actions')).toHaveLength(1)
+    expect(cell.get('.row-actions').findAll('button')).toHaveLength(3)
+  })
+
+  test('on a phone the links and the buttons of a card share one footer', async () => {
+    const wrapper = await ready({ rowLinks: [LINKS[0]], extraAction: EXTRA })
+    const footer = wrapper.get('.mobile-card .mobile-card-footer')
+
+    expect(footer.findAll('.mobile-card-links .ui-chip')).toHaveLength(1)
+    const buttons = footer.findAll('.mobile-card-actions button')
+    expect(buttons.map((button) => button.attributes('aria-label'))).toEqual(['Этапы', 'Редактировать', 'Удалить'])
+    expect(buttons.every((button) => button.classes().includes('ui-icon-btn'))).toBe(true)
+    expect(footer.find('.ion-button').exists()).toBe(false)
   })
 
   test('two or more secondary actions fold into one menu and nothing is clipped', async () => {
@@ -119,7 +174,7 @@ describe('ResourceTable row actions', () => {
     const cell = firstRow(wrapper)
 
     expect(cell.findAll('button[aria-label="Ещё"]')).toHaveLength(1)
-    expect(cell.findAll('button.ui-icon-btn')).toHaveLength(1)
+    expect(cell.findAll('button.ui-icon-btn')).toHaveLength(3)
 
     await cell.get('button[aria-label="Ещё"]').trigger('click')
     await nextTick()
@@ -151,8 +206,7 @@ describe('ResourceTable row actions', () => {
     const wrapper = await ready()
     const cell = firstRow(wrapper)
 
-    expect(cell.findAll('button.ui-icon-btn')).toHaveLength(0)
-    expect(cell.findAll('.ion-button')).toHaveLength(2)
+    expect(cell.findAll('button').map((button) => button.attributes('aria-label'))).toEqual(['Редактировать', 'Удалить'])
   })
 
   test('picking a menu item follows its link for that row', async () => {

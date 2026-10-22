@@ -572,6 +572,16 @@ input.ui-field-control {
   color: var(--ion-color-danger);
 }
 
+.ui-icon-btn--delete {
+  color: var(--ion-color-danger);
+}
+
+.ui-icon-btn--delete:hover:not(:disabled),
+.ui-icon-btn--delete:focus-visible {
+  background: rgba(var(--ion-color-danger-rgb), 0.12);
+  color: var(--ion-color-danger);
+}
+
 .ui-icon-btn:disabled {
   opacity: 0.5;
   cursor: default;

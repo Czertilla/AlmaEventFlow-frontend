@@ -107,6 +107,29 @@ describe('useHideOnScroll', () => {
     expect(hidden(wrapper)).toBe('false')
   })
 
+  test('is on unless it is told otherwise', async () => {
+    scroller = document.createElement('div')
+    const content = document.createElement('ion-content') as HTMLElement & { getScrollElement: () => Promise<HTMLElement> }
+    content.getScrollElement = () => Promise.resolve(scroller)
+    document.body.appendChild(content)
+    const Probe = defineComponent({
+      setup() {
+        const host = ref<HTMLElement | null>(null)
+        const state = useHideOnScroll(host)
+        return () => h('div', { ref: host, 'data-hidden': String(state.hidden.value) })
+      },
+    })
+    const wrapper = mount(Probe, { attachTo: content })
+    mounted.push(wrapper)
+    await nextTick()
+    await Promise.resolve()
+
+    scrollTo(300)
+    await nextTick()
+
+    expect(hidden(wrapper)).toBe('true')
+  })
+
   test('without an Ionic content around it nothing happens', async () => {
     const Probe = defineComponent({
       setup() {

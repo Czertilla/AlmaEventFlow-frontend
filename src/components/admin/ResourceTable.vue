@@ -61,16 +61,6 @@
         </div>
       </div>
 
-      <div v-if="isDesktop && filters.length && filterOpen" class="rt-filter-panel">
-        <ResourceFilterFields
-          :filters="filters"
-          :values="filterValues"
-          :active-count="activeFilters.length"
-          @set="setFilter"
-          @reset="resetFilters"
-        />
-      </div>
-
       <div v-if="activeFilters.length && (!isDesktop || !filterOpen)" class="rt-active-filters">
         <button
           v-for="f in activeFilters"
@@ -84,6 +74,16 @@
           <ion-icon :icon="closeOutline" />
         </button>
       </div>
+    </div>
+
+    <div v-if="isDesktop && filters.length && filterOpen" class="rt-filter-panel">
+      <ResourceFilterFields
+        :filters="filters"
+        :values="filterValues"
+        :active-count="activeFilters.length"
+        @set="setFilter"
+        @reset="resetFilters"
+      />
     </div>
 
     <!-- Скелетон вместо спиннера на пустом месте: форма будущих строк/карточек
@@ -161,26 +161,28 @@
               <template v-else>{{ getCellValue(item, col) }}</template>
             </td>
             <td class="actions-cell" @click.stop>
-              <RowActionsMenu v-if="rowActions(item).length > 1" :actions="rowActions(item)" />
-              <template v-else>
-                <button
-                  v-for="action in rowActions(item)"
-                  :key="action.label"
-                  type="button"
-                  class="ui-icon-btn"
-                  :title="action.label"
-                  :aria-label="action.label"
-                  @click="action.run()"
-                >
-                  <ion-icon :icon="action.icon" />
+              <div class="row-actions">
+                <RowActionsMenu v-if="rowActions(item).length > 1" :actions="rowActions(item)" />
+                <template v-else>
+                  <button
+                    v-for="action in rowActions(item)"
+                    :key="action.label"
+                    type="button"
+                    class="ui-icon-btn"
+                    :title="action.label"
+                    :aria-label="action.label"
+                    @click="action.run()"
+                  >
+                    <ion-icon :icon="action.icon" />
+                  </button>
+                </template>
+                <button type="button" class="ui-icon-btn ui-icon-btn--primary" title="Редактировать" aria-label="Редактировать" @click="$emit('edit', item)">
+                  <ion-icon :icon="pencilOutline" />
                 </button>
-              </template>
-              <ion-button fill="clear" size="small" @click="$emit('edit', item)">
-                <ion-icon :icon="pencilOutline" />
-              </ion-button>
-              <ion-button fill="clear" size="small" color="danger" @click="confirmDelete(item)">
-                <ion-icon :icon="trashOutline" />
-              </ion-button>
+                <button type="button" class="ui-icon-btn ui-icon-btn--delete" title="Удалить" aria-label="Удалить" @click="confirmDelete(item)">
+                  <ion-icon :icon="trashOutline" />
+                </button>
+              </div>
             </td>
           </tr>
         </tbody>
@@ -205,34 +207,37 @@
               <template v-else>{{ getCellValue(item, col) }}</template>
             </span>
           </div>
-          <div v-if="rowLinks.length" class="mobile-card-links" @click.stop>
-            <button
-              v-for="link in rowLinks"
-              :key="link.label"
-              type="button"
-              class="ui-chip mobile-link"
-              @click="followLink(link, item)"
-            >
-              <ion-icon :icon="link.icon || linkOutline" />
-              {{ link.label }}
-            </button>
-          </div>
-          <div class="mobile-card-actions" @click.stop>
-            <ion-button
-              v-if="extraAction && (!extraAction.visible || extraAction.visible(item))"
-              fill="clear"
-              size="small"
-              :title="extraAction.title"
-              @click="$emit('extra', item)"
-            >
-              <ion-icon :icon="extraAction.icon" />
-            </ion-button>
-            <ion-button fill="clear" size="small" @click="$emit('edit', item)">
-              <ion-icon :icon="pencilOutline" />
-            </ion-button>
-            <ion-button fill="clear" size="small" color="danger" @click="confirmDelete(item)">
-              <ion-icon :icon="trashOutline" />
-            </ion-button>
+          <div class="mobile-card-footer" @click.stop>
+            <div v-if="rowLinks.length" class="mobile-card-links">
+              <button
+                v-for="link in rowLinks"
+                :key="link.label"
+                type="button"
+                class="ui-chip mobile-link"
+                @click="followLink(link, item)"
+              >
+                <ion-icon :icon="link.icon || linkOutline" />
+                {{ link.label }}
+              </button>
+            </div>
+            <div class="mobile-card-actions">
+              <button
+                v-if="extraAction && (!extraAction.visible || extraAction.visible(item))"
+                type="button"
+                class="ui-icon-btn"
+                :title="extraAction.title"
+                :aria-label="extraAction.title"
+                @click="$emit('extra', item)"
+              >
+                <ion-icon :icon="extraAction.icon" />
+              </button>
+              <button type="button" class="ui-icon-btn ui-icon-btn--primary" title="Редактировать" aria-label="Редактировать" @click="$emit('edit', item)">
+                <ion-icon :icon="pencilOutline" />
+              </button>
+              <button type="button" class="ui-icon-btn ui-icon-btn--delete" title="Удалить" aria-label="Удалить" @click="confirmDelete(item)">
+                <ion-icon :icon="trashOutline" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -412,7 +417,7 @@ const emit = defineEmits<{
 const navigate = useAdminNavigate()
 const { isDesktop } = usePlatform()
 const topEl = ref<HTMLElement | null>(null)
-const { hidden: barHidden, raised: barRaised } = useHideOnScroll(topEl, () => !isDesktop.value)
+const { hidden: barHidden, raised: barRaised } = useHideOnScroll(topEl)
 const URL_PATH = window.location.pathname
 const URL_KEYS = ['q', 'sort', 'order', ...props.filters.map((f) => f.key)]
 
@@ -664,6 +669,26 @@ defineExpose({ loadData: reload })
 }
 
 /* ── Unified toolbar ── */
+.rt-top {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flow-root;
+  margin: -8px 0 0;
+  padding: 8px 0 0;
+  background: var(--ion-background-color);
+  transition: transform 0.25s ease, box-shadow 0.2s ease;
+}
+
+.rt-top--hidden {
+  transform: translateY(-100%);
+  pointer-events: none;
+}
+
+.rt-top--raised {
+  box-shadow: 0 8px 12px -10px rgba(0, 0, 0, 0.4);
+}
+
 .rt-toolbar {
   display: flex;
   align-items: center;
@@ -913,9 +938,11 @@ defineExpose({ loadData: reload })
   white-space: nowrap;
 }
 
-.actions-cell .ui-icon-btn {
-  display: inline-flex;
-  vertical-align: middle;
+.row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
 }
 
 /* ── Mobile cards ── */
@@ -980,50 +1007,45 @@ defineExpose({ loadData: reload })
   border-radius: 6px;
 }
 
+.mobile-card-footer {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--ion-color-step-100, #f0f0f0);
+}
+
 .mobile-card-links {
   display: flex;
+  flex: 1 1 auto;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 10px;
+  min-width: 0;
 }
 
 .mobile-link {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  min-height: 34px;
 }
 
 .mobile-card-actions {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
   gap: 4px;
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 1px solid var(--ion-color-step-100, #f0f0f0);
+  margin-left: auto;
 }
 
 /* ── Responsive ── */
 @media (max-width: 767px) {
   .rt-top {
-    position: sticky;
-    top: 0;
-    z-index: 10;
     display: flex;
     flex-direction: column;
     gap: 10px;
     margin: -12px -12px 0;
     padding: 12px 12px 10px;
-    background: var(--ion-background-color);
-    transition: transform 0.25s ease, box-shadow 0.2s ease;
-  }
-
-  .rt-top--hidden {
-    transform: translateY(-100%);
-    pointer-events: none;
-  }
-
-  .rt-top--raised {
-    box-shadow: 0 8px 12px -10px rgba(0, 0, 0, 0.4);
   }
 
   .rt-toolbar,
