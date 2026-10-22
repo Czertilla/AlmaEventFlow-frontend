@@ -109,12 +109,11 @@
                     v-model="form.degree.id"
                     v-model:draft="form.degree.draft"
                     label="Степень"
-                    placeholder="Бакалавриат, магистратура…"
                     numeric
                     :fetch="searchDegrees"
                     :locked="groupLocked"
                     :hint="groupLocked ? 'Берётся из группы' : undefined"
-                    creatable
+                    :creatable="auth.isSuperuser"
                     browse
                   />
                   <p v-if="errors.degree" class="pf-error">{{ errors.degree }}</p>
