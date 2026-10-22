@@ -87,10 +87,10 @@ describe('profile form', () => {
   const inputs = (wrapper: VueWrapper) => wrapper.findAll('input.ui-field-control')
   const submit = (wrapper: VueWrapper) => wrapper.find('button.pf-save')
 
-  test('a user without a profile is offered to create it, and who sees the data is behind a help button', async () => {
+  test('a user without saved details is offered to fill them in, and who sees the data is behind a help button', async () => {
     const wrapper = await open()
 
-    expect(submit(wrapper).text()).toBe('Создать профиль')
+    expect(submit(wrapper).text()).toBe('Сохранить')
     expect(wrapper.text()).not.toContain('руководители')
 
     await wrapper.get('.ui-card-title .ui-help').trigger('click')

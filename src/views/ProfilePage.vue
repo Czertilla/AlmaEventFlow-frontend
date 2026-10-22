@@ -24,13 +24,13 @@
 
         <section class="ui-card">
           <div class="ui-card-head">
-            <h3 class="ui-card-title">Мой профиль</h3>
+            <h3 class="ui-card-title">Подробная информация</h3>
             <button
               v-if="profile"
               type="button"
               class="ui-icon-btn"
               title="Изменить"
-              aria-label="Изменить профиль"
+              aria-label="Изменить подробную информацию"
               @click="router.push('/profile/data')"
             >
               <ion-icon :icon="createOutline" />
@@ -38,7 +38,7 @@
           </div>
           <span v-if="!myProfile.loaded && !myProfile.failed" class="skeleton profile-skeleton" aria-hidden="true" />
           <div v-else-if="myProfile.failed" class="profile-cta">
-            <p class="profile-hint">Не удалось загрузить профиль.</p>
+            <p class="profile-hint">Не удалось загрузить подробную информацию.</p>
             <button type="button" class="ui-btn ui-btn--ghost ui-btn--sm" @click="loadAll">Повторить</button>
           </div>
           <dl v-else-if="profile" class="profile-lines">
@@ -65,11 +65,11 @@
           </dl>
           <div v-else class="profile-cta">
             <p class="profile-hint">
-              Профиль ещё не заполнен
+              Подробная информация ещё не заполнена
               <HelpTip text="Руководители ваших коллективов видят имя, учёбу и контакты, которые вы укажете." />
             </p>
             <button type="button" class="ui-btn ui-btn--primary ui-btn--sm" @click="router.push('/profile/data')">
-              Заполнить профиль
+              Заполнить
             </button>
           </div>
         </section>

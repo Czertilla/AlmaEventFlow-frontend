@@ -15,7 +15,7 @@
 
         <div v-if="!ready" class="pf-state"><ion-spinner name="crescent" /></div>
 
-        <PageState v-else-if="myProfile.failed" text="Не удалось загрузить профиль">
+        <PageState v-else-if="myProfile.failed" text="Не удалось загрузить подробную информацию">
           <button type="button" class="ui-btn ui-btn--primary ui-btn--sm" @click="start">Повторить</button>
         </PageState>
 
@@ -94,7 +94,7 @@
                     :model-value="form.group.id"
                     v-model:draft="form.group.draft"
                     label="Группа"
-                    help="Если группа уже есть в списке, университет, факультет, степень и курс подставятся сами. Если нет, впишите её название: группа добавится вместе с профилем."
+                    help="Если группа уже есть в списке, университет, факультет, степень и курс подставятся сами. Если нет, впишите её название: группа добавится при сохранении."
                     resource="group"
                     numeric
                     :fetch="searchGroups"
@@ -264,7 +264,7 @@ const baseline = ref<FormSnapshot>(snapshot(form))
 let attempted = false
 let shakeTimer: ReturnType<typeof setTimeout> | undefined
 
-const title = computed(() => (editing.value ? 'Изменить профиль' : 'Создать профиль'))
+const title = 'Подробная информация'
 const groupLocked = computed(() => form.group.id != null)
 const universityLocked = computed(() => form.faculty.id != null && form.university.id != null)
 
@@ -272,7 +272,7 @@ const changed = computed(() => (editing.value ? changedFields(baseline.value, fo
 const counts = computed(() => sectionCounts(baseline.value, form))
 const total = computed(() => Object.values(counts.value).reduce((sum, count) => sum + count, 0))
 const saveLabel = computed(() => {
-  if (!editing.value) return 'Создать профиль'
+  if (!editing.value) return 'Сохранить'
   return total.value ? `Сохранить изменения (${total.value})` : 'Нет изменений'
 })
 
@@ -504,18 +504,18 @@ async function submit() {
       await myProfile.load(true)
       editing.value = true
       fill(myProfile.profile)
-      error.value = 'Профиль уже создан, возможно на другом устройстве. Проверьте данные и сохраните их.'
+      error.value = 'Подробная информация уже заполнена, возможно на другом устройстве. Проверьте данные и сохраните их.'
     } else if (detail === 'ACCOUNT_LINK_OUT_OF_SYNC') {
-      error.value = 'Не удалось создать профиль: с аккаунтом связаны старые данные. Обратитесь к администратору.'
+      error.value = 'Не удалось сохранить подробную информацию: с аккаунтом связаны старые данные. Обратитесь к администратору.'
     } else {
-      showError(err, 'Не удалось сохранить профиль')
+      showError(err, 'Не удалось сохранить подробную информацию')
     }
     return
   } finally {
     saving.value = false
   }
   if (!wasEditing) await auth.refreshWhenLinked(personId)
-  showSuccess(wasEditing ? 'Профиль сохранён' : 'Профиль создан')
+  showSuccess(wasEditing ? 'Изменения сохранены' : 'Подробная информация сохранена')
   router.push('/profile')
 }
 

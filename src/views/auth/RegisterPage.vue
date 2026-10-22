@@ -19,7 +19,7 @@
 
             <div v-if="invitePersonName" class="invite-notice">
               <ion-icon :icon="linkOutline" />
-              <span>Вы регистрируетесь с привязкой к профилю <strong>{{ invitePersonName }}</strong></span>
+              <span>Вы регистрируетесь с привязкой к подробной информации <strong>{{ invitePersonName }}</strong></span>
             </div>
             <div v-else-if="inviteError" class="invite-notice invite-notice--error">
               <ion-icon :icon="alertCircleOutline" />
@@ -125,7 +125,7 @@ onMounted(async () => {
   if (name) {
     invitePersonName.value = name
   } else {
-    inviteError.value = 'Не удалось загрузить профиль для привязки'
+    inviteError.value = 'Не удалось загрузить подробную информацию для привязки'
   }
 })
 

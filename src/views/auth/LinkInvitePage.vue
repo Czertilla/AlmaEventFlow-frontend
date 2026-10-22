@@ -7,7 +7,7 @@
           <div class="auth-logo">
             <img src="/aef.svg" class="logo-img" alt="Alma Event Flow" />
           </div>
-          <h1>Привязка профиля</h1>
+          <h1>Привязка подробной информации</h1>
         </div>
 
         <div class="auth-card">
@@ -28,7 +28,7 @@
               <div class="link-icon">
                 <ion-icon :icon="checkmarkCircleOutline" />
               </div>
-              <p class="link-text">Профиль {{ personName }} привязан к вашему аккаунту.</p>
+              <p class="link-text">Подробная информация {{ personName }} привязана к вашему аккаунту.</p>
               <router-link to="/" class="auth-btn auth-btn--link">На главную</router-link>
             </div>
 
@@ -36,7 +36,7 @@
               <div class="link-icon">
                 <ion-icon :icon="linkOutline" />
               </div>
-              <p class="link-text">Привязать профиль <strong>{{ personName }}</strong> к вашему аккаунту?</p>
+              <p class="link-text">Привязать подробную информацию <strong>{{ personName }}</strong> к вашему аккаунту?</p>
               <button class="auth-btn" :disabled="linking" @click="handleLink">
                 <span v-if="linking" class="btn-spinner" />
                 <span v-else>Привязать</span>
@@ -82,7 +82,7 @@ onMounted(async () => {
 
   if (!auth.user) await auth.fetchUser()
   if (auth.user?.person_id) {
-    error.value = 'Ваш аккаунт уже привязан к профилю'
+    error.value = 'Ваш аккаунт уже привязан к подробной информации'
     checking.value = false
     return
   }
@@ -101,7 +101,7 @@ onMounted(async () => {
   }
   const name = await resolvePersonName(personId)
   if (!name) {
-    error.value = 'Не удалось загрузить профиль для привязки'
+    error.value = 'Не удалось загрузить подробную информацию для привязки'
     checking.value = false
     return
   }
@@ -117,8 +117,8 @@ async function handleLink() {
     done.value = true
   } catch (err) {
     error.value = (err as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-      || 'Не удалось привязать профиль'
-    showErrorToast(err, 'Не удалось привязать профиль')
+      || 'Не удалось привязать подробную информацию'
+    showErrorToast(err, 'Не удалось привязать подробную информацию')
   } finally {
     linking.value = false
   }
