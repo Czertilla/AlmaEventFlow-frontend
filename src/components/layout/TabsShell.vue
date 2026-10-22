@@ -1,38 +1,40 @@
 <template>
-  <ion-tabs>
-    <ion-router-outlet />
+  <ion-page>
+    <ion-tabs>
+      <ion-router-outlet />
 
-    <!-- Нижняя навигация только на мобильных: на десктопе её заменяет DesktopHeader -->
-    <ion-tab-bar v-if="!isDesktop" slot="bottom" :selected-tab="selectedTab">
-      <ion-tab-button tab="home" href="/">
-        <ion-icon :icon="homeOutline" />
-        <ion-label>Главная</ion-label>
-      </ion-tab-button>
+      <!-- Нижняя навигация только на мобильных: на десктопе её заменяет DesktopHeader -->
+      <ion-tab-bar v-if="!isDesktop" slot="bottom" :selected-tab="selectedTab">
+        <ion-tab-button tab="home" href="/">
+          <ion-icon :icon="homeOutline" />
+          <ion-label>Главная</ion-label>
+        </ion-tab-button>
 
-      <ion-tab-button v-if="principal.isPrincipal" tab="principal" href="/principal/dashboard">
-        <ion-icon :icon="shieldCheckmarkOutline" />
-        <ion-label>Руководитель</ion-label>
-      </ion-tab-button>
+        <ion-tab-button v-if="principal.isPrincipal" tab="principal" href="/principal/dashboard">
+          <ion-icon :icon="shieldCheckmarkOutline" />
+          <ion-label>Руководитель</ion-label>
+        </ion-tab-button>
 
-      <ion-tab-button v-if="auth.isSuperuser" tab="admin" href="/admin/users">
-        <ion-icon :icon="settingsOutline" />
-        <ion-label>Админ</ion-label>
-      </ion-tab-button>
+        <ion-tab-button v-if="auth.isSuperuser" tab="admin" href="/admin/users">
+          <ion-icon :icon="settingsOutline" />
+          <ion-label>Админ</ion-label>
+        </ion-tab-button>
 
-      <!-- Кнопка-действие: открывает боковое меню профиля, не участвует в роутинге -->
-      <ion-tab-button tab="profile" @click="openProfileMenu">
-        <ion-icon :icon="personOutline" />
-        <ion-label>Профиль</ion-label>
-      </ion-tab-button>
-    </ion-tab-bar>
-  </ion-tabs>
+        <!-- Кнопка-действие: открывает боковое меню профиля, не участвует в роутинге -->
+        <ion-tab-button tab="profile" @click="openProfileMenu">
+          <ion-icon :icon="personOutline" />
+          <ion-label>Профиль</ion-label>
+        </ion-tab-button>
+      </ion-tab-bar>
+    </ion-tabs>
+  </ion-page>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import {
-  IonTabs, IonRouterOutlet, IonTabBar, IonTabButton, IonIcon, IonLabel, menuController,
+  IonPage, IonTabs, IonRouterOutlet, IonTabBar, IonTabButton, IonIcon, IonLabel, menuController,
 } from '@ionic/vue'
 import { homeOutline, shieldCheckmarkOutline, settingsOutline, personOutline } from 'ionicons/icons'
 import { useAuthStore } from '@/stores/auth'
