@@ -828,8 +828,8 @@ export interface HealthV1 {
   version: string;
 }
 
-export interface InviteTokenCreate {
-  person_id: string;
+export interface InviteTokenData {
+  /** Seconds the invitation stays valid. */
   expires_in?: number | null;
 }
 
@@ -5679,6 +5679,7 @@ export const resolveDietProfileV2DietsPost = (
   }
 
 /**
+ * Superuser only: a profile picks a degree, it does not make one.
  * @summary Resolve Student Degree
  */
 export const resolveStudentDegreeProfileV2StudentDegreesPost = (
@@ -5755,6 +5756,21 @@ export const getAccountLinkHistoryProfileV2AccountLinksHistoryGet = (
       `/profile/v2/account-links/history`,{
     ...options,
         params: {...params, ...options?.params},}
+    );
+  }
+
+/**
+ * A token that lets its bearer register an account for the person,
+ * or attach the person to an account they already have.
+ * @summary Create Invite
+ */
+export const createInviteProfileV2PersonsPersonIdInvitePost = (
+    personId: string,
+    inviteTokenData: InviteTokenData, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<InviteTokenRead>> => {
+    return axios.post(
+      `/profile/v2/persons/${personId}/invite`,
+      inviteTokenData,options
     );
   }
 
@@ -6099,18 +6115,6 @@ export const getManyUserV1UsersGet = (
   }
 
 /**
- * @summary Create Invite Token
- */
-export const createInviteTokenUserV1UsersInvitePost = (
-    inviteTokenCreate: InviteTokenCreate, options?: AxiosRequestConfig
- ): Promise<AxiosResponse<InviteTokenRead>> => {
-    return axios.post(
-      `/user/v1/users/invite`,
-      inviteTokenCreate,options
-    );
-  }
-
-/**
  * Admin-only: attaches an existing profile person to an existing
  * account, for cases the invite-token flow doesn't cover (account created
  * first, or re-linking to a different person).
@@ -6412,6 +6416,7 @@ export type ResolveUniversityProfileV2UniversitiesPostResult = AxiosResponse<Org
 export type ResolveFacultyProfileV2FacultiesPostResult = AxiosResponse<OrganizationRefRead>
 export type ResolveOrganizationProfileV2OrganizationsPostResult = AxiosResponse<OrganizationRefRead>
 export type GetAccountLinkHistoryProfileV2AccountLinksHistoryGetResult = AxiosResponse<PageV1AccountLinkChangeRead>
+export type CreateInviteProfileV2PersonsPersonIdInvitePostResult = AxiosResponse<InviteTokenRead>
 export type LoginUserV1AuthJwtLoginPostResult = AxiosResponse<LoginUserV1AuthJwtLoginPost200>
 export type RefreshUserV1AuthJwtRefreshPostResult = AxiosResponse<RefreshUserV1AuthJwtRefreshPost200>
 export type LogoutUserV1AuthJwtLogoutPostResult = AxiosResponse<void>
@@ -6438,7 +6443,6 @@ export type GetTelegramLoginConfigUserV1AuthTelegramConfigGetResult = AxiosRespo
 export type LoginWithTelegramUserV1AuthTelegramLoginPostResult = AxiosResponse<LoginWithTelegramUserV1AuthTelegramLoginPost200>
 export type CheckUsernameUserV1UsersCheckUsernameGetResult = AxiosResponse<CheckResponse>
 export type GetManyUserV1UsersGetResult = AxiosResponse<PageV1UserRead>
-export type CreateInviteTokenUserV1UsersInvitePostResult = AxiosResponse<InviteTokenRead>
 export type LinkPersonUserV1UsersUserIdPersonPatchResult = AxiosResponse<UserRead>
 export type LinkInviteUserV1UsersMeLinkInvitePostResult = AxiosResponse<UserRead>
 export type HealthUserV1HealthGetResult = AxiosResponse<HealthV1>

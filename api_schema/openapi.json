@@ -28393,6 +28393,7 @@
                     "reference"
                 ],
                 "summary": "Resolve Student Degree",
+                "description": "Superuser only: a profile picks a degree, it does not make one.",
                 "operationId": "resolve_student_degree_profile_v2_student_degrees_post",
                 "requestBody": {
                     "content": {
@@ -29099,6 +29100,162 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/v2/persons/{person_id}/invite": {
+            "post": {
+                "tags": [
+                    "person",
+                    "invite"
+                ],
+                "summary": "Create Invite",
+                "description": "A token that lets its bearer register an account for the person, \nor attach the person to an account they already have.",
+                "operationId": "create_invite_profile_v2_persons__person_id__invite_post",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "person_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Person Id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/InviteTokenData"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InviteTokenRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "The person already has an account",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "PERSON_ALREADY_HAS_ACCOUNT": {
+                                        "summary": "PERSON_ALREADY_HAS_ACCOUNT",
+                                        "value": {
+                                            "detail": "PERSON_ALREADY_HAS_ACCOUNT"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "PERSON_NOT_FOUND",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "PERSON_NOT_FOUND": {
+                                        "summary": "PERSON_NOT_FOUND",
+                                        "value": {
+                                            "detail": "PERSON_NOT_FOUND"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "INVITE_SIGNING_NOT_CONFIGURED",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "INVITE_SIGNING_NOT_CONFIGURED": {
+                                        "summary": "INVITE_SIGNING_NOT_CONFIGURED",
+                                        "value": {
+                                            "detail": "INVITE_SIGNING_NOT_CONFIGURED"
                                         }
                                     }
                                 },
@@ -31002,94 +31159,6 @@
                         }
                     }
                 }
-            }
-        },
-        "/user/v1/users/invite": {
-            "post": {
-                "tags": [
-                    "users"
-                ],
-                "summary": "Create Invite Token",
-                "operationId": "create_invite_token_user_v1_users_invite_post",
-                "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/InviteTokenCreate"
-                            }
-                        }
-                    },
-                    "required": true
-                },
-                "responses": {
-                    "200": {
-                        "description": "Successful Response",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/InviteTokenRead"
-                                }
-                            }
-                        }
-                    },
-                    "401": {
-                        "description": "Missing or invalid authentication token",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "NOT_AUTHENTICATED": {
-                                        "summary": "Missing or invalid authentication token",
-                                        "value": {
-                                            "detail": "NOT_AUTHENTICATED"
-                                        }
-                                    },
-                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
-                                        "summary": "Token decode failed",
-                                        "value": {
-                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "403": {
-                        "description": "Insufficient permissions",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                },
-                                "examples": {
-                                    "FORBIDDEN": {
-                                        "summary": "Not superuser or not verified",
-                                        "value": {
-                                            "detail": "FORBIDDEN"
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    "422": {
-                        "description": "Validation Error",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/HTTPValidationError"
-                                }
-                            }
-                        }
-                    }
-                },
-                "security": [
-                    {
-                        "HTTPBearer": []
-                    }
-                ]
             }
         },
         "/user/v1/users/{user_id}/person": {
@@ -34986,30 +35055,24 @@
                 ],
                 "title": "HealthV1"
             },
-            "InviteTokenCreate": {
+            "InviteTokenData": {
                 "properties": {
-                    "person_id": {
-                        "type": "string",
-                        "format": "uuid",
-                        "title": "Person Id"
-                    },
                     "expires_in": {
                         "anyOf": [
                             {
-                                "type": "integer"
+                                "type": "integer",
+                                "exclusiveMinimum": 0.0
                             },
                             {
                                 "type": "null"
                             }
                         ],
-                        "title": "Expires In"
+                        "title": "Expires In",
+                        "description": "Seconds the invitation stays valid."
                     }
                 },
                 "type": "object",
-                "required": [
-                    "person_id"
-                ],
-                "title": "InviteTokenCreate"
+                "title": "InviteTokenData"
             },
             "InviteTokenRead": {
                 "properties": {

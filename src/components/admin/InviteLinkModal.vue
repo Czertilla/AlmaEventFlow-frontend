@@ -29,11 +29,14 @@ import { ref } from 'vue'
 import { IonContent, IonIcon } from '@ionic/vue'
 import { closeOutline, copyOutline, checkmarkOutline } from 'ionicons/icons'
 import UiInput from '@/components/common/UiInput.vue'
-import { createInviteTokenUserV1UsersInvitePost } from '@/api/generated/almaEventFlow'
+import { createInviteProfileV2PersonsPersonIdInvitePost } from '@/api/generated/almaEventFlow'
+import { useToast } from '@/composables/useToast'
 
 defineEmits<{ close: [] }>()
 
 const props = defineProps<{ personId: string }>()
+
+const { showError } = useToast()
 
 const expiresIn = ref(24)
 const inviteLink = ref('')
@@ -43,10 +46,10 @@ const copied = ref(false)
 async function createInvite() {
   creating.value = true
   try {
-    const res = await createInviteTokenUserV1UsersInvitePost({ person_id: props.personId, expires_in: expiresIn.value * 3600 })
+    const res = await createInviteProfileV2PersonsPersonIdInvitePost(props.personId, { expires_in: expiresIn.value * 3600 })
     inviteLink.value = `${window.location.origin}/auth/register?token=${res.data.token}`
   } catch (err) {
-    console.error('Failed to create invite', err)
+    showError(err, 'Не удалось создать ссылку')
   } finally {
     creating.value = false
   }
