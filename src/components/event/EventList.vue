@@ -4,6 +4,10 @@
     class="event-list"
     :style="maxHeight ? { maxHeight: maxHeight + 'px' } : undefined"
     @scroll="handleScroll"
+    @wheel.passive="markUserDriven"
+    @touchstart.passive="markUserDriven"
+    @pointerdown="markUserDriven"
+    @keydown="markUserDriven"
   >
     <!-- Отдельная обёртка вокруг ВСЕГО содержимого, которое может менять
          высоту -- ResizeObserver наблюдает именно за ней (см. скрипт), а не
@@ -77,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { IonIcon } from '@ionic/vue'
 import { checkmarkDoneOutline } from 'ionicons/icons'
 import EventPreview from './EventPreview.vue'
@@ -85,7 +89,8 @@ import { usePlatform } from '@/composables/usePlatform'
 import type { EventRead } from '@/api/generated/almaEventFlow'
 import type { EventAttendanceItem, EventTimeRange } from '@/stores/eventCalendar'
 import type { CollectiveAttendanceItem } from './EventPreview.vue'
-import { isSameDay, format, parseISO } from 'date-fns'
+import { cardForDay, eventDay, topCardIndex } from '@/utils/listScroll'
+import { format, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
 
 const props = defineProps<{
@@ -96,7 +101,6 @@ const props = defineProps<{
   loading: boolean
   loadingUp: boolean
   loadingDown: boolean
-  scrollToDate?: string
   hasMoreUp: boolean
   hasMoreDown: boolean
 }>()
@@ -120,6 +124,8 @@ const LOAD_EDGE = 150
 // меняет высоту САМОГО блока -- просто открывает больше уже отрисованного
 // списка, без видимого «разрастания».
 const OFFSCREEN_OVERSHOOT_MOBILE = 400
+const SETTLE_STILL_FRAMES = 6
+const SETTLE_MAX_FRAMES = 90
 
 // Ширины скелетон-строк слегка отличаются -- иначе ряд одинаковых полосок
 // читается как явная заглушка (см. тот же приём в HomePage.vue/DashboardPage.vue).
@@ -138,10 +144,22 @@ const contentRef = ref<HTMLElement | null>(null)
 const maxHeight = ref<number>()
 const eventRefs = new Map<string, HTMLElement>()
 let lastEmittedDate: string | null = null
-let isScrolling = false
 let edgeCooldown = false
 let lastScrollTop = 0
 let calendarVisible = true
+// Дату и видимость календаря меняет только прокрутка самого человека: после
+// scrollTo список стоит там, куда его поставили, а не там, где «середина».
+let userDriven = false
+// Пока идёт программная прокрутка, догрузка не трогает scrollTop -- иначе
+// компенсация сдвига обрывает плавную анимацию на полпути.
+let settling = false
+let settleToken = 0
+let releaseScroll: ((reached: boolean) => void) | null = null
+
+function settleScrollPromise(reached = true) {
+  releaseScroll?.(reached)
+  releaseScroll = null
+}
 
 // sticky month-separator: активным становится сепаратор, чья предыдущая карточка
 // полностью скрыта (bottom edge выше scrollTop). Сепараторы выше активного всегда
@@ -226,14 +244,14 @@ function updateBottomSpacer() {
 let resizeObserver: ResizeObserver | null = null
 // ResizeObserver.observe() всегда даёт один "бесплатный" вызов колбэка сразу
 // после подписки, отражающий текущий размер -- ДО того, как список успел
-// встать на начальную позицию (scrollListToDate из HomePage.vue доезжает
-// туда через несколько nextTick/rAF, а не мгновенно). Если в этот момент
-// захватить якорь, он окажется привязан к scrollTop=0 (самому верху), и
-// первая же настоящая догрузка после этого попытается "восстановить" список
-// к ЭТОЙ ложной позиции -- список визуально прыгает наверх, будто там нет
-// ничего, хотя выше уже подгружены карточки. positioned взводится только
-// после того, как список реально встал на место (см. tryScroll ниже) или
-// после первого настоящего скролла пользователя (handleScroll) -- до этого
+// встать на начальную позицию (scrollTo из HomePage.vue доезжает туда через
+// несколько nextTick/rAF, а не мгновенно). Если в этот момент захватить
+// якорь, он окажется привязан к scrollTop=0 (самому верху), и первая же
+// настоящая догрузка после этого попытается "восстановить" список к ЭТОЙ
+// ложной позиции -- список визуально прыгает наверх, будто там нет ничего,
+// хотя выше уже подгружены карточки. positioned взводится только после того,
+// как список реально встал на место (см. finish в scrollListToDate) или
+// после первого жеста пользователя (markUserDriven) -- до этого
 // ResizeObserver ничего не трогает.
 let positioned = false
 
@@ -251,6 +269,8 @@ onMounted(() => {
   if (contentRef.value) resizeObserver.observe(contentRef.value)
 })
 onBeforeUnmount(() => {
+  settleToken++
+  settleScrollPromise()
   window.removeEventListener('resize', onResize)
   resizeObserver?.disconnect()
   if (scrollEndTimer) clearTimeout(scrollEndTimer)
@@ -261,45 +281,80 @@ function onResize() {
   nextTick(updateBottomSpacer)
 }
 
-// Скроллит ТОЛЬКО контейнер списка (не страницу), ставя нужную дату к верхней кромке.
-// Это программная прокрутка — на время неё гасим реакцию на пользовательский скролл.
-function scrollListToDate(dateStr: string, smooth = true) {
-  isScrolling = true
+function markUserDriven() {
+  userDriven = true
+  positioned = true
+  settling = false
+  settleToken++
+  settleScrollPromise()
+}
+
+// Позиция считается установленной, когда scrollTop перестал меняться: плавная
+// прокрутка длится разное время в зависимости от расстояния.
+function whenScrollSettles(root: HTMLElement, done: () => void) {
+  let last = root.scrollTop
+  let still = 0
+  let frames = 0
+  const tick = () => {
+    frames++
+    const now = root.scrollTop
+    still = now === last ? still + 1 : 0
+    last = now
+    if (still >= SETTLE_STILL_FRAMES || frames >= SETTLE_MAX_FRAMES) done()
+    else requestAnimationFrame(tick)
+  }
+  requestAnimationFrame(tick)
+}
+
+// Ставит первую карточку выбранного дня (а у дня без мероприятий -- ближайшую
+// следующую) к верхней кромке списка. Скроллит ТОЛЬКО контейнер списка, не страницу.
+// Ответ: дошла ли карточка до кромки (false -- не хватило прокручиваемой длины).
+function scrollListToDate(day: Date, smooth = true): Promise<boolean> {
+  settleScrollPromise()
+  const settled = new Promise<boolean>((resolve) => { releaseScroll = resolve })
+  userDriven = false
+  settling = true
+  lastEmittedDate = null
+  const token = ++settleToken
   let retries = 0
+  let target: HTMLElement | null = null
   const MAX_RETRIES = 5
-  const tryScroll = () => {
+  const finish = () => {
+    if (token !== settleToken) return
+    settling = false
+    positioned = true
     const root = containerRef.value
-    const target = props.events.find((e) => e.date && isSameDay(new Date(e.date), new Date(dateStr)))
-    const el = target ? eventRefs.get(target.id) : null
+    const reached = !root || !target || Math.abs(target.getBoundingClientRect().top - root.getBoundingClientRect().top) <= 2
+    captureAnchor()
+    handleScroll()
+    settleScrollPromise(reached)
+  }
+  const tryScroll = () => {
+    if (token !== settleToken) return
+    const root = containerRef.value
+    const index = cardForDay(props.events.map((e) => eventDay(e.date)), day)
+    const el = index >= 0 ? eventRefs.get(props.events[index].id) : null
     if (root && el) {
+      target = el
       const delta = el.getBoundingClientRect().top - root.getBoundingClientRect().top
       root.scrollTo({ top: root.scrollTop + delta, behavior: smooth ? 'smooth' : 'auto' })
       lastScrollTop = root.scrollTop + delta
-      // handleScroll (и его captureAnchor) не вызывается, пока isScrolling --
-      // без этого якорь остался бы от позиции ДО программного прыжка, и
-      // случись догрузка сразу после него, компенсация посчиталась бы от
-      // устаревшей точки. positioned взводим здесь же -- ResizeObserver
-      // начинает восстанавливать позицию только с этого момента.
-      setTimeout(() => { isScrolling = false; positioned = true; captureAnchor() }, smooth ? 500 : 80)
-    } else if (root && smooth === false && retries < MAX_RETRIES) {
+      whenScrollSettles(root, finish)
+    } else if (root && !smooth && retries < MAX_RETRIES) {
       retries++
-      requestAnimationFrame(() => tryScroll())
+      requestAnimationFrame(tryScroll)
     } else {
-      setTimeout(() => { isScrolling = false; positioned = true; captureAnchor() }, 80)
+      finish()
     }
   }
   nextTick(() => {
     updateMaxHeight()
     updateBottomSpacer()
-    nextTick(() => requestAnimationFrame(() => tryScroll()))
+    nextTick(() => requestAnimationFrame(tryScroll))
   })
+  return settled
 }
 
-watch(() => props.scrollToDate, (val) => {
-  if (val) scrollListToDate(val)
-})
-
-// Явный вызов из родителя после перезагрузки списка (когда значение даты не изменилось)
 defineExpose({ scrollTo: scrollListToDate })
 
 // ---- Устойчивость к рывкам при догрузке/перерисовке списка -----------------
@@ -376,74 +431,59 @@ function getItems(event: EventRead): CollectiveAttendanceItem[] {
   }))
 }
 
+function reportCalendarVisibility(scrollTop: number) {
+  if (Math.abs(scrollTop - lastScrollTop) <= 8) return
+  const goingDown = scrollTop > lastScrollTop && scrollTop > 40
+  const shouldShow = !goingDown
+  if (shouldShow !== calendarVisible) {
+    calendarVisible = shouldShow
+    emit('calendarVisibleChange', calendarVisible)
+  }
+  lastScrollTop = scrollTop
+}
+
+function reportVisibleDate(scrollTop: number) {
+  const cards = props.events.map((event) => {
+    const el = eventRefs.get(event.id)
+    return { top: el?.offsetTop ?? Number.POSITIVE_INFINITY, height: el?.offsetHeight ?? 0 }
+  })
+  const date = props.events[topCardIndex(cards, scrollTop)]?.date
+  if (date && date !== lastEmittedDate) {
+    lastEmittedDate = date
+    emit('visibleDateChanged', date)
+  }
+}
+
+function loadAtEdges(root: HTMLElement) {
+  if (settling || edgeCooldown || props.loading || props.loadingUp || props.loadingDown) return
+  const { scrollTop, scrollHeight, clientHeight } = root
+  if (props.hasMoreUp && scrollTop < LOAD_EDGE) {
+    edgeCooldown = true
+    emit('loadMoreUp')
+    setTimeout(() => { edgeCooldown = false }, 800)
+  } else if (props.hasMoreDown && scrollHeight - scrollTop - clientHeight < LOAD_EDGE) {
+    edgeCooldown = true
+    emit('loadMoreDown')
+    setTimeout(() => { edgeCooldown = false }, 800)
+  }
+}
+
 function handleScroll() {
-  if (isScrolling) return
-  // Любой скролл, прошедший мимо isScrolling -- либо реальный жест
-  // пользователя, либо уже наша собственная компенсация (см. restoreAnchor);
-  // в обоих случаях список уже не в "непроинициализированном" состоянии.
-  positioned = true
   const root = containerRef.value
   if (!root || props.events.length === 0) return
-
   const scrollTop = root.scrollTop
 
-  // Emit calendar visibility: hide when scrolling down past 40px, show when scrolling up
-  if (Math.abs(scrollTop - lastScrollTop) > 8) {
-    const goingDown = scrollTop > lastScrollTop && scrollTop > 40
-    const shouldShow = !goingDown
-    if (shouldShow !== calendarVisible) {
-      calendarVisible = shouldShow
-      emit('calendarVisibleChange', calendarVisible)
-      // Высота/распорка списка НЕ зависят от того, свёрнут ли календарь (см.
-      // updateMaxHeight) -- пересчитывать их здесь больше не нужно, календарь
-      // просто открывает/закрывает уже отрисованный список без изменения его
-      // собственной высоты.
-    }
-    lastScrollTop = scrollTop
-  }
-  const scrollHeight = root.scrollHeight
-  const clientHeight = root.clientHeight
-  const viewportMiddle = scrollTop + clientHeight / 2
-
-  let closestEvent: EventRead | null = null
-  let closestDistance = Infinity
-
-  for (const event of props.events) {
-    const el = eventRefs.get(event.id)
-    if (!el || !event.date) continue
-    const offsetTop = el.offsetTop
-    const distance = Math.abs(offsetTop - viewportMiddle)
-    if (distance < closestDistance) {
-      closestDistance = distance
-      closestEvent = event
-    }
+  if (userDriven) {
+    reportCalendarVisibility(scrollTop)
+    reportVisibleDate(scrollTop)
+    // sticky month-separator: сразу при скролле, скрывается через HIDE_HOLD после остановки
+    activeMonthIdx.value = findActiveMonthIdx()
+    showLocator.value = true
+    if (scrollEndTimer) clearTimeout(scrollEndTimer)
+    scrollEndTimer = setTimeout(() => { showLocator.value = false }, HIDE_HOLD)
   }
 
-  if (closestEvent && closestEvent.date !== lastEmittedDate) {
-    lastEmittedDate = closestEvent.date!
-    emit('visibleDateChanged', lastEmittedDate)
-  }
-
-  // sticky month-separator: сразу при скролле, скрывается через HIDE_HOLD после остановки
-  activeMonthIdx.value = findActiveMonthIdx()
-  showLocator.value = true
-  if (scrollEndTimer) clearTimeout(scrollEndTimer)
-  scrollEndTimer = setTimeout(() => {
-    console.log(`[locator] HIDE (${HIDE_HOLD}ms idle)`)
-    showLocator.value = false
-  }, HIDE_HOLD)
-
-  if (!edgeCooldown && !props.loading && !props.loadingUp && !props.loadingDown) {
-    if (scrollTop < LOAD_EDGE) {
-      edgeCooldown = true
-      emit('loadMoreUp')
-      setTimeout(() => { edgeCooldown = false }, 800)
-    } else if (scrollHeight - scrollTop - clientHeight < LOAD_EDGE) {
-      edgeCooldown = true
-      emit('loadMoreDown')
-      setTimeout(() => { edgeCooldown = false }, 800)
-    }
-  }
+  loadAtEdges(root)
 
   // Держим "якорь" свежим на каждый реальный скролл пользователя -- см.
   // ResizeObserver в onMounted: к моменту, когда раскладка правда изменится,

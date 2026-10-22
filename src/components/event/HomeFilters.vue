@@ -38,64 +38,121 @@
       <span v-if="!loading && principal.collectives.length === 0" class="filters-empty">Нет коллективов</span>
     </div>
 
+    <div class="filters-divider" />
+    <label class="ui-toggle-row">
+      <span>
+        Только предстоящие
+        <HelpTip text="Сегодняшние и будущие мероприятия, прошедшие скрыты." />
+      </span>
+      <ion-toggle
+        :checked="upcoming"
+        aria-label="Только предстоящие"
+        @ion-change="upcoming = $event.detail.checked"
+      />
+    </label>
+
     <template v-if="principal.isPrincipal">
-      <div class="filters-divider" />
       <span class="filters-sublabel">Статус мероприятия</span>
-      <div class="filters">
+      <div class="ui-chips">
+        <button class="ui-chip" :class="{ 'ui-chip--active': statuses.length === 0 }" @click="statuses = []">
+          Любой
+        </button>
         <button
-          v-for="s in STATUS_FILTERS"
-          :key="s.value"
-          class="filter-chip"
-          :class="{ 'filter-chip--active': status === s.value }"
-          @click="status = s.value"
+          v-for="[value, label] in STATUS_OPTIONS"
+          :key="value"
+          class="ui-chip"
+          :class="{ 'ui-chip--active': statuses.includes(value) }"
+          @click="statuses = toggled(statuses, value)"
         >
-          {{ s.label }}
+          {{ label }}
         </button>
       </div>
     </template>
 
-    <div class="filters-divider" />
-    <div class="facet-filters">
-      <UiSelect v-model="type" class="facet-field" label="Тип" :options="TYPE_OPTIONS" />
-      <UiSelect v-model="level" class="facet-field" label="Уровень" :options="LEVEL_OPTIONS" />
-      <UiSelect v-model="format" class="facet-field" label="Формат" :options="FORMAT_OPTIONS" />
+    <span class="filters-sublabel">Тип</span>
+    <div class="ui-chips">
+      <button class="ui-chip" :class="{ 'ui-chip--active': types.length === 0 }" @click="types = []">Все</button>
+      <button
+        v-for="[value, label] in typeOptions"
+        :key="value"
+        class="ui-chip"
+        :class="{ 'ui-chip--active': types.includes(value) }"
+        :style="types.includes(value) ? typeStyle(value) : undefined"
+        @click="types = toggled(types, value)"
+      >
+        {{ label }}
+      </button>
     </div>
+
+    <span class="filters-sublabel">Уровень</span>
+    <div class="ui-chips">
+      <button class="ui-chip" :class="{ 'ui-chip--active': levels.length === 0 }" @click="levels = []">Все</button>
+      <button
+        v-for="[value, label] in levelOptions"
+        :key="value"
+        class="ui-chip"
+        :class="{ 'ui-chip--active': levels.includes(value) }"
+        @click="levels = toggled(levels, value)"
+      >
+        {{ label }}
+      </button>
+    </div>
+
+    <span class="filters-sublabel">Формат</span>
+    <div class="ui-chips">
+      <button class="ui-chip" :class="{ 'ui-chip--active': formats.length === 0 }" @click="formats = []">Все</button>
+      <button
+        v-for="[value, label] in formatOptions"
+        :key="value"
+        class="ui-chip"
+        :class="{ 'ui-chip--active': formats.includes(value) }"
+        @click="formats = toggled(formats, value)"
+      >
+        {{ label }}
+      </button>
+    </div>
+
+    <button v-if="changed" class="ui-btn ui-btn--ghost ui-btn--sm reset-btn" @click="emit('reset')">
+      Сбросить фильтры
+    </button>
   </div>
 </template>
 
 <script setup lang="ts">
-import UiSelect from '@/components/common/UiSelect.vue'
-import { optionsFromPairs, withAny } from '@/utils/selectOptions'
+import { computed } from 'vue'
+import { IonToggle } from '@ionic/vue'
+import HelpTip from '@/components/common/HelpTip.vue'
 import { usePrincipalStore } from '@/stores/principal'
 import { getCollectiveColor } from '@/utils/colors'
-import { typeOptions, levelOptions, formatOptions } from '@/utils/eventLabels'
+import { typeOptions, levelOptions, formatOptions, statusOptions, typeColor } from '@/utils/eventLabels'
+import { LISTED_STATUSES, toggled } from '@/utils/homeFilters'
 import type {
   EventStatusEnumV1, EventTypeEnumV1, EventLevelEnumV1, EventFormatEnumV1,
 } from '@/api/generated/almaEventFlow'
 
 defineProps<{
   loading?: boolean
+  changed?: boolean
 }>()
 
-const status = defineModel<EventStatusEnumV1 | 'all'>('status', { required: true })
-const TYPE_OPTIONS = withAny<EventTypeEnumV1 | 'all'>(optionsFromPairs(typeOptions), 'all')
-const LEVEL_OPTIONS = withAny<EventLevelEnumV1 | 'all'>(optionsFromPairs(levelOptions), 'all')
-const FORMAT_OPTIONS = withAny<EventFormatEnumV1 | 'all'>(optionsFromPairs(formatOptions), 'all')
+const emit = defineEmits<{ reset: [] }>()
 
-const type = defineModel<EventTypeEnumV1 | 'all'>('type', { required: true })
-const level = defineModel<EventLevelEnumV1 | 'all'>('level', { required: true })
-const format = defineModel<EventFormatEnumV1 | 'all'>('format', { required: true })
+const statuses = defineModel<EventStatusEnumV1[]>('statuses', { required: true })
+const types = defineModel<EventTypeEnumV1[]>('types', { required: true })
+const levels = defineModel<EventLevelEnumV1[]>('levels', { required: true })
+const formats = defineModel<EventFormatEnumV1[]>('formats', { required: true })
+const upcoming = defineModel<boolean>('upcoming', { required: true })
 
 const principal = usePrincipalStore()
 const getColor = getCollectiveColor
 
-// Фильтр статуса доступен только руководителю (участник всегда видит лишь активные)
-const STATUS_FILTERS: Array<{ value: EventStatusEnumV1 | 'all'; label: string }> = [
-  { value: 'all', label: 'Любой статус' },
-  { value: 'active', label: 'Активно' },
-  { value: 'draft', label: 'Черновик' },
-  { value: 'archived', label: 'Архив' },
-]
+// Статус доступен только руководителю (участник всегда видит лишь активные), шаблоны в списке не показываются
+const STATUS_OPTIONS = computed(() => statusOptions.filter(([value]) => LISTED_STATUSES.includes(value)))
+
+function typeStyle(value: EventTypeEnumV1) {
+  const color = typeColor(value)
+  return { borderColor: color, color, background: `${color}1A` }
+}
 
 // Роль пользователя в коллективе для подписи на чипе фильтра
 function roleLabel(collectiveId: string): string {
@@ -191,18 +248,11 @@ function roleLabel(collectiveId: string): string {
   text-transform: uppercase;
   letter-spacing: 0.4px;
   color: var(--ion-color-step-400);
-  margin-bottom: 8px;
+  margin: 14px 0 8px;
 }
 
-.facet-filters {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.facet-field {
-  flex: 1;
-  min-width: 120px;
+.reset-btn {
+  margin-top: 14px;
 }
 
 .filter-chip--skeleton {

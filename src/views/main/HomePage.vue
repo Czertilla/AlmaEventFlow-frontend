@@ -31,7 +31,7 @@
           <div class="home-layout" :class="{ 'home-layout--mobile': !isDesktop }">
             <div
               class="calendar-section"
-              :class="{ 'calendar-section--hidden': !isDesktop && !mobileCalendarVisible }"
+              :class="{ 'calendar-section--hidden': calendarCollapsed }"
             >
               <div class="section-card calendar-card">
                 <div class="section-card-header">
@@ -63,11 +63,14 @@
                   <h3>Фильтры</h3>
                 </div>
                 <HomeFilters
-                  v-model:status="statusFilter"
-                  v-model:type="typeFilter"
-                  v-model:level="levelFilter"
-                  v-model:format="formatFilter"
+                  v-model:statuses="statusFilter"
+                  v-model:types="typeFilter"
+                  v-model:levels="levelFilter"
+                  v-model:formats="formatFilter"
+                  v-model:upcoming="upcomingFilter"
                   :loading="principal.loading"
+                  :changed="filtersChanged"
+                  @reset="resetFilters"
                 />
               </div>
             </div>
@@ -94,7 +97,6 @@
                   :loading="loading"
                   :loading-up="loadingUp"
                   :loading-down="loadingDown"
-                  :scroll-to-date="calendarScrollTarget"
                   :has-more-up="hasMoreUp"
                   :has-more-down="hasMoreDown"
                   @select-event="onSelectEvent"
@@ -120,7 +122,7 @@
                 </div>
                 <div v-else-if="filteredEvents.length === 0" class="events-empty">
                   <ion-icon :icon="calendarOutline" />
-                  <p>Нет мероприятий на выбранную дату</p>
+                  <p>{{ filtersChanged ? 'Ничего не найдено' : 'Мероприятий нет' }}</p>
                 </div>
               </div>
             </div>
@@ -153,11 +155,14 @@
       <ion-content class="ion-padding">
         <div class="filter-modal-body">
           <HomeFilters
-            v-model:status="statusFilter"
-            v-model:type="typeFilter"
-            v-model:level="levelFilter"
-            v-model:format="formatFilter"
+            v-model:statuses="statusFilter"
+            v-model:types="typeFilter"
+            v-model:levels="levelFilter"
+            v-model:formats="formatFilter"
+            v-model:upcoming="upcomingFilter"
             :loading="principal.loading"
+            :changed="filtersChanged"
+            @reset="resetFilters"
           />
         </div>
       </ion-content>
@@ -205,36 +210,43 @@
 <script setup lang="ts">
 import { ref, computed, nextTick, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import type { AxiosRequestConfig } from 'axios'
 import { IonPage, IonModal, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonButton, IonIcon, onIonViewWillEnter } from '@ionic/vue'
 import { useEventCalendarStore } from '@/stores/eventCalendar'
 import { usePrincipalStore } from '@/stores/principal'
+import { useSettingsStore } from '@/stores/settings'
 import { usePlatform } from '@/composables/usePlatform'
 import { useUrlState } from '@/composables/useUrlState'
 import { useCalendarSync } from '@/composables/useCalendarSync'
 import { useAttendancePending } from '@/composables/useAttendancePending'
 import { usePendingAttendance } from '@/composables/usePendingAttendance'
-import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays } from 'date-fns'
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import {
   getEventsEventV1EventsGet,
   patchMyAttendanceEventV1MeMembersMemberIdAttendanceAttendanceIdPatch,
   patchMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdAttendanceAttendanceIdPatch,
 } from '@/api/generated/almaEventFlow'
-import type { EventRead, PageV1EventRead, EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1 } from '@/api/generated/almaEventFlow'
+import type {
+  EventRead, PageV1EventRead, EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1,
+  GetEventsEventV1EventsGetParams,
+} from '@/api/generated/almaEventFlow'
 import CalendarGrid from '@/components/calendar/CalendarGrid.vue'
 import MiniCalendar from '@/components/calendar/MiniCalendar.vue'
 import EventList from '@/components/event/EventList.vue'
 import HomeFilters from '@/components/event/HomeFilters.vue'
 import AppFab from '@/components/common/AppFab.vue'
 import PendingAttendanceModal from '@/components/event/PendingAttendanceModal.vue'
-import { buildEventWindow, findUpcomingIndex } from '@/utils/eventWindow'
+import { buildEventWindow } from '@/utils/eventWindow'
 import type { EventWindow } from '@/utils/eventWindow'
+import {
+  HOME_FILTER_DEFAULTS, countActiveFilters, homeFilterParams, matchesHomeFilters, parseHomeFilters, statusesToQuery,
+} from '@/utils/homeFilters'
 import { calendarOutline, closeOutline, optionsOutline, alertCircleOutline } from 'ionicons/icons'
 
 const router = useRouter()
 const calendar = useEventCalendarStore()
 const principal = usePrincipalStore()
+const settings = useSettingsStore()
 const { isDesktop } = usePlatform()
 const { syncSelectedDateToCalendar } = useCalendarSync()
 const { withPending } = useAttendancePending()
@@ -243,7 +255,6 @@ const {
   refreshPendingCount, fetchPendingRemoteEventIds, mergePendingEvents, maybeAutoShow,
   openPending, resetPending,
 } = usePendingAttendance()
-const calendarScrollTarget = ref<string>()
 
 // Ширины скелетон-строк слегка отличаются -- иначе ряд одинаковых полосок
 // читается как явная заглушка, а не намёк на будущий текст разной длины.
@@ -252,7 +263,7 @@ function skeletonWidth(n: number): string {
   return SKELETON_WIDTHS[n % SKELETON_WIDTHS.length]
 }
 
-const eventListRef = ref<{ scrollTo: (d: string, smooth?: boolean) => void } | null>(null)
+const eventListRef = ref<{ scrollTo: (day: Date, smooth?: boolean) => Promise<boolean> } | null>(null)
 const showFullCalendar = ref(false)
 const showFilterModal = ref(false)
 const mobileCalendarVisible = ref(true)
@@ -267,50 +278,46 @@ const noSelection = computed(
   () => !principal.showAllEvents && principal.selectedCollectiveIds.length === 0,
 )
 
-// Серверный фильтр событий по выбранным коллективам. «Все мероприятия» — без фильтра.
-function eventsOptions(): AxiosRequestConfig | undefined {
-  if (principal.showAllEvents) return undefined
-  const ids = principal.selectedCollectiveIds
-  return ids.length ? { params: { participant_id__in: ids.join(',') } } : undefined
-}
+// Фильтры лежат в адресной строке; сервер получает их же, поэтому страницы
+// списка и признаки «есть ли ещё» всегда относятся к одному и тому же набору.
+const facetUrl = useUrlState({ ...HOME_FILTER_DEFAULTS })
+const filters = computed(() => parseHomeFilters(facetUrl))
+const filtersChanged = computed(() => countActiveFilters(filters.value, principal.isPrincipal) > 0)
 
-const STATUS_ACTIVE: EventStatusEnumV1 = 'active'
-
-// Состояние фильтров (UI вынесен в HomeFilters; здесь — источник для filteredEvents)
-const facetUrl = useUrlState({ status: 'active', type: 'all', level: 'all', format: 'all' })
 const statusFilter = computed({
-  get: () => facetUrl.status as EventStatusEnumV1 | 'all',
-  set: (value: EventStatusEnumV1 | 'all') => { facetUrl.status = value },
+  get: () => filters.value.statuses,
+  set: (value: EventStatusEnumV1[]) => { facetUrl.statuses = statusesToQuery(value) },
 })
 const typeFilter = computed({
-  get: () => facetUrl.type as EventTypeEnumV1 | 'all',
-  set: (value: EventTypeEnumV1 | 'all') => { facetUrl.type = value },
+  get: () => filters.value.types,
+  set: (value: EventTypeEnumV1[]) => { facetUrl.types = value.join(',') },
 })
 const levelFilter = computed({
-  get: () => facetUrl.level as EventLevelEnumV1 | 'all',
-  set: (value: EventLevelEnumV1 | 'all') => { facetUrl.level = value },
+  get: () => filters.value.levels,
+  set: (value: EventLevelEnumV1[]) => { facetUrl.levels = value.join(',') },
 })
 const formatFilter = computed({
-  get: () => facetUrl.format as EventFormatEnumV1 | 'all',
-  set: (value: EventFormatEnumV1 | 'all') => { facetUrl.format = value },
+  get: () => filters.value.formats,
+  set: (value: EventFormatEnumV1[]) => { facetUrl.formats = value.join(',') },
+})
+const upcomingFilter = computed({
+  get: () => filters.value.upcoming,
+  set: (value: boolean) => { facetUrl.upcoming = value ? '1' : '' },
 })
 
-function matchesFacets(e: EventRead): boolean {
-  if (typeFilter.value !== 'all' && e.type !== typeFilter.value) return false
-  if (levelFilter.value !== 'all' && e.level !== levelFilter.value) return false
-  if (formatFilter.value !== 'all' && e.format !== formatFilter.value) return false
-  return true
+function resetFilters() {
+  Object.assign(facetUrl, HOME_FILTER_DEFAULTS)
 }
 
-// Фильтр по коллективам выполняет бэкенд (participant_id__in при загрузке), здесь
-// остаются только статус (руководитель) и фасеты — участник видит лишь активные.
-const filteredEvents = computed(() =>
-  (principal.isPrincipal
-    ? calendar.events.filter((e) =>
-        e.status !== 'template' && (statusFilter.value === 'all' || e.status === statusFilter.value))
-    : calendar.events.filter((e) => e.status === STATUS_ACTIVE)
-  ).filter(matchesFacets),
-)
+function toDateString(d: Date): string {
+  // Local date, not UTC — toISOString would shift the day near midnight
+  return format(d, 'yyyy-MM-dd')
+}
+
+const filteredEvents = computed(() => {
+  const today = toDateString(new Date())
+  return calendar.events.filter((e) => matchesHomeFilters(e, filters.value, principal.isPrincipal, today))
+})
 
 const greeting = computed(() => {
   const h = new Date().getHours()
@@ -328,7 +335,11 @@ const todayFormatted = computed(() =>
 const eventDates = computed(() =>
   filteredEvents.value
     .filter((e) => e.date)
-    .map((e) => new Date(e.date as string)),
+    .map((e) => parseISO(e.date as string)),
+)
+
+const calendarCollapsed = computed(
+  () => !isDesktop.value && settings.collapseOnScroll && !mobileCalendarVisible.value,
 )
 
 function getCalendarRange(): { start: Date; end: Date } {
@@ -344,24 +355,8 @@ function getCalendarRange(): { start: Date; end: Date } {
   }
 }
 
-function onSelectDay(date: Date) {
-  syncSelectedDateToCalendar(date)
-  calendarScrollTarget.value = date.toISOString()
-}
-
-function onSelectDayMobile(date: Date) {
-  syncSelectedDateToCalendar(date)
-  calendarScrollTarget.value = date.toISOString()
-  showFullCalendar.value = false
-}
-
 function onSelectEvent(id: string) {
   router.push(`/event/${id}`)
-}
-
-function toDateString(d: Date): string {
-  // Local date, not UTC — toISOString would shift the day near midnight
-  return format(d, 'yyyy-MM-dd')
 }
 
 async function fetchAttendanceForEvents(eventList: Array<{ id: string }>) {
@@ -380,22 +375,40 @@ const loadingDown = ref(false)
 // Пока initLoad выставляет коллективы (fetchCollectives → выбор), watch фильтра
 // не должен запускать параллельную перезагрузку
 let initializing = false
+// Номер последней загрузки окна: ответ более старой не должен затирать новый список
+let loadSeq = 0
+let reloadTimer: ReturnType<typeof setTimeout> | undefined
 
 const EVENTS_PAGE_SIZE = 10
 
-// Окно событий вокруг даты: прошлое (<=) и будущее (>=) с серверным фильтром по
-// коллективам; дедуп + сортировка + признаки "есть ли ещё" -- общая логика с
-// «Участиями» (матрицей), см. utils/eventWindow.
+// Параметры запроса: фильтры страницы + выбранные коллективы + то, что нужно конкретному запросу
+function listParams(extra: GetEventsEventV1EventsGetParams): GetEventsEventV1EventsGetParams {
+  const params = homeFilterParams(filters.value, principal.isPrincipal, toDateString(new Date()))
+  if (!principal.showAllEvents && principal.selectedCollectiveIds.length) {
+    params.participant_id__in = principal.selectedCollectiveIds.join(',')
+  }
+  return { ...params, ...extra }
+}
+
+async function fetchPage(extra: GetEventsEventV1EventsGetParams): Promise<EventRead[]> {
+  const response = await getEventsEventV1EventsGet(listParams(extra))
+  return (response.data as PageV1EventRead).items
+}
+
+// Окно событий вокруг даты: прошлое (<=) и будущее (>=) с теми же фильтрами; дедуп +
+// сортировка + признаки "есть ли ещё" -- общая логика с «Участиями» (матрицей),
+// см. utils/eventWindow. «Только предстоящие» не уходит раньше сегодня (listParams).
 async function fetchEventWindow(anchorStr: string): Promise<EventWindow<EventRead>> {
-  const [pastResp, futureResp] = await Promise.all([
-    getEventsEventV1EventsGet({ date__lte: anchorStr, order_by: '-date', limit: EVENTS_PAGE_SIZE }, eventsOptions()),
-    getEventsEventV1EventsGet({ date__gte: anchorStr, order_by: 'date', limit: EVENTS_PAGE_SIZE }, eventsOptions()),
+  const today = toDateString(new Date())
+  const noPast = filters.value.upcoming && anchorStr <= today
+  const from = filters.value.upcoming && anchorStr < today ? today : anchorStr
+  const [past, future] = await Promise.all([
+    noPast
+      ? Promise.resolve<EventRead[]>([])
+      : fetchPage({ date__lte: anchorStr, order_by: '-date', limit: EVENTS_PAGE_SIZE }),
+    fetchPage({ date__gte: from, order_by: 'date', limit: EVENTS_PAGE_SIZE }),
   ])
-  return buildEventWindow(
-    (pastResp.data as PageV1EventRead).items,
-    (futureResp.data as PageV1EventRead).items,
-    EVENTS_PAGE_SIZE,
-  )
+  return buildEventWindow(past, future, EVENTS_PAGE_SIZE)
 }
 
 // Новые события специально попадают в calendar.events ПОСЛЕДНИМ шагом, уже
@@ -411,24 +424,20 @@ function newEventIds(items: EventRead[]): string[] {
 }
 
 // loading (в отличие от loadingUp/loadingDown ниже) сюда намеренно не трогаем:
-// эта функция также вызывается в цикле из checkCalendarFill() при первой
-// загрузке страницы, и если дёргать общий флаг на каждой итерации, он
-// несколько раз мигает false/true пока initLoad() ещё не закончил -- список
-// на экране выглядит нестабильным, будто "доезжает" рывками. loading — это
-// только внешняя граница initLoad()/reloadEventsForFilter(), а повторный вход
-// уже прикрыт loadingUp/loadingDown (см. edge-guard в EventList.handleScroll).
+// эта функция также вызывается в цикле из checkCalendarFill(), и если
+// дёргать общий флаг на каждой итерации, он несколько раз мигает false/true --
+// список на экране выглядит нестабильным, будто "доезжает" рывками. loading — это
+// только внешняя граница initLoad()/reloadWindow(), а повторный вход
+// уже прикрыт loadingUp/loadingDown (см. loadAtEdges в EventList).
 async function loadMoreUp(): Promise<boolean> {
   if (!hasMoreUp.value || loadingUp.value || noSelection.value) return false
+  const seq = loadSeq
   loadingUp.value = true
   try {
     const firstDate = calendar.events[0]?.date
     if (!firstDate) return false
-    const response = await getEventsEventV1EventsGet({
-      date__lte: firstDate,
-      limit: EVENTS_PAGE_SIZE,
-      order_by: '-date',
-    }, eventsOptions())
-    const items = (response.data as PageV1EventRead).items
+    const items = await fetchPage({ date__lte: firstDate, limit: EVENTS_PAGE_SIZE, order_by: '-date' })
+    if (seq !== loadSeq) return false
     hasMoreUp.value = items.length === EVENTS_PAGE_SIZE
     if (items.length === 0) return false
     const ids = newEventIds(items)
@@ -440,6 +449,7 @@ async function loadMoreUp(): Promise<boolean> {
       calendar.fetchAttendances(collectives.value, ids, principal.userMemberIds),
       calendar.fetchStageTimes(ids),
     ])
+    if (seq !== loadSeq) return false
     calendar.addEvents(items)
     return true
   } finally {
@@ -450,16 +460,13 @@ async function loadMoreUp(): Promise<boolean> {
 // см. коммент у loadMoreUp -- loading общий флаг здесь тоже не трогаем.
 async function loadMoreDown(): Promise<boolean> {
   if (!hasMoreDown.value || loadingDown.value || noSelection.value) return false
+  const seq = loadSeq
   loadingDown.value = true
   try {
     const lastDate = calendar.events[calendar.events.length - 1]?.date
     if (!lastDate) return false
-    const response = await getEventsEventV1EventsGet({
-      date__gte: lastDate,
-      limit: EVENTS_PAGE_SIZE,
-      order_by: 'date',
-    }, eventsOptions())
-    const items = (response.data as PageV1EventRead).items
+    const items = await fetchPage({ date__gte: lastDate, limit: EVENTS_PAGE_SIZE, order_by: 'date' })
+    if (seq !== loadSeq) return false
     hasMoreDown.value = items.length === EVENTS_PAGE_SIZE
     if (items.length === 0) return false
     const ids = newEventIds(items)
@@ -471,6 +478,7 @@ async function loadMoreDown(): Promise<boolean> {
       calendar.fetchAttendances(collectives.value, ids, principal.userMemberIds),
       calendar.fetchStageTimes(ids),
     ])
+    if (seq !== loadSeq) return false
     calendar.addEvents(items)
     return true
   } finally {
@@ -482,9 +490,9 @@ async function loadMoreDown(): Promise<boolean> {
 // (ограничение по числу итераций — страховка от зацикливания). Нужна только
 // при ПРЫЖКЕ по календарю на произвольную дату (onShiftWeek/onPrevMonth/
 // onNextMonth) — туда нельзя доскроллить постепенно, поэтому диапазон
-// догружается заранее. Начальная загрузка (initLoad/reloadEventsForFilter)
-// эту функцию больше не вызывает: там достаточно одного окна вокруг текущей
-// даты (fetchEventWindow) + бесшовной подгрузки по достижении края списка
+// догружается заранее. Начальная загрузка (initLoad/reloadWindow)
+// эту функцию не вызывает: там достаточно одного окна вокруг даты
+// (fetchEventWindow) + бесшовной подгрузки по достижении края списка
 // (loadMoreUp/loadMoreDown) — тот же принцип, что и в матрице «Участий»
 // (см. DashboardPage.vue/positionMatrixScroll + loadMorePast/loadMoreFuture).
 async function checkCalendarFill() {
@@ -496,10 +504,10 @@ async function checkCalendarFill() {
       if (hasMoreDown.value && await loadMoreDown()) loaded = true
       else if (hasMoreUp.value && await loadMoreUp()) loaded = true
     } else {
-      const firstDate = new Date(calendar.events[0].date!)
+      const firstDate = parseISO(calendar.events[0].date!)
       if (hasMoreUp.value && firstDate >= start && await loadMoreUp()) loaded = true
 
-      const lastDate = new Date(calendar.events[calendar.events.length - 1].date!)
+      const lastDate = parseISO(calendar.events[calendar.events.length - 1].date!)
       if (hasMoreDown.value && lastDate <= end && await loadMoreDown()) loaded = true
     }
 
@@ -512,8 +520,7 @@ async function checkCalendarFill() {
     const firstDate = calendar.events[0].date
     if (firstDate) {
       try {
-        const resp = await getEventsEventV1EventsGet({ date__lte: firstDate, limit: 3, order_by: '-date' }, eventsOptions())
-        const items = (resp.data as PageV1EventRead).items
+        const items = await fetchPage({ date__lte: firstDate, limit: 3, order_by: '-date' })
         if (!items.some((e) => e.date && e.date < firstDate)) hasMoreUp.value = false
       } catch { /* ignore */ }
     }
@@ -522,49 +529,84 @@ async function checkCalendarFill() {
     const lastDate = calendar.events[calendar.events.length - 1].date
     if (lastDate) {
       try {
-        const resp = await getEventsEventV1EventsGet({ date__gte: lastDate, limit: 3, order_by: 'date' }, eventsOptions())
-        const items = (resp.data as PageV1EventRead).items
+        const items = await fetchPage({ date__gte: lastDate, limit: 3, order_by: 'date' })
         if (!items.some((e) => e.date && e.date > lastDate)) hasMoreDown.value = false
       } catch { /* ignore */ }
     }
   }
 }
 
+function whenIdle(flag: { value: boolean }): Promise<void> {
+  if (!flag.value) return Promise.resolve()
+  return new Promise((resolve) => {
+    const stop = watch(flag, (busy) => {
+      if (busy) return
+      stop()
+      resolve()
+    })
+  })
+}
+
+// Ставит список на дату; если длины списка не хватило довести карточку до верха
+// (мало загруженных карточек), догружает вниз и повторяет.
+async function aimAt(date: Date, smooth: boolean) {
+  for (let attempt = 0; attempt < 3; attempt++) {
+    const reached = await eventListRef.value?.scrollTo(date, smooth && attempt === 0)
+    if (reached !== false || !hasMoreDown.value) return
+    if (loadingDown.value) await whenIdle(loadingDown)
+    else if (!(await loadMoreDown())) return
+    await nextTick()
+  }
+}
+
+// Выбор даты в календаре: список встаёт на её первое мероприятие (у пустого дня --
+// на ближайшее следующее). Дата за пределами загруженного окна -- новое окно вокруг неё.
+async function gotoDate(date: Date) {
+  syncSelectedDateToCalendar(date)
+  const key = toDateString(date)
+  const first = calendar.events[0]?.date
+  const last = calendar.events[calendar.events.length - 1]?.date
+  const beyondEnd = hasMoreDown.value && (!last || key > last)
+  const beyondStart = hasMoreUp.value && (!first || key < first)
+  if (beyondEnd || beyondStart) await reloadWindow(key)
+  else await aimAt(date, true)
+}
+
+function onSelectDay(date: Date) {
+  gotoDate(date)
+}
+
+function onSelectDayMobile(date: Date) {
+  showFullCalendar.value = false
+  gotoDate(date)
+}
+
 // Перелистывание недели в мобильном мини-календаре
-function onShiftWeek(direction: 1 | -1) {
-  const next = addDays(calendar.selectedDate, direction * 7)
-  syncSelectedDateToCalendar(next)
-  calendarScrollTarget.value = next.toISOString()
-  checkCalendarFill()
+async function onShiftWeek(direction: 1 | -1) {
+  await gotoDate(addDays(calendar.selectedDate, direction * 7))
+  await checkCalendarFill()
 }
 
 function onPrevMonth() {
   calendar.prevMonth()
-  scrollToFirstEventOfMonth()
-  checkCalendarFill()
+  showMonth()
 }
 
 function onNextMonth() {
   calendar.nextMonth()
-  scrollToFirstEventOfMonth()
-  checkCalendarFill()
+  showMonth()
 }
 
-function scrollToFirstEventOfMonth() {
-  const monthStart = new Date(calendar.currentMonth.getFullYear(), calendar.currentMonth.getMonth(), 1)
-  const monthEnd = new Date(calendar.currentMonth.getFullYear(), calendar.currentMonth.getMonth() + 1, 0, 23, 59, 59)
-  const monthEvents = calendar.events.filter((e) => {
+async function showMonth() {
+  const monthStart = startOfMonth(calendar.currentMonth)
+  const monthEnd = endOfMonth(calendar.currentMonth)
+  const firstOfMonth = filteredEvents.value.find((e) => {
     if (!e.date) return false
-    const d = new Date(e.date)
+    const d = parseISO(e.date)
     return d >= monthStart && d <= monthEnd
   })
-  if (monthEvents.length > 0 && monthEvents[0].date) {
-    calendar.setSelectedDate(new Date(monthEvents[0].date))
-    calendarScrollTarget.value = monthEvents[0].date
-  } else {
-    calendar.setSelectedDate(monthStart)
-    calendarScrollTarget.value = monthStart.toISOString()
-  }
+  await gotoDate(firstOfMonth?.date ? parseISO(firstOfMonth.date) : monthStart)
+  await checkCalendarFill()
 }
 
 // Находит коллектив и запись attendance по её id среди загруженных
@@ -620,16 +662,22 @@ async function onDeleteComment(attendanceId: string) {
 }
 
 function onVisibleDateChanged(dateStr: string) {
-  syncSelectedDateToCalendar(new Date(dateStr))
+  syncSelectedDateToCalendar(parseISO(dateStr))
 }
 
 function onCalendarVisibleChange(visible: boolean) {
-  if (!isDesktop.value) mobileCalendarVisible.value = visible
+  if (!isDesktop.value && settings.collapseOnScroll) mobileCalendarVisible.value = visible
 }
+
+watch(() => settings.collapseOnScroll, (collapsing) => {
+  if (!collapsing) mobileCalendarVisible.value = true
+})
 
 async function initLoad() {
   const today = new Date()
   const todayStr = toDateString(today)
+  const seq = ++loadSeq
+  clearTimeout(reloadTimer)
   initializing = true
   loading.value = true
   hasMoreUp.value = true
@@ -652,6 +700,7 @@ async function initLoad() {
   } else {
     try {
       const eventWindow = await fetchEventWindow(todayStr)
+      if (seq !== loadSeq) return
       calendar.setEvents(eventWindow.events)
       hasMoreUp.value = eventWindow.hasMorePast
       hasMoreDown.value = eventWindow.hasMoreFuture
@@ -667,20 +716,18 @@ async function initLoad() {
   maybeAutoShow(await mergePendingEvents(remoteIds))
   refreshPendingCount()
 
+  if (seq !== loadSeq) return
   loading.value = false
   // Первым видимым делаем самое раннее мероприятие с датой >= сегодня
-  const todayMidnight = new Date(todayStr)
-  const upcomingIdx = findUpcomingIndex(calendar.events, todayMidnight)
-  const target = upcomingIdx >= 0 ? calendar.events[upcomingIdx].date! : calendar.selectedDate.toISOString()
-  calendarScrollTarget.value = target
-  // Прокрутка списка к стартовой позиции — мгновенно, значение могло не измениться
-  nextTick(() => eventListRef.value?.scrollTo(target, false))
+  await nextTick()
+  await aimAt(today, false)
   refreshPendingCount()
 }
 
-// Смена выбора коллективов / «Все мероприятия» → перезагрузка из бэкенда
-// (participant_id__in). Лёгкая: не сбрасывает дату и не трогает модалку pending.
-async function reloadEventsForFilter() {
+// Смена выбора коллективов, фильтров или прыжок на далёкую дату → новое окно
+// из бэкенда вокруг даты. Лёгкая: не сбрасывает дату и не трогает модалку pending.
+async function reloadWindow(anchorStr: string) {
+  const seq = ++loadSeq
   loading.value = true
   hasMoreUp.value = true
   hasMoreDown.value = true
@@ -691,7 +738,8 @@ async function reloadEventsForFilter() {
     return
   }
   try {
-    const eventWindow = await fetchEventWindow(toDateString(calendar.selectedDate))
+    const eventWindow = await fetchEventWindow(anchorStr)
+    if (seq !== loadSeq) return
     calendar.setEvents(eventWindow.events)
     hasMoreUp.value = eventWindow.hasMorePast
     hasMoreDown.value = eventWindow.hasMoreFuture
@@ -699,13 +747,35 @@ async function reloadEventsForFilter() {
   } catch {
     /* ignore */
   }
+  if (seq !== loadSeq) return
   loading.value = false
   refreshPendingCount()
+  await nextTick()
+  await aimAt(parseISO(anchorStr), false)
+}
+
+function reloadSoon() {
+  if (initializing) return
+  clearTimeout(reloadTimer)
+  reloadTimer = setTimeout(() => {
+    if (filters.value.upcoming && toDateString(calendar.selectedDate) < toDateString(new Date())) {
+      syncSelectedDateToCalendar(new Date())
+    }
+    reloadWindow(toDateString(calendar.selectedDate))
+  }, 120)
 }
 
 watch(
-  () => [principal.showAllEvents, principal.selectedCollectiveIds.join(',')],
-  () => { if (!initializing) reloadEventsForFilter() },
+  () => [
+    principal.showAllEvents,
+    principal.selectedCollectiveIds.join(','),
+    facetUrl.statuses,
+    facetUrl.types,
+    facetUrl.levels,
+    facetUrl.formats,
+    facetUrl.upcoming,
+  ],
+  reloadSoon,
 )
 
 // Перезагружаем список при каждом входе на главную: смена аккаунта, возврат
