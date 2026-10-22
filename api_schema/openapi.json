@@ -31451,6 +31451,180 @@
                 }
             }
         },
+        "/user/v2/users/me/settings": {
+            "get": {
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Read My Settings",
+                "description": "The caller's client settings, the same on every device and session.",
+                "operationId": "read_my_settings_user_v2_users_me_settings_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserSettingsRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Patch My Settings",
+                "description": "Changes only the named settings and returns all of them.\n\nA device that sends just what the person changed never overwrites what\nanother device changed meanwhile. A request that changes nothing leaves the\nrevision as it was.",
+                "operationId": "patch_my_settings_user_v2_users_me_settings_patch",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/UserSettingsPatch"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/UserSettingsRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "413": {
+                        "description": "The settings together would be over 16384 bytes",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "SETTINGS_TOO_LARGE": {
+                                        "summary": "SETTINGS_TOO_LARGE",
+                                        "value": {
+                                            "detail": "SETTINGS_TOO_LARGE"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
         "/event/v2/collectives/{collective_id}/recent-locations": {
             "get": {
                 "tags": [
@@ -40792,6 +40966,55 @@
                     "person_id"
                 ],
                 "title": "UserRead"
+            },
+            "UserSettingsPatch": {
+                "properties": {
+                    "values": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "title": "Values",
+                        "description": "Settings to change by name; a null removes the setting, the settings left out stay as they are."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "values"
+                ],
+                "title": "UserSettingsPatch"
+            },
+            "UserSettingsRead": {
+                "properties": {
+                    "values": {
+                        "additionalProperties": true,
+                        "type": "object",
+                        "title": "Values",
+                        "description": "Client settings by name; the client owns the names and the values."
+                    },
+                    "revision": {
+                        "type": "integer",
+                        "title": "Revision",
+                        "description": "Grows with every change; 0 while nothing was ever saved."
+                    },
+                    "edited_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Edited At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "values",
+                    "revision",
+                    "edited_at"
+                ],
+                "title": "UserSettingsRead"
             },
             "UserUpdate": {
                 "properties": {

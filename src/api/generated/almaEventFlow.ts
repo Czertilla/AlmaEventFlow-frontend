@@ -1954,6 +1954,29 @@ export interface UserCreate {
   invite_token?: string | null;
 }
 
+/**
+ * Settings to change by name; a null removes the setting, the settings left out stay as they are.
+ */
+export type UserSettingsPatchValues = { [key: string]: unknown };
+
+export interface UserSettingsPatch {
+  /** Settings to change by name; a null removes the setting, the settings left out stay as they are. */
+  values: UserSettingsPatchValues;
+}
+
+/**
+ * Client settings by name; the client owns the names and the values.
+ */
+export type UserSettingsReadValues = { [key: string]: unknown };
+
+export interface UserSettingsRead {
+  /** Client settings by name; the client owns the names and the values. */
+  values: UserSettingsReadValues;
+  /** Grows with every change; 0 while nothing was ever saved. */
+  revision: number;
+  edited_at: string | null;
+}
+
 export interface UserUpdate {
   password?: string | null;
   email?: string | null;
@@ -6157,6 +6180,35 @@ export const healthUserV1HealthGet = (
   }
 
 /**
+ * The caller's client settings, the same on every device and session.
+ * @summary Read My Settings
+ */
+export const readMySettingsUserV2UsersMeSettingsGet = (
+     options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<UserSettingsRead>> => {
+    return axios.get(
+      `/user/v2/users/me/settings`,options
+    );
+  }
+
+/**
+ * Changes only the named settings and returns all of them.
+ *
+ * A device that sends just what the person changed never overwrites what
+ * another device changed meanwhile. A request that changes nothing leaves the
+ * revision as it was.
+ * @summary Patch My Settings
+ */
+export const patchMySettingsUserV2UsersMeSettingsPatch = (
+    userSettingsPatch: UserSettingsPatch, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<UserSettingsRead>> => {
+    return axios.patch(
+      `/user/v2/users/me/settings`,
+      userSettingsPatch,options
+    );
+  }
+
+/**
  * Where the collective held its events lately, the latest first.
  *
  * A place counts from the time its event was last edited (created, when it
@@ -6446,5 +6498,7 @@ export type GetManyUserV1UsersGetResult = AxiosResponse<PageV1UserRead>
 export type LinkPersonUserV1UsersUserIdPersonPatchResult = AxiosResponse<UserRead>
 export type LinkInviteUserV1UsersMeLinkInvitePostResult = AxiosResponse<UserRead>
 export type HealthUserV1HealthGetResult = AxiosResponse<HealthV1>
+export type ReadMySettingsUserV2UsersMeSettingsGetResult = AxiosResponse<UserSettingsRead>
+export type PatchMySettingsUserV2UsersMeSettingsPatchResult = AxiosResponse<UserSettingsRead>
 export type GetRecentLocationsEventV2CollectivesCollectiveIdRecentLocationsGetResult = AxiosResponse<RecentLocationRead[]>
 export type GetCollectiveProfileEventV2CollectivesCollectiveIdProfileGetResult = AxiosResponse<CollectiveProfileRead>
