@@ -46,6 +46,8 @@ import type { FormField } from '@/components/admin/ResourceFormModal.vue'
 const tableRef = ref()
 
 const filters: FilterDef[] = [
+  { key: 'group_id', label: 'Группа', type: 'picker', picker: 'group' },
+  { key: 'faculty_id', label: 'Факультет', type: 'picker', picker: 'faculty' },
   { key: 'is_active', label: 'Активен', type: 'select', options: [{ value: 'true', label: 'Да' }, { value: 'false', label: 'Нет' }] },
   { key: 'is_budget', label: 'Бюджет', type: 'select', options: [{ value: 'true', label: 'Да' }, { value: 'false', label: 'Нет' }] },
   { key: 'is_full', label: 'Очная форма', type: 'select', options: [{ value: 'true', label: 'Да' }, { value: 'false', label: 'Нет' }] },

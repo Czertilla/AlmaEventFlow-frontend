@@ -88,7 +88,7 @@ import {
   peopleOutline, personOutline, businessOutline, peopleCircleOutline,
   idCardOutline, mapOutline, calendarOutline, homeOutline,
   schoolOutline, restaurantOutline, ribbonOutline, checkmarkDoneOutline,
-  personAddOutline,
+  personAddOutline, layersOutline, medalOutline,
 } from 'ionicons/icons'
 import { useRouter } from 'vue-router'
 import { usePlatform } from '@/composables/usePlatform'
@@ -111,6 +111,8 @@ const PAGES: Record<string, AdminPageEntry> = {
   '/admin/persons': { title: 'Персоны', component: defineAsyncComponent(() => import('@/views/admin/AdminPersons.vue')) },
   '/admin/profiles': { title: 'Профили', component: defineAsyncComponent(() => import('@/views/admin/AdminProfiles.vue')) },
   '/admin/students': { title: 'Студенты', component: defineAsyncComponent(() => import('@/views/admin/AdminStudents.vue')) },
+  '/admin/student-groups': { title: 'Группы', component: defineAsyncComponent(() => import('@/views/admin/AdminStudentGroups.vue')) },
+  '/admin/student-degrees': { title: 'Степени', component: defineAsyncComponent(() => import('@/views/admin/AdminStudentDegrees.vue')) },
   '/admin/diets': { title: 'Диеты', component: defineAsyncComponent(() => import('@/views/admin/AdminDiets.vue')) },
   '/admin/geo': { title: 'Гео', component: defineAsyncComponent(() => import('@/views/admin/AdminGeo.vue')) },
   '/admin/events': { title: 'Мероприятия', component: defineAsyncComponent(() => import('@/views/admin/AdminEvents.vue')) },
@@ -171,6 +173,8 @@ const NAV_GROUPS = [
     { path: '/admin/persons', label: 'Персоны', icon: personOutline },
     { path: '/admin/profiles', label: 'Профили', icon: idCardOutline },
     { path: '/admin/students', label: 'Студенты', icon: schoolOutline },
+    { path: '/admin/student-groups', label: 'Группы', icon: layersOutline },
+    { path: '/admin/student-degrees', label: 'Степени', icon: medalOutline },
     { path: '/admin/diets', label: 'Диеты', icon: restaurantOutline },
   ]},
   { label: 'Geo', items: [

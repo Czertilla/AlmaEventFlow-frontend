@@ -78,6 +78,38 @@ afterEach(() => {
   document.body.innerHTML = ''
 })
 
+describe('ResourceFormModal conditional field', () => {
+  const CONDITIONAL: FormField[] = [
+    { key: 'kind', label: 'Тип', type: 'text' },
+    { key: 'university_id', label: 'Университет', type: 'text', visibleWhen: (values) => values.kind === 'faculty' },
+  ]
+  const inputs = (wrapper: VueWrapper) => wrapper.findAll('input[type="text"]')
+
+  test('shows the field only while its condition holds', async () => {
+    const wrapper = form(null, CONDITIONAL)
+    await flushPromises()
+    expect(inputs(wrapper)).toHaveLength(1)
+
+    await inputs(wrapper)[0]!.setValue('faculty')
+    await nextTick()
+
+    expect(inputs(wrapper)).toHaveLength(2)
+  })
+
+  test('does not save a field that is hidden again', async () => {
+    const wrapper = form(null, CONDITIONAL)
+    await flushPromises()
+    await inputs(wrapper)[0]!.setValue('faculty')
+    await nextTick()
+    await inputs(wrapper)[1]!.setValue('u1')
+
+    await inputs(wrapper)[0]!.setValue('collective')
+    await save(wrapper)
+
+    expect(onSave).toHaveBeenCalledWith({ kind: 'collective' })
+  })
+})
+
 describe('ResourceFormModal multi-value field', () => {
   test('starts with the values the record already has', async () => {
     const wrapper = await ready(EXISTING)

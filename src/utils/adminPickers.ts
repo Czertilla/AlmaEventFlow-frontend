@@ -4,8 +4,12 @@ import {
   getMembersEventV1MembersGet,
   getParticipationsEventV1ParticipationsGet,
   getRolesEventV1RolesGet,
+  getStudentDegreesProfileV1StudentsDegreesGet,
+  getStudentGroupsProfileV1StudentsGroupsGet,
   listCollectivesOrgV1CollectivesGet,
+  listFacultiesOrgV1FacultiesGet,
   listOrganizationsOrgV1OrganizationsGet,
+  listUniversitiesOrgV1UniversitiesGet,
   searchPersonProfileV1PersonsGet,
 } from '@/api/generated/almaEventFlow'
 import { formatPersonName, resolvePersonName } from '@/utils/names'
@@ -37,6 +41,26 @@ export const PICKERS = {
     kind: 'organization',
     search: async (search) =>
       (await listOrganizationsOrgV1OrganizationsGet({ search, limit: LIMIT })).data.items.map((o) => ({ id: o.id, name: o.name })),
+  },
+  faculty: {
+    kind: 'organization',
+    search: async (search) =>
+      (await listFacultiesOrgV1FacultiesGet({ search, limit: LIMIT })).data.items.map((f) => ({ id: f.id, name: f.name })),
+  },
+  university: {
+    kind: 'organization',
+    search: async (search) =>
+      (await listUniversitiesOrgV1UniversitiesGet({ search, limit: LIMIT })).data.items.map((u) => ({ id: u.id, name: u.name })),
+  },
+  degree: {
+    kind: 'degree',
+    search: async (search) =>
+      (await getStudentDegreesProfileV1StudentsDegreesGet({ search, limit: LIMIT })).data.items.map((d) => ({ id: String(d.id), name: d.name })),
+  },
+  group: {
+    kind: 'group',
+    search: async (search) =>
+      (await getStudentGroupsProfileV1StudentsGroupsGet({ search, limit: LIMIT })).data.items.map((g) => ({ id: String(g.id), name: g.name })),
   },
   event: {
     kind: 'event',

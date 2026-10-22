@@ -19,7 +19,7 @@
   </div>
   <ion-content class="ion-padding">
     <div class="form-list">
-      <template v-for="field in fields" :key="field.key">
+      <template v-for="field in visibleFields" :key="field.key">
         <UiInput
           v-if="field.type === 'text' || field.type === 'email' || field.type === 'number'"
           v-model="form[field.key]"
@@ -107,7 +107,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { IonButton, IonIcon, IonContent, IonToggle, IonSpinner, modalController } from '@ionic/vue'
 import { closeOutline } from 'ionicons/icons'
 import GeoMap from '@/components/geo/GeoMap.vue'
@@ -120,6 +120,7 @@ import UuidBadge from '@/components/common/UuidBadge.vue'
 import TimestampsMeta from '@/components/common/TimestampsMeta.vue'
 import { useAdminNavigate } from '@/composables/useAdminNavigate'
 import { PICKERS, type PickerItem, type PickerName } from '@/utils/adminPickers'
+import { apiErrorMessage } from '@/utils/apiErrors'
 import type { ResourceKind } from '@/utils/resourceLabels'
 
 export interface FormField {
@@ -146,6 +147,8 @@ export interface FormField {
   /** multisearch: поле формы, без которого варианты не имеют смысла; при его смене в новой записи выбор сбрасывается */
   dependsOn?: string
   dependsHint?: string
+  /** Поле показывается и сохраняется, только пока условие выполнено (значения формы приходят аргументом) */
+  visibleWhen?: (form: Record<string, any>) => boolean
 }
 
 export interface FormLink {
@@ -181,6 +184,8 @@ for (const field of props.fields) {
     },
   )
 }
+
+const visibleFields = computed(() => props.fields.filter((field) => !field.visibleWhen || field.visibleWhen(form)))
 
 function choicesFor(field: FormField): (search: string) => Promise<PickerItem[]> {
   return async (search) => (field.choices ? field.choices(search, form) : [])
@@ -224,6 +229,7 @@ const RESOURCE_BY_KEY: Record<string, ResourceKind> = {
   participation_id: 'participation',
   role_id: 'role',
   group_id: 'group',
+  degree_id: 'degree',
 }
 
 function resourceFor(field: FormField): ResourceKind | undefined {
@@ -257,7 +263,7 @@ async function submit() {
   error.value = ''
   try {
     const data: Record<string, any> = {}
-    for (const field of props.fields) {
+    for (const field of visibleFields.value) {
       const val = form[field.key]
       if (field.type === 'multisearch') {
         data[field.key] = ((val ?? []) as PickerItem[]).map((entry) => entry.id)
@@ -276,7 +282,7 @@ async function submit() {
     }
     await props.onSave(data)
   } catch (err: any) {
-    error.value = err?.response?.data?.detail?.[0]?.msg || err?.message || 'Ошибка сохранения'
+    error.value = apiErrorMessage(err, err?.message || 'Ошибка сохранения')
   } finally {
     saving.value = false
   }

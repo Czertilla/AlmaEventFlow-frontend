@@ -18,7 +18,7 @@
       <ResourceFormModal
         v-if="editModal"
         :title="isCreating ? 'Создать организацию' : 'Редактировать организацию'"
-        :fields="isCreating ? createFields : editFields"
+        :fields="formFields"
         :item="editingItem"
         :on-save="saveOrganization"
         @close="editModal = false"
@@ -27,7 +27,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { IonModal } from '@ionic/vue'
 import ResourceTable from '@/components/admin/ResourceTable.vue'
 import ResourceFormModal from '@/components/admin/ResourceFormModal.vue'
@@ -38,15 +38,19 @@ import {
   createFacultyOrgV1FacultiesPost,
   createCollectiveOrgV1CollectivesPost,
   patchOrganizationOrgV1OrganizationsOrganizationIdPatch,
+  getFacultyOrgV1FacultiesFacultyIdGet,
+  patchFacultyOrgV1FacultiesFacultyIdPatch,
   deleteOrganizationOrgV1OrganizationsOrganizationIdDelete,
 } from '@/api/generated/almaEventFlow'
 import { searchPersonProfileV1PersonsGet } from '@/api/generated/almaEventFlow'
 import { getAddressesGeoV1AddressesGet } from '@/api/generated/almaEventFlow'
 import type { ColumnDef, SortOption, FilterDef } from '@/components/admin/ResourceTable.vue'
+import { useToast } from '@/composables/useToast'
 import { TIMESTAMP_FILTERS, TIMESTAMP_SORT_OPTIONS } from '@/utils/timestamps'
 import type { FormField } from '@/components/admin/ResourceFormModal.vue'
 
 const tableRef = ref()
+const { showError } = useToast()
 
 const typeLabels: Record<string, string> = {
   organization: 'Организация',
@@ -102,12 +106,17 @@ const editFields: FormField[] = [
   },
 ]
 
+const universityField: FormField = { key: 'university_id', label: 'Университет', type: 'search', picker: 'university' }
+
 const createFields: FormField[] = [
   editFields[0],
   editFields[1],
   { key: 'type', label: 'Тип', type: 'select', required: true, options: typeOptions },
   ...editFields.slice(2),
+  { ...universityField, visibleWhen: (form) => form.type === 'faculty' },
 ]
+
+const editFacultyFields: FormField[] = [...editFields, universityField]
 
 const creators: Record<string, (body: any) => Promise<unknown>> = {
   organization: createOrganizationOrgV1OrganizationsPost,
@@ -124,9 +133,16 @@ async function fetchOrganizations(params: Record<string, any>) {
   return listOrganizationsOrgV1OrganizationsGet(params as any)
 }
 
-function openEdit(item: any) {
+const formFields = computed(() => {
+  if (isCreating.value) return createFields
+  return editingItem.value?.type === 'faculty' ? editFacultyFields : editFields
+})
+
+async function openEdit(item: any) {
   isCreating.value = false
-  editingItem.value = item
+  editingItem.value = item.type === 'faculty'
+    ? { ...item, university_id: (await getFacultyOrgV1FacultiesFacultyIdGet(item.id)).data.university_id }
+    : item
   editModal.value = true
 }
 
@@ -141,10 +157,16 @@ async function saveOrganization(data: any) {
     const { type, ...body } = data
     await creators[type || 'organization'](body)
   } else if (editingItem.value) {
-    const { name, acronym, principal_id, address_id } = data
-    await patchOrganizationOrgV1OrganizationsOrganizationIdPatch(editingItem.value.id, {
-      name, acronym, principal_id, address_id,
-    })
+    const { name, acronym, principal_id, address_id, university_id } = data
+    if (editingItem.value.type === 'faculty') {
+      await patchFacultyOrgV1FacultiesFacultyIdPatch(editingItem.value.id, {
+        name, acronym, principal_id, address_id, university_id,
+      })
+    } else {
+      await patchOrganizationOrgV1OrganizationsOrganizationIdPatch(editingItem.value.id, {
+        name, acronym, principal_id, address_id,
+      })
+    }
   }
   editModal.value = false
   tableRef.value?.loadData()
@@ -154,6 +176,8 @@ async function handleDelete(item: any) {
   try {
     await deleteOrganizationOrgV1OrganizationsOrganizationIdDelete(item.id)
     tableRef.value?.loadData()
-  } catch (err) { console.error(err) }
+  } catch (err) {
+    showError(err, 'Не удалось удалить')
+  }
 }
 </script>

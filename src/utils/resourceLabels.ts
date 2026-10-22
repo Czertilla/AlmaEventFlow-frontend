@@ -9,12 +9,13 @@ import {
   getRoleEventV1RolesRoleIdGet,
   getMemberEventV1MembersMemberIdGet,
   getStudentGroupProfileV1StudentsGroupsGroupIdGet,
+  getStudentDegreeProfileV1StudentsDegreesDegreeIdGet,
 } from '@/api/generated/almaEventFlow'
 import { resolvePersonName, resolveMemberName } from '@/utils/names'
 
 export type ResourceKind =
   | 'person' | 'member' | 'memberInCollective' | 'collective' | 'event'
-  | 'organization' | 'participation' | 'city' | 'address' | 'location' | 'role' | 'group'
+  | 'organization' | 'participation' | 'city' | 'address' | 'location' | 'role' | 'group' | 'degree'
 
 // Кэш по типу ресурса -- имена меняются редко, как и в utils/names.ts.
 // Неудачу не кешируем (см. resolvePersonName) -- единичный сетевой сбой
@@ -100,6 +101,10 @@ async function resolveGroupName(id: string): Promise<string | null> {
   return cached('group', id, async () => (await getStudentGroupProfileV1StudentsGroupsGroupIdGet(Number(id))).data.name)
 }
 
+async function resolveDegreeName(id: string): Promise<string | null> {
+  return cached('degree', id, async () => (await getStudentDegreeProfileV1StudentsDegreesDegreeIdGet(Number(id))).data.name)
+}
+
 async function resolveLocationName(id: string): Promise<string | null> {
   return cached('location', id, async () => {
     const { data } = await getLocationGeoV1LocationsLocationIdGet(id)
@@ -134,6 +139,7 @@ const resolvers: Record<ResourceKind, (id: string) => Promise<string | null>> = 
   memberInCollective: resolveMemberInCollective,
   location: resolveLocationName,
   group: resolveGroupName,
+  degree: resolveDegreeName,
   role: resolveRoleName,
   collective: resolveCollectiveName,
   event: resolveEventName,
