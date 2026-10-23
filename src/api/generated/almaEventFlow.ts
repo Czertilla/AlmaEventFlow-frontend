@@ -183,12 +183,151 @@ export interface AttendanceByType {
   type: EventTypeEnumV1 | null;
 }
 
+export interface AttendanceChangeData {
+  is_attended?: boolean;
+  comment?: string | null;
+  /** Only the leader of the collective may set it. */
+  is_verified?: boolean;
+}
+
+export interface AttendanceReadV2 {
+  id: string;
+  created_at: string;
+  edited_at: string | null;
+  member_id: string;
+  participation_id: string;
+  /** `null` until someone marks the place. */
+  is_attended: boolean | null;
+  is_verified: boolean;
+  comment: string | null;
+}
+
+export interface ParticipationCounts {
+  id: string;
+  event_id: string;
+  collective_id: string;
+  attended_count: number;
+  total_count: number;
+}
+
+/**
+ * The place as it is now and the counters it moves, so a list can be updated
+ * without asking again.
+ */
+export interface AttendanceChanged {
+  attendance: AttendanceReadV2;
+  participation: ParticipationCounts;
+}
+
 export interface AttendanceCreate {
   member_id: string;
   participation_id: string;
-  is_attended?: boolean | null;
+  is_attended?: boolean;
   is_verified?: boolean | null;
   comment?: string | null;
+}
+
+export interface AttendanceDeclareData {
+  participation_id: string;
+  member_id: string;
+}
+
+export interface MemberPerson {
+  id: string;
+  surname: string;
+  name: string;
+  patronymic: string | null;
+}
+
+export interface RolePreview {
+  id: string;
+  name: string;
+}
+
+export interface RosterMember {
+  id: string;
+  person: MemberPerson;
+  is_active: boolean;
+  roles: RolePreview[];
+}
+
+export interface RoleRead {
+  created_at: string;
+  edited_at: string | null;
+  id: string;
+  name: string;
+  collective_id: string;
+}
+
+export type EventStatusEnumV1 = typeof EventStatusEnumV1[keyof typeof EventStatusEnumV1];
+
+
+export const EventStatusEnumV1 = {
+  draft: 'draft',
+  template: 'template',
+  active: 'active',
+  archived: 'archived',
+} as const;
+
+export type EventLevelEnumV1 = typeof EventLevelEnumV1[keyof typeof EventLevelEnumV1];
+
+
+export const EventLevelEnumV1 = {
+  internal: 'internal',
+  regional: 'regional',
+  national: 'national',
+  international: 'international',
+} as const;
+
+export type EventFormatEnumV1 = typeof EventFormatEnumV1[keyof typeof EventFormatEnumV1];
+
+
+export const EventFormatEnumV1 = {
+  online: 'online',
+  offline: 'offline',
+} as const;
+
+/**
+ * Where an event is, as geo last told: the text to show and a point on the map.
+ */
+export interface EventPlace {
+  id: string;
+  name: string | null;
+  lat: number | null;
+  lon: number | null;
+}
+
+/**
+ * An event the collective takes part in, with the collective's participation.
+ */
+export interface CollectiveEvent {
+  id: string;
+  name: string;
+  date: string | null;
+  status: EventStatusEnumV1;
+  level: EventLevelEnumV1 | null;
+  type: EventTypeEnumV1 | null;
+  format: EventFormatEnumV1;
+  location: EventPlace | null;
+  participation_id: string;
+  created_at: string;
+  edited_at: string | null;
+}
+
+/**
+ * Who was declared for which event: `attendances` are the places of the
+ * participations of `events`. `members` and `roles` are the same in every window.
+ */
+export interface AttendanceMatrix {
+  members: RosterMember[];
+  roles: RoleRead[];
+  /** Oldest first, no templates. */
+  events: CollectiveEvent[];
+  attendances: AttendanceReadV2[];
+  has_more_past: boolean;
+  has_more_future: boolean;
+  past_cursor: string | null;
+  future_cursor: string | null;
 }
 
 export type AttendanceOutcomeEnumV1 = typeof AttendanceOutcomeEnumV1[keyof typeof AttendanceOutcomeEnumV1];
@@ -202,12 +341,12 @@ export const AttendanceOutcomeEnumV1 = {
 } as const;
 
 export interface AttendancePatchData {
-  is_attended?: boolean | null;
+  is_attended?: boolean;
   comment?: string | null;
 }
 
 export interface AttendancePrincipalPatchData {
-  is_attended?: boolean | null;
+  is_attended?: boolean;
   comment?: string | null;
   is_verified?: boolean | null;
 }
@@ -215,7 +354,7 @@ export interface AttendancePrincipalPatchData {
 export interface AttendancePutData {
   member_id: string;
   participation_id: string;
-  is_attended?: boolean | null;
+  is_attended?: boolean;
   is_verified?: boolean | null;
   comment?: string | null;
 }
@@ -226,7 +365,7 @@ export interface AttendanceRead {
   edited_at: string | null;
   member_id: string;
   participation_id: string;
-  is_attended?: boolean | null;
+  is_attended?: boolean;
   is_verified?: boolean | null;
   comment?: string | null;
 }
@@ -408,16 +547,6 @@ export interface CollectiveDay {
   date: string;
 }
 
-export type EventStatusEnumV1 = typeof EventStatusEnumV1[keyof typeof EventStatusEnumV1];
-
-
-export const EventStatusEnumV1 = {
-  draft: 'draft',
-  template: 'template',
-  active: 'active',
-  archived: 'archived',
-} as const;
-
 export interface CollectiveEventItem {
   attended: number;
   absent: number;
@@ -430,11 +559,11 @@ export interface CollectiveEventItem {
   type: EventTypeEnumV1 | null;
 }
 
-export interface MemberPerson {
-  id: string;
-  surname: string;
-  name: string;
-  patronymic: string | null;
+export interface CollectiveEvents {
+  /** The latest first, undated ones on top. */
+  items: CollectiveEvent[];
+  /** There are more events than the answer holds. */
+  truncated: boolean;
 }
 
 export interface CollectiveInfo {
@@ -510,6 +639,13 @@ export interface CollectiveRead {
   address_id?: string | null;
   university_id?: string | null;
   type?: string;
+}
+
+export interface CollectiveRoster {
+  /** By name, the former members too. */
+  members: RosterMember[];
+  /** By name. */
+  roles: RoleRead[];
 }
 
 export type ContactType = typeof ContactType[keyof typeof ContactType];
@@ -646,23 +782,55 @@ export interface ErrorModel {
   detail: ErrorModelDetail;
 }
 
-export type EventLevelEnumV1 = typeof EventLevelEnumV1[keyof typeof EventLevelEnumV1];
+export interface EventCardParticipation {
+  id: string;
+  collective_id: string;
+  collective_name: string;
+  /** Places of the participation marked as attended. */
+  attended_count: number;
+  /** Places declared for the participation. */
+  total_count: number;
+  /** The caller's own place, when they are a member of the collective. */
+  my_attendance: AttendanceReadV2 | null;
+}
 
+/**
+ * An event as a list shows it. Only the collectives of the caller take part
+ * in `participations`; `edited_at ?? created_at` tells which copy is newer.
+ */
+export interface EventCard {
+  id: string;
+  name: string;
+  date: string | null;
+  status: EventStatusEnumV1;
+  level: EventLevelEnumV1 | null;
+  type: EventTypeEnumV1 | null;
+  format: EventFormatEnumV1;
+  location: EventPlace | null;
+  /** The first stage start, if the event has stages. */
+  starts_at: string | null;
+  /** The last stage end (its start when open-ended). */
+  ends_at: string | null;
+  participations: EventCardParticipation[];
+  created_at: string;
+  edited_at: string | null;
+  /** When the event or a place of its participations last changed: of two copies of a card the greater one is the newer. A deleted place leaves no trace in it. */
+  updated_at: string;
+}
 
-export const EventLevelEnumV1 = {
-  internal: 'internal',
-  regional: 'regional',
-  national: 'national',
-  international: 'international',
-} as const;
+export interface EventCollectivePatchData {
+  is_verified?: boolean | null;
+}
 
-export type EventFormatEnumV1 = typeof EventFormatEnumV1[keyof typeof EventFormatEnumV1];
-
-
-export const EventFormatEnumV1 = {
-  online: 'online',
-  offline: 'offline',
-} as const;
+/**
+ * What the event service knows of a collective: the confirmation is its own.
+ */
+export interface EventCollectiveRead {
+  id: string;
+  name: string;
+  principal_id: string | null;
+  is_verified: boolean;
+}
 
 export interface EventCreate {
   /** @maxLength 128 */
@@ -677,6 +845,20 @@ export interface EventCreate {
   format?: EventFormatEnumV1;
 }
 
+/**
+ * Events in date order. `has_more_*` and the cursors speak of the sides that
+ * were asked for; the other side of a `past` or `future` request is `false`/`null`.
+ */
+export interface EventFeed {
+  items: EventCard[];
+  has_more_past: boolean;
+  has_more_future: boolean;
+  /** Of the earliest event returned. */
+  past_cursor: string | null;
+  /** Of the latest event returned. */
+  future_cursor: string | null;
+}
+
 export type EventLinkTypeEnumV1 = typeof EventLinkTypeEnumV1[keyof typeof EventLinkTypeEnumV1];
 
 
@@ -687,6 +869,92 @@ export const EventLinkTypeEnumV1 = {
   publication: 'publication',
   doc: 'doc',
 } as const;
+
+export interface PageEvent {
+  id: string;
+  name: string;
+  date: string | null;
+  description: string | null;
+  status: EventStatusEnumV1;
+  level: EventLevelEnumV1 | null;
+  type: EventTypeEnumV1 | null;
+  format: EventFormatEnumV1;
+  organizer_id: string | null;
+  location_id: string | null;
+  /** The text to show and the point on the map; geo has the rest. */
+  location: EventPlace | null;
+  created_at: string;
+  edited_at: string | null;
+}
+
+export interface StageRead {
+  created_at: string;
+  edited_at: string | null;
+  id: string;
+  /** @maxLength 32 */
+  name: string;
+  start_at: string;
+  end_at?: string | null;
+  description?: string | null;
+  timezone?: string | null;
+  event_id: string;
+}
+
+export type EventPriorityEnumV1 = typeof EventPriorityEnumV1[keyof typeof EventPriorityEnumV1];
+
+
+export const EventPriorityEnumV1 = {
+  hight: 'hight',
+  medium: 'medium',
+  low: 'low',
+} as const;
+
+export interface PageAttendance {
+  id: string;
+  created_at: string;
+  edited_at: string | null;
+  member_id: string;
+  participation_id: string;
+  /** `null` until someone marks the place. */
+  is_attended: boolean | null;
+  is_verified: boolean;
+  comment: string | null;
+  member: RosterMember;
+}
+
+export interface PageParticipation {
+  id: string;
+  collective_id: string;
+  collective_name: string;
+  priority_degree: EventPriorityEnumV1 | null;
+  /** The caller leads the collective (or is a superuser). */
+  is_principal: boolean;
+  /** The caller has a membership in the collective. */
+  is_member: boolean;
+  /** Only the leader and the members see the places. */
+  can_view_attendances: boolean;
+  /** Null unless the places are visible. */
+  attended_count: number | null;
+  total_count: number | null;
+  my_attendance_id: string | null;
+  /** By surname; empty unless visible. */
+  attendances: PageAttendance[];
+  /** Active members without a place yet; for the leader only. */
+  addable_members: RosterMember[];
+}
+
+/**
+ * Everything the page of an event shows. Collectives are the participating ones,
+ * the caller's own first, then by name.
+ */
+export interface EventPageRead {
+  event: PageEvent;
+  /** By start. */
+  stages: StageRead[];
+  participations: PageParticipation[];
+  /** The collective the caller edits the event on behalf of, if any. */
+  editable_collective_id: string | null;
+}
 
 export interface EventPatchData {
   name?: string | null;
@@ -699,15 +967,6 @@ export interface EventPatchData {
   type?: EventTypeEnumV1 | null;
   format?: EventFormatEnumV1 | null;
 }
-
-export type EventPriorityEnumV1 = typeof EventPriorityEnumV1[keyof typeof EventPriorityEnumV1];
-
-
-export const EventPriorityEnumV1 = {
-  hight: 'hight',
-  medium: 'medium',
-  low: 'low',
-} as const;
 
 export interface EventPutData {
   /** @maxLength 128 */
@@ -807,6 +1066,15 @@ export interface FacultyReference {
   name: string;
   university_id: string;
 }
+
+export type FeedDirection = typeof FeedDirection[keyof typeof FeedDirection];
+
+
+export const FeedDirection = {
+  around: 'around',
+  past: 'past',
+  future: 'future',
+} as const;
 
 export type ValidationErrorCtx = { [key: string]: unknown };
 
@@ -1004,7 +1272,7 @@ export interface MapResult {
 
 export interface MeAttendanceCreateData {
   member_id: string;
-  is_attended?: boolean | null;
+  is_attended?: boolean;
   is_verified?: boolean | null;
   comment?: string | null;
 }
@@ -1107,11 +1375,6 @@ export interface MemberCreateData {
 export interface MemberPatchData {
   roles?: string[] | null;
   is_active?: boolean | null;
-}
-
-export interface RolePreview {
-  id: string;
-  name: string;
 }
 
 export interface MemberRead {
@@ -1338,6 +1601,11 @@ export interface PageV1DietRead {
   pagination: PaginationV1;
 }
 
+export interface PageV1EventCollectiveRead {
+  items: EventCollectiveRead[];
+  pagination: PaginationV1;
+}
+
 export interface PageV1EventRead {
   items: EventRead[];
   pagination: PaginationV1;
@@ -1467,30 +1735,9 @@ export interface PageV1RewardRead {
   pagination: PaginationV1;
 }
 
-export interface RoleRead {
-  created_at: string;
-  edited_at: string | null;
-  id: string;
-  name: string;
-  collective_id: string;
-}
-
 export interface PageV1RoleRead {
   items: RoleRead[];
   pagination: PaginationV1;
-}
-
-export interface StageRead {
-  created_at: string;
-  edited_at: string | null;
-  id: string;
-  /** @maxLength 32 */
-  name: string;
-  start_at: string;
-  end_at?: string | null;
-  description?: string | null;
-  timezone?: string | null;
-  event_id: string;
 }
 
 export interface PageV1StageRead {
@@ -1989,6 +2236,27 @@ export interface UserUpdate {
 
 export interface VapidPublicKey {
   public_key: string;
+}
+
+export interface ViewerCollective {
+  id: string;
+  name: string;
+  is_verified: boolean;
+  /** The caller leads the collective. */
+  is_principal: boolean;
+  /** The caller's membership, if any. */
+  member_id: string | null;
+  member_is_active: boolean | null;
+  /** The roles of the caller's membership. */
+  roles: RolePreview[];
+}
+
+/**
+ * Who the caller is for the events: the collectives they lead or belong to.
+ */
+export interface ViewerContext {
+  person_id: string | null;
+  collectives: ViewerCollective[];
 }
 
 export type GetAttendancesEventV1AttendancesGetParams = {
@@ -2943,6 +3211,93 @@ date_from?: string | null;
  * Last day of the period; today when omitted.
  */
 date_to?: string | null;
+};
+
+export type GetCollectivesEventV1CollectivesGetParams = {
+id?: string | null;
+id__in?: string | null;
+/**
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: name, is_verified.
+ */
+order_by?: string | null;
+search?: string | null;
+principal_id?: string | null;
+principal_id__in?: string | null;
+is_verified?: boolean | null;
+page?: number;
+/**
+ * @maximum 100
+ * @exclusiveMinimum 0
+ */
+limit?: number;
+};
+
+export type GetAttendanceMatrixEventV2CollectivesCollectiveIdAttendanceMatrixGetParams = {
+/**
+ * As in the feed: `around` a day, or the next events `past` / `future` of `cursor`. Ignored when both ends of a range are given.
+ */
+direction?: FeedDirection;
+/**
+ * Today when omitted.
+ */
+anchor?: string | null;
+cursor?: string | null;
+/**
+ * Events per side.
+ * @minimum 1
+ * @maximum 50
+ */
+limit?: number;
+/**
+ * With `date_to`: every event of the range, no paging.
+ */
+date_from?: string | null;
+date_to?: string | null;
+};
+
+export type GetFeedEventV2FeedGetParams = {
+/**
+ * `around`: the events before `anchor` and from it on, `limit` of each side. `past` / `future`: the next `limit` events before / after `cursor` (or before / from `anchor` when there is no cursor).
+ */
+direction?: FeedDirection;
+/**
+ * A day of the caller's calendar; today when omitted.
+ */
+anchor?: string | null;
+/**
+ * `past_cursor` / `future_cursor` of the previous answer, as given.
+ */
+cursor?: string | null;
+/**
+ * Events per side.
+ * @minimum 1
+ * @maximum 50
+ */
+limit?: number;
+/**
+ * Only the events these collectives take part in; every event when empty.
+ * @maxItems 50
+ */
+collective_id?: string[];
+/**
+ * Any of the given statuses; all but `template` when empty. Only the leaders of the collectives taking part see a status other than `active`.
+ */
+status?: EventStatusEnumV1[];
+type?: EventTypeEnumV1[];
+level?: EventLevelEnumV1[];
+format?: EventFormatEnumV1[];
+/**
+ * Only the events on this day or later.
+ */
+date_from?: string | null;
+};
+
+export type GetCardsEventV2FeedCardsGetParams = {
+/**
+ * @minItems 1
+ * @maxItems 100
+ */
+id: string[];
 };
 
 /**
@@ -6245,6 +6600,191 @@ export const getCollectiveProfileEventV2CollectivesCollectiveIdProfileGet = (
     );
   }
 
+/**
+ * @summary Get Collectives
+ */
+export const getCollectivesEventV1CollectivesGet = (
+    params?: GetCollectivesEventV1CollectivesGetParams, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<PageV1EventCollectiveRead>> => {
+    return axios.get(
+      `/event/v1/collectives`,{
+    ...options,
+        params: {...params, ...options?.params},}
+    );
+  }
+
+/**
+ * @summary Get Collective
+ */
+export const getCollectiveEventV1CollectivesCollectiveIdGet = (
+    collectiveId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<EventCollectiveRead>> => {
+    return axios.get(
+      `/event/v1/collectives/${collectiveId}`,options
+    );
+  }
+
+/**
+ * Confirms a collective (or takes the confirmation back): only a confirmed one can
+ * create events, a superuser can regardless.
+ * @summary Patch Collective
+ */
+export const patchCollectiveEventV1CollectivesCollectiveIdPatch = (
+    collectiveId: string,
+    eventCollectivePatchData: EventCollectivePatchData, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<EventCollectiveRead>> => {
+    return axios.patch(
+      `/event/v1/collectives/${collectiveId}`,
+      eventCollectivePatchData,options
+    );
+  }
+
+/**
+ * Marks a place, comments on it or (the leader) verifies it. One endpoint for
+ * whoever may: the member of the place, the leader of the collective, a superuser.
+ * @summary Change Attendance
+ */
+export const changeAttendanceEventV2AttendancesAttendanceIdPatch = (
+    attendanceId: string,
+    attendanceChangeData: AttendanceChangeData, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<AttendanceChanged>> => {
+    return axios.patch(
+      `/event/v2/attendances/${attendanceId}`,
+      attendanceChangeData,options
+    );
+  }
+
+/**
+ * The members with their names and roles, and the roles of the collective.
+ * For its leader and superusers.
+ * @summary Get Collective Roster
+ */
+export const getCollectiveRosterEventV2CollectivesCollectiveIdRosterGet = (
+    collectiveId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<CollectiveRoster>> => {
+    return axios.get(
+      `/event/v2/collectives/${collectiveId}/roster`,options
+    );
+  }
+
+/**
+ * Every event the collective takes part in, in any status, a template too.
+ * For its leader and superusers.
+ * @summary Get Collective Events
+ */
+export const getCollectiveEventsEventV2CollectivesCollectiveIdEventsGet = (
+    collectiveId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<CollectiveEvents>> => {
+    return axios.get(
+      `/event/v2/collectives/${collectiveId}/events`,options
+    );
+  }
+
+/**
+ * The roster against a window of the collective's events with every declared
+ * place: the table of the leader's panel in one answer. Keyset paging as in the
+ * feed.
+ * @summary Get Attendance Matrix
+ */
+export const getAttendanceMatrixEventV2CollectivesCollectiveIdAttendanceMatrixGet = (
+    collectiveId: string,
+    params?: GetAttendanceMatrixEventV2CollectivesCollectiveIdAttendanceMatrixGetParams, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<AttendanceMatrix>> => {
+    return axios.get(
+      `/event/v2/collectives/${collectiveId}/attendance-matrix`,{
+    ...options,
+        params: {...params, ...options?.params},}
+    );
+  }
+
+/**
+ * The event with its stages, its place and every participation, in one answer.
+ * The places of a collective come with the names of the members and their roles
+ * for its leader and its members only. An event the caller may not see is not
+ * found.
+ * @summary Get Event Page
+ */
+export const getEventPageEventV2EventsEventIdGet = (
+    eventId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<EventPageRead>> => {
+    return axios.get(
+      `/event/v2/events/${eventId}`,options
+    );
+  }
+
+/**
+ * Events around a day, or the next ones in either direction, each with the
+ * caller's own places and the counters of their collectives: what a list of
+ * events needs in one answer. Keyset paging, so a change of the list between two
+ * requests neither repeats nor skips an event.
+ * @summary Get Feed
+ */
+export const getFeedEventV2FeedGet = (
+    params?: GetFeedEventV2FeedGetParams, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<EventFeed>> => {
+    return axios.get(
+      `/event/v2/feed`,{
+    ...options,
+        params: {...params, ...options?.params},}
+    );
+  }
+
+/**
+ * The same cards by id, in the order asked; an event that does not exist or
+ * that the caller may not see is left out.
+ * @summary Get Cards
+ */
+export const getCardsEventV2FeedCardsGet = (
+    params: GetCardsEventV2FeedCardsGetParams, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<EventCard[]>> => {
+    return axios.get(
+      `/event/v2/feed/cards`,{
+    ...options,
+        params: {...params, ...options?.params},}
+    );
+  }
+
+/**
+ * Active events where a place of the caller is declared and nobody has marked
+ * it yet, the earliest first (at most 100).
+ * @summary Get Pending
+ */
+export const getPendingEventV2FeedPendingGet = (
+     options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<EventCard[]>> => {
+    return axios.get(
+      `/event/v2/feed/pending`,options
+    );
+  }
+
+/**
+ * The collectives the caller leads or is a member of, with their names and
+ * the caller's membership in each: the whole picture a client needs at start.
+ * @summary Get My Context
+ */
+export const getMyContextEventV2MeContextGet = (
+     options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<ViewerContext>> => {
+    return axios.get(
+      `/event/v2/me/context`,options
+    );
+  }
+
+/**
+ * Adds a member of the collective to the event. The new place is not marked:
+ * its `is_attended` is `null` until someone marks it. Only the leader of the
+ * collective and a superuser may; an existing place is returned unchanged.
+ * @summary Declare Attendance
+ */
+export const declareAttendanceEventV2AttendancesPost = (
+    attendanceDeclareData: AttendanceDeclareData, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<AttendanceChanged>> => {
+    return axios.post(
+      `/event/v2/attendances`,
+      attendanceDeclareData,options
+    );
+  }
+
 export type GetAttendancesEventV1AttendancesGetResult = AxiosResponse<PageV1AttendanceRead>
 export type CreateAttendanceEventV1AttendancesPostResult = AxiosResponse<AttendanceRead>
 export type GetAttendanceEventV1AttendancesAttendanceIdGetResult = AxiosResponse<AttendanceRead>
@@ -6502,3 +7042,16 @@ export type ReadMySettingsUserV2UsersMeSettingsGetResult = AxiosResponse<UserSet
 export type PatchMySettingsUserV2UsersMeSettingsPatchResult = AxiosResponse<UserSettingsRead>
 export type GetRecentLocationsEventV2CollectivesCollectiveIdRecentLocationsGetResult = AxiosResponse<RecentLocationRead[]>
 export type GetCollectiveProfileEventV2CollectivesCollectiveIdProfileGetResult = AxiosResponse<CollectiveProfileRead>
+export type GetCollectivesEventV1CollectivesGetResult = AxiosResponse<PageV1EventCollectiveRead>
+export type GetCollectiveEventV1CollectivesCollectiveIdGetResult = AxiosResponse<EventCollectiveRead>
+export type PatchCollectiveEventV1CollectivesCollectiveIdPatchResult = AxiosResponse<EventCollectiveRead>
+export type ChangeAttendanceEventV2AttendancesAttendanceIdPatchResult = AxiosResponse<AttendanceChanged>
+export type GetCollectiveRosterEventV2CollectivesCollectiveIdRosterGetResult = AxiosResponse<CollectiveRoster>
+export type GetCollectiveEventsEventV2CollectivesCollectiveIdEventsGetResult = AxiosResponse<CollectiveEvents>
+export type GetAttendanceMatrixEventV2CollectivesCollectiveIdAttendanceMatrixGetResult = AxiosResponse<AttendanceMatrix>
+export type GetEventPageEventV2EventsEventIdGetResult = AxiosResponse<EventPageRead>
+export type GetFeedEventV2FeedGetResult = AxiosResponse<EventFeed>
+export type GetCardsEventV2FeedCardsGetResult = AxiosResponse<EventCard[]>
+export type GetPendingEventV2FeedPendingGetResult = AxiosResponse<EventCard[]>
+export type GetMyContextEventV2MeContextGetResult = AxiosResponse<ViewerContext>
+export type DeclareAttendanceEventV2AttendancesPostResult = AxiosResponse<AttendanceChanged>
