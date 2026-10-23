@@ -4,6 +4,7 @@ const MESSAGES: Record<string, string> = {
   ORGANIZATION_NOT_FOUND: 'Организация не найдена',
   UNIVERSITY_NOT_FOUND: 'Университет не найден',
   UNIVERSITY_HAS_FACULTIES: 'Университет нельзя удалить: у него есть факультеты',
+  COLLECTIVE_NOT_VERIFIED: 'Коллектив ещё не подтверждён администратором',
   INVITE_SIGNING_NOT_CONFIGURED: 'Приглашения не настроены: у сервиса профилей нет ключа подписи',
   STUDENT_DEGREE_NOT_FOUND: 'Степень не найдена',
   STUDENT_DEGREE_ALREADY_EXISTS: 'Такая степень уже есть',

@@ -7,6 +7,7 @@ describe('apiErrorMessage', () => {
   test('puts a known code into words', () => {
     expect(apiErrorMessage(failure('STUDENT_GROUP_IN_USE'), 'x')).toBe('Группу нельзя удалить: в ней есть студенты')
     expect(apiErrorMessage(failure('PERSON_ALREADY_HAS_ACCOUNT'), 'x')).toBe('У персоны уже есть аккаунт')
+    expect(apiErrorMessage(failure('COLLECTIVE_NOT_VERIFIED'), 'x')).toBe('Коллектив ещё не подтверждён администратором')
   })
 
   test('shows an unknown code as it came', () => {
