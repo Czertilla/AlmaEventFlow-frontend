@@ -1,10 +1,10 @@
 import type {
+  EventCard,
   EventFormatEnumV1,
   EventLevelEnumV1,
-  EventRead,
   EventStatusEnumV1,
   EventTypeEnumV1,
-  GetEventsEventV1EventsGetParams,
+  GetFeedEventV2FeedGetParams,
 } from '@/api/generated/almaEventFlow'
 import { formatOptions, levelOptions, statusOptions, typeOptions } from '@/utils/eventLabels'
 
@@ -76,17 +76,13 @@ export function homeFilterParams(
   state: HomeFilterState,
   isPrincipal: boolean,
   today: string,
-): GetEventsEventV1EventsGetParams {
-  const params: GetEventsEventV1EventsGetParams = {}
-  if (isPrincipal) {
-    params.status__in = (state.statuses.length ? state.statuses : LISTED_STATUSES).join(',')
-  } else {
-    params.status = 'active'
-  }
-  if (state.types.length) params.type__in = state.types.join(',')
-  if (state.levels.length) params.level__in = state.levels.join(',')
-  if (state.formats.length) params.format__in = state.formats.join(',')
-  if (state.upcoming) params.date__gte = today
+): GetFeedEventV2FeedGetParams {
+  const params: GetFeedEventV2FeedGetParams = {}
+  params.status = isPrincipal ? [...(state.statuses.length ? state.statuses : LISTED_STATUSES)] : ['active']
+  if (state.types.length) params.type = [...state.types]
+  if (state.levels.length) params.level = [...state.levels]
+  if (state.formats.length) params.format = [...state.formats]
+  if (state.upcoming) params.date_from = today
   return params
 }
 
@@ -95,7 +91,7 @@ function includes<T extends string>(list: readonly T[], value: T | null | undefi
 }
 
 export function matchesHomeFilters(
-  event: EventRead,
+  event: Pick<EventCard, 'status' | 'type' | 'level' | 'format' | 'date'>,
   state: HomeFilterState,
   isPrincipal: boolean,
   today: string,

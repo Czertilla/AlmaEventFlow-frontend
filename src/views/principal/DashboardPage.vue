@@ -160,8 +160,8 @@
                   <span class="matrix-event-name">{{ e.name }}</span>
                   <span class="matrix-event-date">{{ e.date ? formatDate(e.date, settings.dateFormat) : 'Без даты' }}</span>
                   <LocationDisplay
-                    v-if="e.location_id && locationsById[e.location_id]"
-                    :location="locationsById[e.location_id]"
+                    v-if="e.location"
+                    :location="placeAsLocation(e.location)"
                     class="matrix-event-location"
                   />
                 </th>
@@ -202,7 +202,6 @@
                         v-if="cell.attendance"
                         class="matrix-chip"
                         :is-attended="cell.attendance.is_attended"
-                        :edited-at="cell.attendance.edited_at"
                         :verified="cell.attendance.is_verified"
                         :attendance-id="cell.attendance.id"
                         :show-lock="false"
@@ -296,7 +295,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch, nextTick } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import {
   IonIcon, IonModal, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonButton,
@@ -321,33 +320,27 @@ import { useLayoutAddButton } from '@/composables/usePrincipalPageActions'
 import { usePrincipalStore } from '@/stores/principal'
 import { useSettingsStore } from '@/stores/settings'
 import { formatDate } from '@/utils/date'
-import { resolvePersonName, shortId, shortenName } from '@/utils/names'
+import { formatPersonName, shortenName } from '@/utils/names'
+import { placeAsLocation } from '@/utils/geo'
 import { isUnmarkedAttendance } from '@/utils/memberAttendance'
 import { usePlatform } from '@/composables/usePlatform'
 import { usePrincipalNavigate } from '@/composables/usePrincipalNavigate'
 import { typeOptions, typeColor } from '@/utils/eventLabels'
-import { fetchAllPages } from '@/api/pagination'
 import {
   reconcileRoleOrder, rankByRoleIds, loadSortMode, saveSortMode, type SortMode,
 } from '@/utils/roleSort'
 import { loadDashboardFilters, saveDashboardFilters } from '@/utils/dashboardFilters'
-import { mergeEventWindow, findUpcomingIndex, buildEventWindow } from '@/utils/eventWindow'
+import { mergeEventWindow, findUpcomingIndex } from '@/utils/eventWindow'
 import { useAttendancePending } from '@/composables/useAttendancePending'
 import { useToast } from '@/composables/useToast'
 import { confirmAction } from '@/utils/confirm'
 import {
-  getEventsEventV1EventsGet,
-  getMyCollectiveMembersEventV1MeCollectivesCollectiveIdMembersGet,
-  getMyCollectiveRolesEventV1MeCollectivesCollectiveIdRolesGet,
-  getParticipationsEventV1ParticipationsGet,
-  getAttendancesEventV1AttendancesGet,
-  getLocationGeoV1LocationsLocationIdGet,
-  patchMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdAttendanceAttendanceIdPatch,
-  createMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdParticipationParticipationIdAttendancePost,
+  getAttendanceMatrixEventV2CollectivesCollectiveIdAttendanceMatrixGet,
+  changeAttendanceEventV2AttendancesAttendanceIdPatch,
+  declareAttendanceEventV2AttendancesPost,
 } from '@/api/generated/almaEventFlow'
 import type {
-  EventRead, EventStatusEnumV1, EventTypeEnumV1, MemberRead, RoleRead, ParticipationRead,
-  AttendanceRead, LocationRead,
+  AttendanceMatrix, AttendanceReadV2, CollectiveEvent, EventStatusEnumV1, EventTypeEnumV1, RoleRead, RosterMember,
 } from '@/api/generated/almaEventFlow'
 
 const router = useRouter()
@@ -361,13 +354,13 @@ const { showError } = useToast()
 const showFilterModal = ref(false)
 
 const loading = ref(false)
-const events = ref<EventRead[]>([])
-const members = ref<MemberRead[]>([])
+const events = ref<CollectiveEvent[]>([])
+const members = ref<RosterMember[]>([])
 const roles = ref<RoleRead[]>([])
-const participations = ref<ParticipationRead[]>([])
-const attendances = ref<AttendanceRead[]>([])
-const locationsById = reactive<Record<string, LocationRead>>({})
-const personNames = reactive<Record<string, string>>({})
+const attendances = ref<AttendanceReadV2[]>([])
+// Курсоры окна: от них продолжается подгрузка в обе стороны
+let pastCursor: string | null = null
+let futureCursor: string | null = null
 
 // Ширины скелетон-строк слегка отличаются -- иначе ряд одинаковых полосок
 // читается как явная заглушка, а не намёк на будущий текст разной длины.
@@ -436,11 +429,11 @@ function persistFilters() {
 
 watch([selectedTypes, selectedRoleIds, activeFilter, sortKey, sortOrder], persistFilters)
 
-function eventMatchesQuery(e: EventRead, q: string): boolean {
+function eventMatchesQuery(e: CollectiveEvent, q: string): boolean {
   return e.name.toLowerCase().includes(q)
 }
 
-function memberMatchesQuery(m: MemberRead, q: string): boolean {
+function memberMatchesQuery(m: RosterMember, q: string): boolean {
   return displayName(m).toLowerCase().includes(q) || m.roles.some((r) => r.name.toLowerCase().includes(q))
 }
 
@@ -512,9 +505,9 @@ const monthGroups = computed<MonthGroup[]>(() => {
 // после подгрузки соседних страниц окна. ----
 const todayFormatted = computed(() => formatDate(todayStr(), settings.dateFormat))
 
-const nextUpcomingEvent = computed<EventRead | null>(() => {
+const nextUpcomingEvent = computed<CollectiveEvent | null>(() => {
   const today = new Date(todayStr())
-  let best: EventRead | null = null
+  let best: CollectiveEvent | null = null
   for (const e of filteredEvents.value) {
     if (!e.date) continue
     const d = new Date(e.date)
@@ -538,13 +531,13 @@ function scrollToNextEvent() {
 const rowSortMode = ref<SortMode>('roles')
 const roleOrder = ref<string[]>([])
 
-function memberRoleRank(m: MemberRead): number {
+function memberRoleRank(m: RosterMember): number {
   return rankByRoleIds(roleOrder.value, m.roles.map((r) => r.id))
 }
 
 // Роль с наивысшим приоритетом в заданном порядке -- та же логика, что задаёт
 // ранг участника, но возвращает id роли для подписи разделителя группы.
-function memberTopRoleId(m: MemberRead): string | null {
+function memberTopRoleId(m: RosterMember): string | null {
   let bestIdx = Number.POSITIVE_INFINITY
   let bestId: string | null = null
   for (const r of m.roles) {
@@ -564,13 +557,13 @@ function toggleRowSortMode() {
   if (collectiveId) saveSortMode(collectiveId, rowSortMode.value)
 }
 
-function displayName(m: MemberRead): string {
-  return personNames[m.person_id] || `#${shortId(m.person_id)}`
+function displayName(m: RosterMember): string {
+  return formatPersonName(m.person)
 }
 
 // На мобильном полное ФИО не помещается в узкую sticky-колонку -- показываем
 // "Фамилия И.О." (та же сокращалка, что и в остальных местах приложения).
-function rowMemberName(m: MemberRead): string {
+function rowMemberName(m: RosterMember): string {
   const full = displayName(m)
   return isDesktop.value ? full : shortenName(full)
 }
@@ -590,7 +583,7 @@ const filteredMembers = computed(() => {
       list = matching
     }
   }
-  const byName = (a: MemberRead, b: MemberRead) => displayName(a).localeCompare(displayName(b), 'ru')
+  const byName = (a: RosterMember, b: RosterMember) => displayName(a).localeCompare(displayName(b), 'ru')
   if (rowSortMode.value === 'alpha') return list.slice().sort(byName)
   return list.slice().sort((a, b) => memberRoleRank(a) - memberRoleRank(b) || byName(a, b))
 })
@@ -598,12 +591,12 @@ const filteredMembers = computed(() => {
 // ---- Матрица посещений ----
 const participationIdByEvent = computed(() => {
   const map = new Map<string, string>()
-  for (const p of participations.value) map.set(p.event_id, p.id)
+  for (const e of events.value) map.set(e.id, e.participation_id)
   return map
 })
 
 const attendanceByKey = computed(() => {
-  const map = new Map<string, AttendanceRead>()
+  const map = new Map<string, AttendanceReadV2>()
   for (const a of attendances.value) map.set(`${a.participation_id}:${a.member_id}`, a)
   return map
 })
@@ -612,7 +605,7 @@ interface CellInfo {
   /** Сама отметка -- undefined, если для этого участника на это мероприятие
    * записи ещё не существует ("нет данных об участии"). Ячейка рендерит либо
    * EventAttendanceChip (как на главной странице), либо кнопку создания. */
-  attendance: AttendanceRead | undefined
+  attendance: AttendanceReadV2 | undefined
   title: string
   hasComment: boolean
   verified: boolean
@@ -626,14 +619,14 @@ interface CellInfo {
   pendingKey: string
 }
 
-// Комментарий уже приходит вместе с attendance (см. loadAllAttendance) --
+// Комментарий уже приходит вместе с attendance (см. loadDashboard) --
 // отдельная подгрузка по наведению не нужна, просто добавляем его в title
 // (нативная всплывающая подсказка браузера).
-function withComment(title: string, a: AttendanceRead): string {
+function withComment(title: string, a: AttendanceReadV2): string {
   return a.comment ? `${title}\nКомментарий: ${a.comment}` : title
 }
 
-function buildCellInfo(a: AttendanceRead | undefined, participationId: string | undefined, memberId: string): CellInfo {
+function buildCellInfo(a: AttendanceReadV2 | undefined, participationId: string | undefined, memberId: string): CellInfo {
   if (!a) {
     const pendingKey = participationId ? `create:${participationId}:${memberId}` : ''
     return {
@@ -653,7 +646,7 @@ function buildCellInfo(a: AttendanceRead | undefined, participationId: string | 
 }
 
 interface MatrixRow {
-  member: MemberRead
+  member: RosterMember
   cells: CellInfo[]
   /** Начинает новую группу ролей -- перед строкой рисуется подпись роли
    * (как разделители на странице мероприятия). Имеет смысл только при
@@ -757,39 +750,41 @@ function todayStr(): string {
   return new Date().toISOString().slice(0, 10)
 }
 
-// Окно мероприятий вокруг даты: прошлое (<=) и будущее (>=) -- та же форма
-// запроса, что и на главной странице (fetchEventWindow в HomePage.vue), только
-// с фильтром по конкретному коллективу вместо набора выбранных.
-async function fetchEventsWindow(collectiveId: string, direction: 'past' | 'future', boundary: string): Promise<EventRead[]> {
-  const res = await getEventsEventV1EventsGet(
-    direction === 'past'
-      ? { participant_id: collectiveId, date__lte: boundary, order_by: '-date', limit: EVENTS_PAGE_SIZE }
-      : { participant_id: collectiveId, date__gte: boundary, order_by: 'date', limit: EVENTS_PAGE_SIZE },
-  )
-  return res.data.items.filter((e) => e.status !== 'template')
+// Окно мероприятий вокруг даты и отметки к ним: одним запросом, тот же вид окна,
+// что у ленты на главной странице (ключевая пагинация по курсорам).
+async function fetchMatrix(
+  collectiveId: string,
+  params: Parameters<typeof getAttendanceMatrixEventV2CollectivesCollectiveIdAttendanceMatrixGet>[1],
+): Promise<AttendanceMatrix> {
+  return (await getAttendanceMatrixEventV2CollectivesCollectiveIdAttendanceMatrixGet(
+    collectiveId, { limit: EVENTS_PAGE_SIZE, ...params },
+  )).data
+}
+
+function mergeAttendances(fresh: AttendanceReadV2[]) {
+  const byId = new Map(attendances.value.map((a) => [a.id, a]))
+  for (const a of fresh) byId.set(a.id, a)
+  attendances.value = [...byId.values()]
+}
+
+function takeWindow(matrix: AttendanceMatrix) {
+  events.value = matrix.events
+  attendances.value = matrix.attendances
+  hasMorePast.value = matrix.has_more_past
+  hasMoreFuture.value = matrix.has_more_future
+  pastCursor = matrix.past_cursor
+  futureCursor = matrix.future_cursor
 }
 
 async function loadInitialEvents(collectiveId: string) {
-  if (useCustomRange.value && dateFrom.value && dateTo.value) {
-    const items = await fetchAllPages<EventRead>((page, limit) =>
-      getEventsEventV1EventsGet({
-        participant_id: collectiveId, date__gte: dateFrom.value, date__lte: dateTo.value, order_by: 'date', page, limit,
-      }))
-    events.value = items.filter((e) => e.status !== 'template')
-    hasMorePast.value = false
-    hasMoreFuture.value = false
-  } else {
-    const today = todayStr()
-    const [past, future] = await Promise.all([
-      fetchEventsWindow(collectiveId, 'past', today),
-      fetchEventsWindow(collectiveId, 'future', today),
-    ])
-    const eventWindow = buildEventWindow(past, future, EVENTS_PAGE_SIZE)
-    events.value = eventWindow.events
-    hasMorePast.value = eventWindow.hasMorePast
-    hasMoreFuture.value = eventWindow.hasMoreFuture
-  }
-  await loadLocations(events.value)
+  const ranged = useCustomRange.value && dateFrom.value && dateTo.value
+  const matrix = await fetchMatrix(
+    collectiveId,
+    ranged ? { date_from: dateFrom.value, date_to: dateTo.value } : { anchor: todayStr() },
+  )
+  members.value = matrix.members
+  roles.value = matrix.roles
+  takeWindow(matrix)
   await positionMatrixScroll()
 }
 
@@ -799,22 +794,20 @@ async function loadInitialEvents(collectiveId: string) {
 async function loadMorePast() {
   const collectiveId = principal.activePrincipalCollectiveId
   if (!collectiveId || useCustomRange.value || !hasMorePast.value || loadingPast.value) return
-  const boundary = events.value[0]?.date
-  if (!boundary) {
+  if (!pastCursor) {
     hasMorePast.value = false
     return
   }
   loadingPast.value = true
   try {
-    const items = await fetchEventsWindow(collectiveId, 'past', boundary)
-    const before = events.value.length
+    const matrix = await fetchMatrix(collectiveId, { direction: 'past', cursor: pastCursor })
     const wrap = matrixWrapRef.value
     const prevScrollWidth = wrap?.scrollWidth ?? 0
     const prevScrollLeft = wrap?.scrollLeft ?? 0
-    events.value = mergeEventWindow(items, events.value)
-    hasMorePast.value = items.length === EVENTS_PAGE_SIZE
-    if (events.value.length === before) hasMorePast.value = false
-    await loadLocations(events.value)
+    events.value = mergeEventWindow(matrix.events, events.value)
+    mergeAttendances(matrix.attendances)
+    hasMorePast.value = matrix.has_more_past
+    pastCursor = matrix.past_cursor ?? pastCursor
     await nextTick()
     if (wrap) wrap.scrollLeft = prevScrollLeft + (wrap.scrollWidth - prevScrollWidth)
   } finally {
@@ -827,19 +820,17 @@ async function loadMorePast() {
 async function loadMoreFuture() {
   const collectiveId = principal.activePrincipalCollectiveId
   if (!collectiveId || useCustomRange.value || !hasMoreFuture.value || loadingFuture.value) return
-  const boundary = events.value[events.value.length - 1]?.date
-  if (!boundary) {
+  if (!futureCursor) {
     hasMoreFuture.value = false
     return
   }
   loadingFuture.value = true
   try {
-    const items = await fetchEventsWindow(collectiveId, 'future', boundary)
-    const before = events.value.length
-    events.value = mergeEventWindow(events.value, items)
-    hasMoreFuture.value = items.length === EVENTS_PAGE_SIZE
-    if (events.value.length === before) hasMoreFuture.value = false
-    await loadLocations(events.value)
+    const matrix = await fetchMatrix(collectiveId, { direction: 'future', cursor: futureCursor })
+    events.value = mergeEventWindow(events.value, matrix.events)
+    mergeAttendances(matrix.attendances)
+    hasMoreFuture.value = matrix.has_more_future
+    futureCursor = matrix.future_cursor ?? futureCursor
   } finally {
     loadingFuture.value = false
   }
@@ -926,15 +917,9 @@ function resetDateRange() {
   if (collectiveId) loadInitialEvents(collectiveId)
 }
 
-// Перезагружает только сами отметки (не участия/участников) -- используется
-// после правки/создания одной ячейки, чтобы матрица отразила новое значение.
-async function refreshAttendances() {
-  attendances.value = await loadAllAttendance(participations.value.map((p) => p.id))
-}
-
 // Клик по самой ячейке -- как и раньше, переход на страницу мероприятия
 // (с параметрами member/collective для подсветки нужной строки).
-function onCellClick(event: EventRead, member: MemberRead) {
+function onCellClick(event: CollectiveEvent, member: RosterMember) {
   if (dragMoved) return // клик после перетаскивания полотна -- не переход
   const collectiveId = principal.activePrincipalCollectiveId
   router.push({
@@ -945,7 +930,7 @@ function onCellClick(event: EventRead, member: MemberRead) {
 
 // Кнопка отметки внутри ячейки (EventAttendanceChip, та же кнопка, что и на
 // главной странице) -- значение уже вычислено самим чипом (handleToggle).
-async function onToggleCell(event: EventRead, member: MemberRead, value: boolean) {
+async function onToggleCell(event: CollectiveEvent, member: RosterMember, value: boolean) {
   const collectiveId = principal.activePrincipalCollectiveId
   if (!collectiveId) return
   const participationId = participationIdByEvent.value.get(event.id)
@@ -953,10 +938,10 @@ async function onToggleCell(event: EventRead, member: MemberRead, value: boolean
   if (!attendance || attendance.is_verified) return
   try {
     await withPending(attendance.id, async () => {
-      await patchMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdAttendanceAttendanceIdPatch(
-        collectiveId, attendance.id, { is_attended: value },
-      )
-      await refreshAttendances()
+      const { data } = await changeAttendanceEventV2AttendancesAttendanceIdPatch(attendance.id, {
+        is_attended: value,
+      })
+      mergeAttendances([data.attendance])
     })
   } catch (err) {
     showError(err, 'Не удалось изменить отметку')
@@ -965,7 +950,7 @@ async function onToggleCell(event: EventRead, member: MemberRead, value: boolean
 
 // Кнопка на месте "нет данных об участии" -- предлагает создать отметку
 // (как addAttendance на странице мероприятия), не переходя на неё.
-async function onCreateCell(event: EventRead, member: MemberRead) {
+async function onCreateCell(event: CollectiveEvent, member: RosterMember) {
   const collectiveId = principal.activePrincipalCollectiveId
   if (!collectiveId) return
   const participationId = participationIdByEvent.value.get(event.id)
@@ -979,10 +964,10 @@ async function onCreateCell(event: EventRead, member: MemberRead) {
   if (!ok) return
   try {
     await withPending(`create:${participationId}:${member.id}`, async () => {
-      await createMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdParticipationParticipationIdAttendancePost(
-        collectiveId, participationId, { member_id: member.id },
-      )
-      await refreshAttendances()
+      const { data } = await declareAttendanceEventV2AttendancesPost({
+        participation_id: participationId, member_id: member.id,
+      })
+      mergeAttendances([data.attendance])
     })
   } catch (err) {
     showError(err, 'Не удалось создать отметку')
@@ -993,7 +978,7 @@ function isPending(key: string): boolean {
   return !!key && pending.has(key)
 }
 
-function openMemberProfile(member: MemberRead) {
+function openMemberProfile(member: RosterMember) {
   if (dragMoved) return
   navigate(`/principal/members/${member.id}`)
 }
@@ -1005,55 +990,13 @@ function onEventHeaderClick(eventId: string) {
 
 // ---- Загрузка остальных данных ----
 
-// Батч-фильтра по локациям нет -- один GET на уникальный location_id (по числу
-// мероприятий, не мероприятий×участников), пропуская уже известные (список
-// только растёт, поэтому уже показанные мероприятия не перезапрашиваются).
-async function loadLocations(eventList: EventRead[]) {
-  const ids = [...new Set(eventList.map((e) => e.location_id).filter((id): id is string => !!id))]
-    .filter((id) => !locationsById[id])
-  await Promise.all(ids.map(async (id) => {
-    try {
-      const res = await getLocationGeoV1LocationsLocationIdGet(id)
-      locationsById[id] = res.data
-    } catch { /* локация не критична для страницы */ }
-  }))
-}
-
-// AttendanceFilter поддерживает participation_id__in -- один батч-запрос на
-// весь коллектив вместо запроса на каждое мероприятие; fetchAllPages
-// дочитывает страницы, если строк больше одного лимита.
-async function loadAllAttendance(participationIds: string[]): Promise<AttendanceRead[]> {
-  if (!participationIds.length) return []
-  const participationIdIn = participationIds.join(',')
-  return fetchAllPages<AttendanceRead>((page, limit) =>
-    getAttendancesEventV1AttendancesGet({ participation_id__in: participationIdIn, page, limit }))
-}
-
 async function loadDashboard(collectiveId: string) {
   loading.value = true
   try {
-    const [activeRes, inactiveRes, rolesRes, participationsRes] = await Promise.all([
-      getMyCollectiveMembersEventV1MeCollectivesCollectiveIdMembersGet(collectiveId, { limit: 100, is_active: true }),
-      getMyCollectiveMembersEventV1MeCollectivesCollectiveIdMembersGet(collectiveId, { limit: 100, is_active: false }),
-      getMyCollectiveRolesEventV1MeCollectivesCollectiveIdRolesGet(collectiveId, { limit: 100 }),
-      getParticipationsEventV1ParticipationsGet({ collective_id: collectiveId, limit: 100 }),
-    ])
-
-    members.value = [...activeRes.data.items, ...inactiveRes.data.items]
-    roles.value = rolesRes.data.items
-    participations.value = participationsRes.data.items
+    await loadInitialEvents(collectiveId)
     roleOrder.value = reconcileRoleOrder(collectiveId, roles.value.map((r) => r.id))
     rowSortMode.value = loadSortMode(collectiveId)
     applyStoredFilters(collectiveId)
-
-    await Promise.all([
-      loadInitialEvents(collectiveId),
-      loadAllAttendance(participations.value.map((p) => p.id)).then((list) => { attendances.value = list }),
-      Promise.all(members.value.map(async (m) => {
-        const name = await resolvePersonName(m.person_id)
-        if (name) personNames[m.person_id] = name
-      })),
-    ])
   } catch (err) {
     console.error('Failed to load dashboard', err)
   } finally {
@@ -1084,7 +1027,6 @@ watch(() => principal.activePrincipalCollectiveId, (collectiveId) => {
     events.value = []
     members.value = []
     roles.value = []
-    participations.value = []
     attendances.value = []
     return
   }

@@ -1,11 +1,9 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import { getMyCollectivesEventV1MeCollectivesGet } from '@/api/generated/almaEventFlow'
-import { getCollectiveOrgV1CollectivesCollectiveIdGet } from '@/api/generated/almaEventFlow'
-import { getMyMembersEventV1MeMembersGet } from '@/api/generated/almaEventFlow'
+import { getMyContextEventV2MeContextGet } from '@/api/generated/almaEventFlow'
+import type { ViewerCollective } from '@/api/generated/almaEventFlow'
 import { useAuthStore } from './auth'
 import { getCollectiveColor } from '@/utils/colors'
-import { unwrapList } from '@/api/pagination'
 
 export interface CollectiveInfo {
   id: string
@@ -21,6 +19,7 @@ export const usePrincipalStore = defineStore('principal', () => {
   // «Все мероприятия»: показывает вообще все активные события и блокирует чипы коллективов
   const showAllEvents = ref(false)
   const collectives = ref<CollectiveInfo[]>([])
+  const memberships = ref<ViewerCollective[]>([])
   const isPrincipal = ref(false)
   const loading = ref(false)
   const principalCollectiveIds = ref<Set<string>>(new Set())
@@ -89,71 +88,53 @@ export const usePrincipalStore = defineStore('principal', () => {
   }
 
   function setCollectives(list: CollectiveInfo[], principalIds: string[] = []) {
+    if (list.length === 0) loadedFor = null
     collectives.value = list
     principalCollectiveIds.value = new Set(principalIds)
     isPrincipal.value = principalIds.length > 0
     restoreActivePrincipalCollective(principalIds)
   }
 
-  // Дедупликация параллельных вызовов (App.vue и HomePage могут запросить одновременно)
+  // Дедупликация параллельных вызовов (App.vue и HomePage могут запросить одновременно);
+  // свежий ответ того же аккаунта повторно не запрашивается, force берёт актуальное.
+  const CONTEXT_TTL_MS = 60_000
   let inFlight: Promise<void> | null = null
-  function fetchCollectives(): Promise<void> {
+  let loadedFor: string | null = null
+  let loadedAt = 0
+  function fetchCollectives(force = false): Promise<void> {
     if (inFlight) return inFlight
-    inFlight = doFetchCollectives().finally(() => { inFlight = null })
+    const account = auth.jwtPayload?.sub ?? null
+    if (!force && account !== null && loadedFor === account && Date.now() - loadedAt < CONTEXT_TTL_MS) {
+      return Promise.resolve()
+    }
+    inFlight = doFetchCollectives(account).finally(() => { inFlight = null })
     return inFlight
   }
 
-  async function getMyCollectivesWithRetry() {
+  async function getMyContextWithRetry() {
     try {
-      return await getMyCollectivesEventV1MeCollectivesGet()
+      return await getMyContextEventV2MeContextGet()
     } catch {
       await new Promise((resolve) => setTimeout(resolve, 500))
-      return await getMyCollectivesEventV1MeCollectivesGet()
+      return await getMyContextEventV2MeContextGet()
     }
   }
 
-  async function doFetchCollectives() {
+  async function doFetchCollectives(account: string | null) {
     loading.value = true
     try {
-      const myResp = await getMyCollectivesWithRetry()
-      const myIds = unwrapList<{ id: string }>(myResp.data).map((i) => i.id)
-
-      // Членства пользователя (роль участника) — отдельная ручка me/members,
-      // backend сам резолвит person из JWT
-      const memberMap = new Map<string, string>()
-      const collectiveIdsFromMembers = new Set<string>()
-
-      try {
-        const memberList = unwrapList<{ id: string; collective_id: string }>(
-          (await getMyMembersEventV1MeMembersGet()).data,
-        )
-        for (const m of memberList) {
-          memberMap.set(m.collective_id, m.id)
-          collectiveIdsFromMembers.add(m.collective_id)
-        }
-      } catch (e) {
-        console.warn('fetch memberships failed:', e)
-      }
-
-      userMemberIds.value = memberMap
-
-      // Build full set of collective IDs (principal + participant)
-      const allCollIds = new Set<string>([...myIds, ...collectiveIdsFromMembers])
-
-      const result: CollectiveInfo[] = await Promise.all(
-        Array.from(allCollIds).map(async (id) => {
-          try {
-            const resp = await getCollectiveOrgV1CollectivesCollectiveIdGet(id)
-            const c = resp.data as { id: string; name: string }
-            return { id: c.id, name: c.name, color: getCollectiveColor(c.id) }
-          } catch {
-            return { id, name: `Коллектив ${id.slice(0, 8)}`, color: getCollectiveColor(id) }
-          }
-        }),
+      const rows = (await getMyContextWithRetry()).data.collectives
+      memberships.value = rows
+      userMemberIds.value = new Map(
+        rows.flatMap((c) => (c.member_id ? [[c.id, c.member_id] as [string, string]] : [])),
       )
-
-      setCollectives(result, myIds)
+      setCollectives(
+        rows.map((c) => ({ id: c.id, name: c.name, color: getCollectiveColor(c.id) })),
+        rows.filter((c) => c.is_principal).map((c) => c.id),
+      )
       loadFromStorage()
+      loadedFor = account
+      loadedAt = Date.now()
     } catch (e) {
       console.error('fetchCollectives failed:', e)
     } finally {
@@ -166,6 +147,7 @@ export const usePrincipalStore = defineStore('principal', () => {
     showAllEvents,
     activePrincipalCollectiveId,
     collectives,
+    memberships,
     principalCollectives,
     isPrincipal,
     loading,

@@ -69,7 +69,7 @@ import {
   patchMyCollectiveMemberEventV1MeCollectivesCollectiveIdMembersMemberIdPatch,
   searchPersonProfileV1PersonsGet,
 } from '@/api/generated/almaEventFlow'
-import type { MemberRead, RoleRead } from '@/api/generated/almaEventFlow'
+import type { RoleRead } from '@/api/generated/almaEventFlow'
 import EntityPickerField from '@/components/common/EntityPickerField.vue'
 import UiField from '@/components/common/UiField.vue'
 import { useToast } from '@/composables/useToast'
@@ -80,7 +80,7 @@ interface PersonOption { id: string; name: string; surname: string; patronymic?:
 const props = defineProps<{
   isOpen: boolean
   collectiveId: string
-  member: MemberRead | null
+  member: { id: string; roles: { id: string }[]; is_active?: boolean } | null
   memberName: string
   roles: RoleRead[]
 }>()

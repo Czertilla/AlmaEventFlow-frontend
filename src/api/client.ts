@@ -7,6 +7,7 @@ const BASE_URL = import.meta.env.VITE_API_URL || ''
 // Set global defaults — orval-generated functions use axios directly
 axios.defaults.baseURL = BASE_URL
 axios.defaults.withCredentials = true
+axios.defaults.paramsSerializer = { indexes: null }
 
 let accessToken: string | null = null
 

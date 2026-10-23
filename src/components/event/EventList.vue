@@ -86,7 +86,7 @@ import { IonIcon } from '@ionic/vue'
 import { checkmarkDoneOutline } from 'ionicons/icons'
 import EventPreview from './EventPreview.vue'
 import { usePlatform } from '@/composables/usePlatform'
-import type { EventRead } from '@/api/generated/almaEventFlow'
+import type { EventCard } from '@/api/generated/almaEventFlow'
 import type { EventAttendanceItem, EventTimeRange } from '@/stores/eventCalendar'
 import type { CollectiveAttendanceItem } from './EventPreview.vue'
 import { cardForDay, eventDay, topCardIndex } from '@/utils/listScroll'
@@ -94,7 +94,7 @@ import { format, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
 
 const props = defineProps<{
-  events: EventRead[]
+  events: EventCard[]
   attendances: Map<string, EventAttendanceItem[]>
   stageTimes: Map<string, EventTimeRange>
   isPrincipal: boolean
@@ -419,7 +419,7 @@ function restoreAnchor() {
   lastScrollTop = root.scrollTop
 }
 
-function getItems(event: EventRead): CollectiveAttendanceItem[] {
+function getItems(event: EventCard): CollectiveAttendanceItem[] {
   const items = props.attendances.get(event.id)
   if (!items || items.length === 0) return []
   return items.map((item) => ({

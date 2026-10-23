@@ -286,17 +286,16 @@ import UiTextarea from '@/components/common/UiTextarea.vue'
 import { levelOptions, typeOptions, formatOptions } from '@/utils/eventLabels'
 import { optionsFromPairs, withAny, type SelectOption } from '@/utils/selectOptions'
 import {
-  getEventsEventV1EventsGet,
-  getParticipationsEventV1ParticipationsGet,
+  getFeedEventV2FeedGet,
+  getMyCollectiveTemplatesEventV1MeCollectivesCollectiveIdTemplatesGet,
   getEventStagesEventV1EventsEventIdStagesGet,
-  getMyCollectiveMembersEventV1MeCollectivesCollectiveIdMembersGet,
-  getMyCollectiveRolesEventV1MeCollectivesCollectiveIdRolesGet,
+  getCollectiveRosterEventV2CollectivesCollectiveIdRosterGet,
   createMyEventEventV1MeEventsPost,
   createMyCollectiveParticipationEventV1MeCollectivesCollectiveIdParticipationsPost,
 } from '@/api/generated/almaEventFlow'
-import { resolvePersonName, rememberMemberPerson, shortId } from '@/utils/names'
+import { formatPersonName } from '@/utils/names'
 import { stageAutoNames, stageEffectiveNames, stageEndBeforeStart } from '@/utils/stages'
-import type { EventRead, EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1, MemberRead, RoleRead, LocationRead } from '@/api/generated/almaEventFlow'
+import type { EventRead, EventCard, EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1, RosterMember, RoleRead, LocationRead } from '@/api/generated/almaEventFlow'
 
 const props = defineProps<{ open: boolean }>()
 const emit = defineEmits<{
@@ -341,10 +340,9 @@ function toTzIso(localInput: string): string {
 const principal = usePrincipalStore()
 const { showSuccess, showError } = useToast()
 
-const events = ref<EventRead[]>([])
 const templates = ref<EventRead[]>([])
-const allEvents = ref<EventRead[]>([])
-const members = ref<MemberRead[]>([])
+const upcomingEvents = ref<EventCard[]>([])
+const members = ref<RosterMember[]>([])
 const roles = ref<RoleRead[]>([])
 const sourcesLoading = ref(false)
 const membersLoading = ref(false)
@@ -488,16 +486,17 @@ const isJoinMode = computed(() =>
   !!form.value.sourceId && !templates.value.some((t) => t.id === form.value.sourceId),
 )
 
+// Активные мероприятия, в которых коллектив ещё не участвует
 const joinableEvents = computed(() =>
-  allEvents.value.filter((e) => e.status === 'active' && !events.value.some((ev) => ev.id === e.id)),
+  upcomingEvents.value.filter(
+    (e) => !e.participations.some((p) => p.collective_id === principal.activePrincipalCollectiveId),
+  ),
 )
 
 const activeMembers = computed(() => members.value.filter((m) => m.is_active !== false))
 
-const personNames = reactive<Record<string, string>>({})
-
-function memberName(m: MemberRead): string {
-  return personNames[m.person_id] || `#${shortId(m.person_id)}`
+function memberName(m: RosterMember): string {
+  return formatPersonName(m.person)
 }
 
 const filteredMembers = computed(() => {
@@ -510,7 +509,7 @@ const allSelected = computed(() =>
   activeMembers.value.length > 0 && activeMembers.value.every((m) => selectedMemberIds.value.has(m.id)),
 )
 
-function membersOfRole(roleId: string): MemberRead[] {
+function membersOfRole(roleId: string): RosterMember[] {
   return activeMembers.value.filter((m) => m.roles.some((r) => r.id === roleId))
 }
 
@@ -750,14 +749,14 @@ async function submit() {
 async function loadSources(collectiveId: string) {
   sourcesLoading.value = true
   try {
-    const [participationsResp, eventsResp] = await Promise.all([
-      getParticipationsEventV1ParticipationsGet({ collective_id: collectiveId, limit: 100 }),
-      getEventsEventV1EventsGet({ limit: 100, order_by: '-date' }),
+    const [templatesResp, feedResp] = await Promise.all([
+      getMyCollectiveTemplatesEventV1MeCollectivesCollectiveIdTemplatesGet(collectiveId),
+      getFeedEventV2FeedGet({
+        direction: 'future', anchor: fnsFormat(new Date(), 'yyyy-MM-dd'), status: ['active'], limit: 50,
+      }),
     ])
-    allEvents.value = eventsResp.data.items
-    const eventIds = new Set(participationsResp.data.items.map((p) => p.event_id))
-    events.value = allEvents.value.filter((e) => eventIds.has(e.id))
-    templates.value = events.value.filter((e) => e.status === 'template')
+    templates.value = templatesResp.data
+    upcomingEvents.value = feedResp.data.items
   } catch (err) {
     console.error('Failed to load event sources', err)
   } finally {
@@ -768,18 +767,10 @@ async function loadSources(collectiveId: string) {
 async function loadMembers(collectiveId: string) {
   membersLoading.value = true
   try {
-    const [membersResp, rolesResp] = await Promise.all([
-      getMyCollectiveMembersEventV1MeCollectivesCollectiveIdMembersGet(collectiveId, { limit: 100 }),
-      getMyCollectiveRolesEventV1MeCollectivesCollectiveIdRolesGet(collectiveId, { limit: 100 }),
-    ])
-    members.value = membersResp.data.items
-    roles.value = rolesResp.data.items
+    const { data } = await getCollectiveRosterEventV2CollectivesCollectiveIdRosterGet(collectiveId)
+    members.value = data.members
+    roles.value = data.roles
     if (!participantsExpanded.value) selectedMemberIds.value = new Set(activeMembers.value.map((m) => m.id))
-    await Promise.all(membersResp.data.items.map(async (m) => {
-      rememberMemberPerson(m.id, m.person_id)
-      const name = await resolvePersonName(m.person_id)
-      if (name) personNames[m.person_id] = name
-    }))
   } catch (err) {
     console.error('Failed to load members/roles', err)
   } finally {

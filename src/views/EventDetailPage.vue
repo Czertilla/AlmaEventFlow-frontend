@@ -38,7 +38,7 @@
                   <ion-icon :icon="timeOutline" />
                   {{ eventTime }}
                 </span>
-                <LocationDisplay v-if="displayLocation" :location="displayLocation" class="info-meta-item" />
+                <LocationDisplay v-if="shownLocation" :location="shownLocation" class="info-meta-item" />
                 <UuidBadge :id="event.id" />
               </div>
               <p class="info-description">{{ event.description || 'Нет описания' }}</p>
@@ -110,7 +110,6 @@
                 <div class="my-attendance-chips">
                   <EventAttendanceChip
                     :is-attended="p.myAttendance.is_attended"
-                    :edited-at="p.myAttendance.edited_at"
                     :verified="p.myAttendance.is_verified"
                     :attendance-id="p.myAttendance.id"
                     @toggle="(v) => toggleAttendance(p, p.myAttendance!, v)"
@@ -131,13 +130,6 @@
                 </button>
 
                 <div v-if="expanded[p.participationId]" class="attendance-list">
-                  <div v-if="attendancesLoading(p)" class="attendance-list-skeleton" aria-busy="true">
-                    <div v-for="n in p.attendances.length" :key="n" class="attendance-row">
-                      <span class="skeleton skeleton--text attendance-skel-name" :style="{ width: skeletonWidth(n) }" />
-                      <span class="skeleton attendance-skel-chip" />
-                    </div>
-                  </div>
-                  <template v-else>
                   <template v-for="g in attendanceGroups(p)" :key="g.key">
                   <div v-if="g.label" class="attendance-divider">{{ g.label }}</div>
                   <div
@@ -158,7 +150,6 @@
                     <div class="attendance-row-chips">
                       <EventAttendanceChip
                         :is-attended="a.is_attended"
-                        :edited-at="a.edited_at"
                         :verified="a.is_verified || (!p.isPrincipal && a.id !== p.myAttendance?.id)"
                         :own="a.id === p.myAttendance?.id"
                         :attendance-id="a.id"
@@ -188,7 +179,6 @@
                       </template>
                     </div>
                   </div>
-                  </template>
                   </template>
 
                   <!-- Добавление attendance участнику без отметки -->
@@ -315,14 +305,13 @@ import { usePlatform } from '@/composables/usePlatform'
 import { useToast } from '@/composables/useToast'
 import { useEventParticipations, type ParticipationItem } from '@/composables/useEventParticipations'
 import { formatDate, formatTime } from '@/utils/date'
-import { locationPoint } from '@/utils/geo'
+import { locationPoint, placeAsLocation } from '@/utils/geo'
 import { getCollectiveColor } from '@/utils/colors'
 import {
   statusColor as statusColorOf, statusLabel as statusLabelOf,
   priorityOptions,
 } from '@/utils/eventLabels'
 import {
-  getEventEventV1EventsEventIdGet,
   getEventStagesEventV1EventsEventIdStagesGet,
   createMyCollectiveParticipationEventV1MeCollectivesCollectiveIdParticipationsPost,
   patchMyCollectiveEventEventV1MeCollectivesCollectiveIdEventsEventIdPatch,
@@ -353,8 +342,6 @@ const { isDesktop } = usePlatform()
 const { showError, showSuccess } = useToast()
 
 const eventId = route.params.id as string
-const event = ref<EventRead | null>(null)
-const stages = ref<StageRead[]>([])
 const loading = ref(true)
 const displayLocation = ref<LocationRead | null>(null)
 const mappedLocation = computed(() =>
@@ -374,19 +361,27 @@ async function loadDisplayLocation(locationId: string | null | undefined) {
   }
 }
 
-// Доменная логика участий/посещаемости вынесена в composable
+// Доменная логика страницы вынесена в composable: страница приходит целиком одним ответом
 const {
-  participationItems, expanded, addMemberSel, pending,
+  page, participationItems, expanded, addMemberSel, pending,
   joinableCollectives, editableCollectiveId,
-  availableMembers, memberText, attendancesLoading, whenNamesSettled, attendanceGroups, loadParticipations,
+  availableMembers, memberText, attendanceGroups, loadPage,
   toggleAttendance, saveComment, deleteComment, toggleVerify,
   addAttendance, removeAttendance, verifyAll, cancelParticipation,
 } = useEventParticipations(eventId)
 
-const SKELETON_WIDTHS = ['46%', '34%', '58%', '40%']
-function skeletonWidth(n: number): string {
-  return SKELETON_WIDTHS[n % SKELETON_WIDTHS.length]
-}
+const event = computed(() => page.value?.event ?? null)
+const stages = computed<StageRead[]>({
+  get: () => page.value?.stages ?? [],
+  set: (value) => { if (page.value) page.value.stages = value },
+})
+
+// Пока полная локация не пришла из geo, строка места берётся из самой страницы
+const shownLocation = computed<LocationRead | null>(() => {
+  if (displayLocation.value) return displayLocation.value
+  const place = page.value?.event.location
+  return place ? placeAsLocation(place) : null
+})
 
 const eventTime = computed(() => {
   const d = event.value?.date
@@ -419,7 +414,7 @@ async function saveEvent(body: EventEditBody): Promise<EventRead> {
 
 async function onEventSaved(saved: EventRead | void) {
   if (!saved) return
-  event.value = saved
+  await loadPage()
   await loadDisplayLocation(saved.location_id)
 }
 
@@ -474,7 +469,7 @@ async function submitJoin() {
       priority_degree: joinForm.priority,
     })
     showJoinModal.value = false
-    await loadParticipations()
+    await loadPage()
     showSuccess(`Участие «${collective.name}» создано`)
   } catch (err) {
     showError(err, 'Не удалось создать участие')
@@ -501,7 +496,6 @@ async function scrollToRequestedAttendance() {
   if (target.canExpand) expanded[target.participationId] = true
   const attendance = target.attendances.find((a) => a.member_id === memberId)
   if (!attendance) return
-  await whenNamesSettled()
   highlightedAttendanceId.value = attendance.id
   await nextTick()
   document.getElementById(`attendance-row-${attendance.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
@@ -518,20 +512,17 @@ async function scrollToRequestedAttendance() {
 onIonViewWillEnter(async () => {
   loading.value = true
   try {
-    const [eventResp, stagesResp] = await Promise.all([
-      getEventEventV1EventsEventIdGet(eventId),
-      getEventStagesEventV1EventsEventIdStagesGet(eventId, { limit: 100, order_by: 'start_at' }).catch(() => null),
-      principal.fetchCollectives(),
-    ])
-    event.value = eventResp.data
-    stages.value = stagesResp?.data.items ?? []
-    await Promise.all([loadParticipations(), loadDisplayLocation(event.value.location_id)])
-    await scrollToRequestedAttendance()
+    await Promise.all([loadPage(), principal.fetchCollectives()])
   } catch (err) {
     console.error('Failed to load event', err)
+    page.value = null
   } finally {
     loading.value = false
   }
+  if (!page.value) return
+  loadDisplayLocation(page.value.event.location_id)
+  await nextTick()
+  await scrollToRequestedAttendance()
 })
 </script>
 
@@ -948,23 +939,6 @@ onIonViewWillEnter(async () => {
   display: flex;
   flex-direction: column;
   gap: 6px;
-}
-
-.attendance-list-skeleton {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.attendance-skel-name {
-  height: 14px;
-}
-
-.attendance-skel-chip {
-  width: 136px;
-  height: 28px;
-  margin-left: auto;
-  border-radius: var(--radius-pill);
 }
 
 .attendance-divider {

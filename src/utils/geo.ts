@@ -1,4 +1,4 @@
-import type { LocationRead } from '@/api/generated/almaEventFlow'
+import type { EventPlace, LocationRead } from '@/api/generated/almaEventFlow'
 
 export interface Coordinates {
   lat: number
@@ -49,4 +49,10 @@ export function formatDistance(meters: number): string {
   if (tens < 1000) return `${Math.max(10, tens)} м`
   const km = meters / 1000
   return km < 10 ? `${km.toFixed(1).replace('.', ',')} км` : `${Math.round(km)} км`
+}
+
+/** The place an event list carries (text and point) in the shape the location components read. */
+export function placeAsLocation(place: EventPlace): LocationRead {
+  const spot = place.lat != null && place.lon != null ? { lat: place.lat, lon: place.lon } : null
+  return { id: place.id, name: place.name, spot } as LocationRead
 }

@@ -27,10 +27,10 @@ import { checkmarkCircle, closeCircle, removeCircle, lockClosed } from 'ionicons
 import { useAttendancePending } from '@/composables/useAttendancePending'
 
 const props = withDefaults(defineProps<{
+  /** null — отметку ещё никто не ставил (так отвечает сервер) */
   isAttended: boolean | null | undefined
-  editedAt: string | null | undefined
   verified: boolean | null | undefined
-  /** Это отметка текущего пользователя — только для неё показывается состояние «Требует отметки» */
+  /** Это отметка текущего пользователя — только для неё надпись «Требует отметки», у чужой — «Не отмечено» */
   own?: boolean
   /** id записи attendance — для глобального индикатора загрузки PATCH-запросов */
   attendanceId?: string
@@ -53,7 +53,7 @@ type ChipState = 'pending' | 'attended' | 'absent'
 
 // Заверение не скрывает состояние — чип всегда показывает фактическую отметку
 const state = computed<ChipState>(() => {
-  if (!props.verified && props.own && props.editedAt == null) return 'pending'
+  if (props.isAttended == null) return 'pending'
   return props.isAttended ? 'attended' : 'absent'
 })
 
@@ -64,7 +64,7 @@ const chipIcon = computed(() => ({
 }[state.value]))
 
 const label = computed(() => ({
-  pending: 'Требует отметки',
+  pending: props.own ? 'Требует отметки' : 'Не отмечено',
   attended: 'Присутствует',
   absent: 'Отсутствует',
 }[state.value]))

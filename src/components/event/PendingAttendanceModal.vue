@@ -62,13 +62,13 @@ import {
 import { closeOutline, checkmarkCircleOutline } from 'ionicons/icons'
 import HelpTip from '@/components/common/HelpTip.vue'
 import EventPreview, { type CollectiveAttendanceItem } from './EventPreview.vue'
-import type { EventRead } from '@/api/generated/almaEventFlow'
+import type { EventCard } from '@/api/generated/almaEventFlow'
 import type { EventAttendanceItem } from '@/stores/eventCalendar'
 
 const props = defineProps<{
   isOpen: boolean
   loading: boolean
-  events: EventRead[]
+  events: EventCard[]
   attendances: Map<string, EventAttendanceItem[]>
   isPrincipal: boolean
   allDone: boolean

@@ -117,14 +117,11 @@ describe('day marks and unmarked rows', () => {
     expect(dayMarks(days.get('2026-03-03')!)).toEqual([{ key: 'unmarked', outcome: 'unmarked' }])
   })
 
-  test('a row nobody edited is unmarked whatever it stores', () => {
-    const edited = '2026-01-01T00:00:00Z'
-
-    expect(isUnmarkedAttendance({ is_attended: false, edited_at: null, is_verified: false })).toBe(true)
-    expect(isUnmarkedAttendance({ is_attended: true, edited_at: null, is_verified: false })).toBe(true)
-    expect(isUnmarkedAttendance({ is_attended: null, edited_at: edited, is_verified: false })).toBe(true)
-    expect(isUnmarkedAttendance({ is_attended: false, edited_at: edited, is_verified: false })).toBe(false)
-    expect(isUnmarkedAttendance({ is_attended: false, edited_at: null, is_verified: true })).toBe(false)
+  test('only a null mark is unmarked', () => {
+    expect(isUnmarkedAttendance({ is_attended: null })).toBe(true)
+    expect(isUnmarkedAttendance({})).toBe(true)
+    expect(isUnmarkedAttendance({ is_attended: false })).toBe(false)
+    expect(isUnmarkedAttendance({ is_attended: true })).toBe(false)
   })
 })
 

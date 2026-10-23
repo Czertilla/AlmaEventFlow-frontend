@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import type { EventRead } from '@/api/generated/almaEventFlow'
+import type { EventCard } from '@/api/generated/almaEventFlow'
 import {
   HOME_FILTER_DEFAULTS,
   countActiveFilters,
@@ -14,7 +14,7 @@ import {
 const query = (patch: Partial<HomeFilterQuery> = {}): HomeFilterQuery => ({ ...HOME_FILTER_DEFAULTS, ...patch })
 const TODAY = '2026-10-22'
 
-function event(patch: Partial<EventRead>): EventRead {
+function event(patch: Partial<EventCard>): EventCard {
   return {
     id: 'e1',
     name: 'Концерт',
@@ -24,7 +24,7 @@ function event(patch: Partial<EventRead>): EventRead {
     format: 'offline',
     date: TODAY,
     ...patch,
-  } as EventRead
+  } as EventCard
 }
 
 describe('parseHomeFilters', () => {
@@ -71,23 +71,23 @@ describe('toggled', () => {
 
 describe('homeFilterParams', () => {
   test('a participant asks for active events only', () => {
-    expect(homeFilterParams(parseHomeFilters(query({ statuses: 'any' })), false, TODAY)).toEqual({ status: 'active' })
+    expect(homeFilterParams(parseHomeFilters(query({ statuses: 'any' })), false, TODAY)).toEqual({ status: ['active'] })
   })
 
   test('a leader asks for the chosen statuses, never for templates', () => {
-    expect(homeFilterParams(parseHomeFilters(query({ statuses: 'draft,active' })), true, TODAY).status__in).toBe('draft,active')
-    expect(homeFilterParams(parseHomeFilters(query({ statuses: 'any' })), true, TODAY).status__in).toBe('draft,active,archived')
+    expect(homeFilterParams(parseHomeFilters(query({ statuses: 'draft,active' })), true, TODAY).status).toEqual(['draft', 'active'])
+    expect(homeFilterParams(parseHomeFilters(query({ statuses: 'any' })), true, TODAY).status).toEqual(['draft', 'active', 'archived'])
   })
 
   test('several types, levels and formats go as lists', () => {
     const params = homeFilterParams(parseHomeFilters(query({ types: 'concert,play', levels: 'regional,national', formats: 'online' })), false, TODAY)
 
-    expect(params).toMatchObject({ type__in: 'concert,play', level__in: 'regional,national', format__in: 'online' })
+    expect(params).toMatchObject({ type: ['concert', 'play'], level: ['regional', 'national'], format: ['online'] })
   })
 
   test('upcoming starts at today, otherwise there is no date bound', () => {
-    expect(homeFilterParams(parseHomeFilters(query({ upcoming: '1' })), false, TODAY).date__gte).toBe(TODAY)
-    expect(homeFilterParams(parseHomeFilters(query()), false, TODAY).date__gte).toBeUndefined()
+    expect(homeFilterParams(parseHomeFilters(query({ upcoming: '1' })), false, TODAY).date_from).toBe(TODAY)
+    expect(homeFilterParams(parseHomeFilters(query()), false, TODAY).date_from).toBeUndefined()
   })
 })
 

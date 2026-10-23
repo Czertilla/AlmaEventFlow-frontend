@@ -133,7 +133,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePrincipalStore } from '@/stores/principal'
@@ -152,9 +152,6 @@ import {
   settingsOutline, logOutOutline, chevronForwardOutline,
   createOutline, shieldCheckmarkOutline,
 } from 'ionicons/icons'
-import { getMyMembersEventV1MeMembersGet } from '@/api/generated/almaEventFlow'
-import type { MemberRead } from '@/api/generated/almaEventFlow'
-import { unwrapList } from '@/api/pagination'
 import { getCollectiveColor } from '@/utils/colors'
 import { contactTypeLabels } from '@/utils/contactTypes'
 import { formatDate } from '@/utils/date'
@@ -167,7 +164,6 @@ const { isDesktop } = usePlatform()
 
 const myProfile = useMyProfileStore()
 const settings = useSettingsStore()
-const memberships = ref<MemberRead[]>([])
 
 const profile = computed(() => myProfile.profile)
 const fullName = computed(() => (profile.value ? formatPersonName(profile.value) : ''))
@@ -189,44 +185,33 @@ interface CollectiveRow {
   order: number
 }
 
-const collectiveRows = computed<CollectiveRow[]>(() => {
-  const byCollective = new Map(memberships.value.map((m) => [m.collective_id, m]))
-  const ids = new Set([...byCollective.keys(), ...principal.principalCollectiveIds])
-  return [...ids]
-    .map((id) => {
-      const member = byCollective.get(id)
-      const leader = principal.principalCollectiveIds.has(id)
+const collectiveRows = computed<CollectiveRow[]>(() =>
+  principal.memberships
+    .map((c) => {
+      const inactive = c.member_id !== null && c.member_is_active === false
       const meta = [
-        leader ? 'Руководитель' : '',
-        ...(member?.roles.map((role) => role.name) ?? []),
-        member && !member.is_active ? 'Неактивен' : '',
+        c.is_principal ? 'Руководитель' : '',
+        ...c.roles.map((role) => role.name),
+        inactive ? 'Неактивен' : '',
       ].filter(Boolean)
       return {
-        collectiveId: id,
-        name: principal.collectives.find((c) => c.id === id)?.name ?? `Коллектив ${id.slice(0, 8)}`,
-        color: getCollectiveColor(id),
-        memberId: member?.id ?? null,
+        collectiveId: c.id,
+        name: c.name,
+        color: getCollectiveColor(c.id),
+        memberId: c.member_id,
         meta: meta.join(' · ') || 'Участник',
-        order: member && !member.is_active ? 1 : 0,
+        order: inactive ? 1 : 0,
       }
     })
-    .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, 'ru'))
-})
+    .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, 'ru')),
+)
 
 async function loadAll() {
   if (!auth.user) await auth.fetchUser()
   await myProfile.load(true)
-  if (!myProfile.profile) {
-    memberships.value = []
-    return
-  }
+  if (!myProfile.profile) return
   await myProfile.syncToken()
-  try {
-    await principal.fetchCollectives()
-    memberships.value = unwrapList<MemberRead>((await getMyMembersEventV1MeMembersGet()).data)
-  } catch {
-    memberships.value = []
-  }
+  await principal.fetchCollectives(true)
 }
 
 onIonViewWillEnter(loadAll)

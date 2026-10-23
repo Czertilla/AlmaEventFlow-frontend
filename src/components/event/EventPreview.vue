@@ -26,7 +26,6 @@
           <div class="attendance-chips" @click.stop>
             <EventAttendanceChip
               :is-attended="item.attendance.is_attended"
-              :edited-at="item.attendance.edited_at"
               :verified="item.attendance.is_verified"
               :attendance-id="item.attendance.id"
               :show-lock="false"
@@ -55,7 +54,6 @@
           <div class="collective-actions" v-if="item.attendance" @click.stop>
             <EventAttendanceChip
               :is-attended="item.attendance.is_attended"
-              :edited-at="item.attendance.edited_at"
               :verified="item.attendance.is_verified"
               :attendance-id="item.attendance.id"
               :show-lock="false"
@@ -87,14 +85,14 @@ import { getCollectiveColor } from '@/utils/colors'
 import EventAttendanceChip from './EventAttendanceChip.vue'
 import EventCommentChip from './EventCommentChip.vue'
 import LocationDisplay from '@/components/geo/LocationDisplay.vue'
-import type { EventRead, AttendanceRead, EventStatusEnumV1, LocationRead } from '@/api/generated/almaEventFlow'
+import type { EventCard, AttendanceReadV2, EventStatusEnumV1, LocationRead } from '@/api/generated/almaEventFlow'
 import type { EventTimeRange } from '@/stores/eventCalendar'
 import { calendarOutline, lockClosed } from 'ionicons/icons'
 
 export interface CollectiveAttendanceItem {
   collectiveId: string
   collectiveName: string
-  attendance: AttendanceRead | null
+  attendance: AttendanceReadV2 | null
   attendedCount?: number
   totalCount?: number
 }
@@ -102,7 +100,7 @@ export interface CollectiveAttendanceItem {
 const getColor = getCollectiveColor
 
 const props = defineProps<{
-  event: EventRead
+  event: EventCard
   items: CollectiveAttendanceItem[]
   timeRange?: EventTimeRange
   isPrincipal: boolean

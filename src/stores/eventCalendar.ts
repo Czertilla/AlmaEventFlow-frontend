@@ -1,15 +1,12 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, addMonths, isSameDay, isWithinInterval } from 'date-fns'
-import { getParticipationsEventV1ParticipationsGet, getAttendancesEventV1AttendancesGet, getStagesEventV1StagesGet } from '@/api/generated/almaEventFlow'
-import type { EventRead, AttendanceRead, StageRead } from '@/api/generated/almaEventFlow'
-import type { CollectiveInfo } from './principal'
-import { fetchAllPages } from '@/api/pagination'
+import type { AttendanceChanged, AttendanceReadV2, EventCard } from '@/api/generated/almaEventFlow'
 
 export interface EventAttendanceItem {
   collectiveId: string
   collectiveName: string
-  attendance: AttendanceRead | null
+  attendance: AttendanceReadV2 | null
   attendedCount: number
   totalCount: number
 }
@@ -19,15 +16,48 @@ export interface EventTimeRange {
   last: string
 }
 
+function byDate(a: EventCard, b: EventCard): number {
+  const diff = new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime()
+  if (diff !== 0) return diff
+  return a.id < b.id ? -1 : a.id > b.id ? 1 : 0
+}
+
+/** The newer of two copies of one card; the one that came later wins a tie. */
+function newer(a: EventCard, b: EventCard): EventCard {
+  return b.updated_at >= a.updated_at ? b : a
+}
+
 export const useEventCalendarStore = defineStore('eventCalendar', () => {
-  const events = ref<EventRead[]>([])
-  const attendances = ref<Map<string, EventAttendanceItem[]>>(new Map())
-  const stageTimes = ref<Map<string, EventTimeRange>>(new Map())
+  const events = ref<EventCard[]>([])
   const selectedDate = ref<Date>(new Date())
   const currentMonth = ref<Date>(new Date())
   const visibleRange = ref<{ start: Date; end: Date }>({
     start: startOfWeek(startOfMonth(new Date()), { weekStartsOn: 1 }),
     end: endOfWeek(endOfMonth(new Date()), { weekStartsOn: 1 }),
+  })
+
+  // Отметки и время этапов приходят в самой карточке: отдельных запросов за ними нет.
+  const attendances = computed(() => {
+    const map = new Map<string, EventAttendanceItem[]>()
+    for (const event of events.value) {
+      if (event.participations.length === 0) continue
+      map.set(event.id, event.participations.map((p) => ({
+        collectiveId: p.collective_id,
+        collectiveName: p.collective_name,
+        attendance: p.my_attendance,
+        attendedCount: p.attended_count,
+        totalCount: p.total_count,
+      })))
+    }
+    return map
+  })
+
+  const stageTimes = computed(() => {
+    const map = new Map<string, EventTimeRange>()
+    for (const event of events.value) {
+      if (event.starts_at && event.ends_at) map.set(event.id, { first: event.starts_at, last: event.ends_at })
+    }
+    return map
   })
 
   const eventsForSelectedDate = computed(() =>
@@ -54,138 +84,60 @@ export const useEventCalendarStore = defineStore('eventCalendar', () => {
     setCurrentMonth(addMonths(currentMonth.value, -1))
   }
 
-  function setEvents(list: EventRead[]) {
+  function setEvents(list: EventCard[]) {
     events.value = list
   }
 
-  function addEvents(list: EventRead[]) {
+  /** New cards join the list; a card the list already has is left as it is. */
+  function addEvents(list: EventCard[]) {
     const existingIds = new Set(events.value.map((e) => e.id))
-    const newEvents = list.filter((e) => !existingIds.has(e.id))
-    events.value = [...events.value, ...newEvents].sort(
-      (a, b) => new Date(a.date || 0).getTime() - new Date(b.date || 0).getTime(),
-    )
+    const fresh = list.filter((e) => !existingIds.has(e.id))
+    if (fresh.length === 0) return
+    events.value = [...events.value, ...fresh].sort(byDate)
   }
 
-  function setAttendances(map: Map<string, EventAttendanceItem[]>) {
-    attendances.value = map
+  /** Fresh copies of cards: the newer copy wins, an unknown card is added. */
+  function upsertCards(list: EventCard[]) {
+    const incoming = new Map(list.map((e) => [e.id, e]))
+    const merged = events.value.map((e) => {
+      const copy = incoming.get(e.id)
+      incoming.delete(e.id)
+      return copy ? newer(e, copy) : e
+    })
+    events.value = [...merged, ...incoming.values()].sort(byDate)
   }
 
-  async function fetchAttendances(
-    collectives: CollectiveInfo[],
-    eventIds: string[],
-    userMemberIds: Map<string, string>,
-  ) {
-    if (collectives.length === 0 || eventIds.length === 0) return
+  function removeEvent(eventId: string) {
+    events.value = events.value.filter((e) => e.id !== eventId)
+  }
 
-    const collectiveMap = new Map(collectives.map((c) => [c.id, c.name]))
-    const collectiveIds = collectives.map((c) => c.id)
-    // Собственные членства — по ним отличаем «свою» запись среди всех отметок участия
-    const myMemberIds = new Set(userMemberIds.values())
-
-    // 1. Участия пользовательских коллективов в этих мероприятиях.
-    //    Фильтр по коллективу — серверный (collective_id__in), а не клиентский.
-    const participations = await fetchAllPages<{ id: string; event_id: string; collective_id: string }>(
-      (page, limit) =>
-        getParticipationsEventV1ParticipationsGet({
-          event_id__in: eventIds.join(','),
-          collective_id__in: collectiveIds.join(','),
-          page,
-          limit,
+  /** A change of one place: the caller's own mark and the counters of its participation. */
+  function applyAttendanceChange(change: AttendanceChanged) {
+    const { attendance, participation } = change
+    events.value = events.value.map((event) => {
+      if (event.id !== participation.event_id) return event
+      return {
+        ...event,
+        updated_at: attendance.edited_at && attendance.edited_at > event.updated_at
+          ? attendance.edited_at
+          : event.updated_at,
+        participations: event.participations.map((p) => {
+          if (p.id !== participation.id) return p
+          const mine = p.my_attendance?.id === attendance.id
+          return {
+            ...p,
+            attended_count: participation.attended_count,
+            total_count: participation.total_count,
+            my_attendance: mine ? attendance : p.my_attendance,
+          }
         }),
-    )
-
-    const participationByEvent = new Map<string, Array<{ id: string; collective_id: string }>>()
-    for (const p of participations) {
-      if (!participationByEvent.has(p.event_id)) participationByEvent.set(p.event_id, [])
-      participationByEvent.get(p.event_id)!.push(p)
-    }
-
-    // 2. Все отметки этих участий — одним запросом по participation_id__in.
-    //    Из них же берём собственную запись (member_id ∈ userMemberIds) и считаем счётчики.
-    const participationIds = participations.map((p) => p.id)
-    const attendanceByParticipation = new Map<string, AttendanceRead>()
-    const countByParticipation = new Map<string, { attended: number; total: number }>()
-    if (participationIds.length > 0) {
-      try {
-        const allAttendances = await fetchAllPages<AttendanceRead>(
-          (page, limit) =>
-            getAttendancesEventV1AttendancesGet(
-              { page, limit },
-              { params: { participation_id__in: participationIds.join(',') } },
-            ),
-        )
-        for (const a of allAttendances) {
-          const pid = a.participation_id
-          if (!pid) continue
-          const cur = countByParticipation.get(pid) || { attended: 0, total: 0 }
-          cur.total++
-          if (a.is_attended) cur.attended++
-          countByParticipation.set(pid, cur)
-          if (a.member_id && myMemberIds.has(a.member_id)) attendanceByParticipation.set(pid, a)
-        }
-      } catch (e) {
-        console.warn('attendance fetch failed:', e)
       }
-    }
-
-    const result = new Map<string, EventAttendanceItem[]>()
-    for (const eventId of eventIds) {
-      const parts = participationByEvent.get(eventId) || []
-      const items: EventAttendanceItem[] = []
-      for (const p of parts) {
-        const collectiveName = collectiveMap.get(p.collective_id) || 'Неизвестный коллектив'
-        const attendance = attendanceByParticipation.get(p.id) || null
-        const counts = countByParticipation.get(p.id) || { attended: 0, total: 0 }
-        items.push({
-          collectiveId: p.collective_id,
-          collectiveName,
-          attendance,
-          attendedCount: counts.attended,
-          totalCount: counts.total,
-        })
-      }
-      if (items.length > 0) result.set(eventId, items)
-    }
-    const merged = new Map(attendances.value)
-    for (const [k, v] of result) merged.set(k, v)
-    attendances.value = merged
+    })
   }
 
-  // Диапазон времени мероприятия — по этапам (у event.date времени нет),
-  // первая метка = min(start_at), последняя = max(end_at ?? start_at)
-  async function fetchStageTimes(eventIds: string[]) {
-    if (eventIds.length === 0) return
-    let items: StageRead[]
-    try {
-      items = await fetchAllPages<StageRead>(
-        (page, limit) =>
-          getStagesEventV1StagesGet({ event_id__in: eventIds.join(','), page, limit }),
-      )
-    } catch (e) {
-      console.warn('stage times fetch failed:', e)
-      return
-    }
-    const byEvent = new Map<string, StageRead[]>()
-    for (const s of items) {
-      if (!byEvent.has(s.event_id)) byEvent.set(s.event_id, [])
-      byEvent.get(s.event_id)!.push(s)
-    }
-    const merged = new Map(stageTimes.value)
-    for (const [eventId, stagesList] of byEvent) {
-      const starts = stagesList.map((s) => s.start_at)
-      const ends = stagesList.map((s) => s.end_at || s.start_at)
-      const first = starts.reduce((a, b) => (a < b ? a : b))
-      const last = ends.reduce((a, b) => (a > b ? a : b))
-      merged.set(eventId, { first, last })
-    }
-    stageTimes.value = merged
-  }
-
-  // Полный сброс — вызывается при смене аккаунта, чтобы не показывать чужие attendance
+  // Полный сброс — вызывается при смене аккаунта, чтобы не показывать чужие отметки
   function reset() {
     events.value = []
-    attendances.value = new Map()
-    stageTimes.value = new Map()
     selectedDate.value = new Date()
     setCurrentMonth(new Date())
   }
@@ -208,9 +160,9 @@ export const useEventCalendarStore = defineStore('eventCalendar', () => {
     prevMonth,
     setEvents,
     addEvents,
-    setAttendances,
-    fetchAttendances,
-    fetchStageTimes,
+    upsertCards,
+    removeEvent,
+    applyAttendanceChange,
     reset,
     isInVisibleRange,
   }

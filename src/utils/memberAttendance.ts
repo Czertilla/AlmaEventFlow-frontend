@@ -49,10 +49,8 @@ export function dayKey(date: Date): string {
   return format(date, 'yyyy-MM-dd')
 }
 
-export function isUnmarkedAttendance(
-  a: { is_attended?: boolean | null; edited_at?: string | null; is_verified?: boolean | null },
-): boolean {
-  return a.is_attended == null || (a.edited_at == null && !a.is_verified)
+export function isUnmarkedAttendance(a: { is_attended?: boolean | null }): boolean {
+  return a.is_attended == null
 }
 
 export function emptyCounts(): Record<Outcome, number> {

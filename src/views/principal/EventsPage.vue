@@ -79,16 +79,13 @@ import UiSelectPill from '@/components/common/UiSelectPill.vue'
 import type { SelectOption } from '@/utils/selectOptions'
 import { formatDate } from '@/utils/date'
 import { statusColor, statusLabel } from '@/utils/eventLabels'
-import {
-  getEventsEventV1EventsGet,
-  getParticipationsEventV1ParticipationsGet,
-} from '@/api/generated/almaEventFlow'
-import type { EventRead, EventStatusEnumV1 } from '@/api/generated/almaEventFlow'
+import { getCollectiveEventsEventV2CollectivesCollectiveIdEventsGet } from '@/api/generated/almaEventFlow'
+import type { CollectiveEvent, EventStatusEnumV1 } from '@/api/generated/almaEventFlow'
 
 const principal = usePrincipalStore()
 const settings = useSettingsStore()
 
-const events = ref<EventRead[]>([])
+const events = ref<CollectiveEvent[]>([])
 const loading = ref(false)
 const urlState = useUrlState({ q: '', status: '', sort: 'date', order: 'desc' })
 const searchQuery = computed({ get: () => urlState.q, set: (value: string) => { urlState.q = value } })
@@ -154,12 +151,7 @@ const filteredEvents = computed(() => {
 async function loadEvents(collectiveId: string) {
   loading.value = true
   try {
-    const [participationsResp, eventsResp] = await Promise.all([
-      getParticipationsEventV1ParticipationsGet({ collective_id: collectiveId, limit: 100 }),
-      getEventsEventV1EventsGet({ limit: 100, order_by: '-date' }),
-    ])
-    const eventIds = new Set(participationsResp.data.items.map((p) => p.event_id))
-    events.value = eventsResp.data.items.filter((e) => eventIds.has(e.id))
+    events.value = (await getCollectiveEventsEventV2CollectivesCollectiveIdEventsGet(collectiveId)).data.items
   } catch (err) {
     console.error('Failed to load events', err)
   } finally {

@@ -4,42 +4,61 @@ import { usePrincipalStore } from '@/stores/principal'
 import { useAttendancePending } from '@/composables/useAttendancePending'
 import { useToast } from '@/composables/useToast'
 import { confirmAction } from '@/utils/confirm'
-import { resolveMemberName, rememberMemberPerson, shortId, shortenName } from '@/utils/names'
+import { formatPersonName, shortId, shortenName } from '@/utils/names'
 import { loadStoredRoleOrder, loadSortMode } from '@/utils/roleSort'
 import {
-  getParticipationsEventV1ParticipationsGet,
-  getAttendancesEventV1AttendancesGet,
-  getMyCollectiveMembersEventV1MeCollectivesCollectiveIdMembersGet,
-  patchMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdAttendanceAttendanceIdPatch,
-  patchMyAttendanceEventV1MeMembersMemberIdAttendanceAttendanceIdPatch,
-  createMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdParticipationParticipationIdAttendancePost,
+  getEventPageEventV2EventsEventIdGet,
+  changeAttendanceEventV2AttendancesAttendanceIdPatch,
+  declareAttendanceEventV2AttendancesPost,
   deleteMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdAttendanceAttendanceIdDelete,
   verifyMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdParticipationParticipationIdAttendanceVerifyPost,
   cancelMyCollectiveParticipationEventV1MeCollectivesCollectiveIdParticipationsEventIdDelete,
 } from '@/api/generated/almaEventFlow'
-import type { AttendanceRead, MemberRead } from '@/api/generated/almaEventFlow'
+import type {
+  AttendanceChanged,
+  EventPageRead,
+  PageAttendance,
+  PageParticipation,
+  RosterMember,
+} from '@/api/generated/almaEventFlow'
 
 export interface ParticipationItem {
   participationId: string
   collectiveId: string
   collectiveName: string
-  attendances: AttendanceRead[]
-  myAttendance: AttendanceRead | null
+  attendances: PageAttendance[]
+  myAttendance: PageAttendance | null
   isPrincipal: boolean
   isMember: boolean
   canExpand: boolean
+  addableMembers: RosterMember[]
 }
 
 // label=null — группа без подписи (алфавитный режим или участники без роли).
 export interface AttendanceGroup {
   key: string
   label: string | null
-  items: AttendanceRead[]
+  items: PageAttendance[]
+}
+
+function toItem(p: PageParticipation): ParticipationItem {
+  return {
+    participationId: p.id,
+    collectiveId: p.collective_id,
+    collectiveName: p.collective_name,
+    attendances: p.attendances,
+    myAttendance: p.attendances.find((a) => a.id === p.my_attendance_id) ?? null,
+    isPrincipal: p.is_principal,
+    isMember: p.is_member,
+    canExpand: p.can_view_attendances,
+    addableMembers: p.addable_members,
+  }
 }
 
 /**
- * Доменная логика страницы мероприятия: загрузка участий и отметок присутствия,
- * группировка по ролям, CRUD отметок и отмена участия. Извлечена из EventDetailPage,
+ * Доменная логика страницы мероприятия: одна загрузка страницы целиком (мероприятие,
+ * этапы, участия, отметки с именами и ролями), правка отметок по ответу сервера,
+ * добавление и удаление отметок, отмена участия. Извлечена из EventDetailPage,
  * чтобы SFC отвечал за представление, а логика была изолирована и тестируема.
  */
 export function useEventParticipations(eventId: string) {
@@ -48,15 +67,13 @@ export function useEventParticipations(eventId: string) {
   const { withPending, pending } = useAttendancePending()
   const { showError, showSuccess } = useToast()
 
-  const participationItems = ref<ParticipationItem[]>([])
+  const page = ref<EventPageRead | null>(null)
   const expanded = reactive<Record<string, boolean>>({})
-  // member_id → ФИО; сокращённый id показываем только если имя не удалось получить
-  const memberNames = reactive<Record<string, string>>({})
-  const namesLoading = reactive(new Set<string>())
-  let namesSettled: Promise<void> = Promise.resolve()
-  // Участники коллективов руководителя (для добавления attendance)
-  const collectiveMembers = reactive<Record<string, MemberRead[]>>({})
   const addMemberSel = reactive<Record<string, string>>({})
+
+  const participationItems = computed<ParticipationItem[]>(() =>
+    (page.value?.participations ?? []).map(toItem),
+  )
 
   // Principal's collectives that are not in the event yet
   const joinableCollectives = computed(() =>
@@ -66,59 +83,50 @@ export function useEventParticipations(eventId: string) {
   )
 
   // Руководитель может редактировать мероприятие, если его коллектив в нём участвует.
-  const editableCollectiveId = computed(
-    () => participationItems.value.find((p) => p.isPrincipal)?.collectiveId ?? null,
-  )
+  const editableCollectiveId = computed(() => page.value?.editable_collective_id ?? null)
 
-  function availableMembers(p: ParticipationItem): MemberRead[] {
-    const members = collectiveMembers[p.collectiveId] || []
-    const withAttendance = new Set(p.attendances.map((a) => a.member_id))
-    return members.filter((m) => m.is_active !== false && !withAttendance.has(m.id) && !namesLoading.has(m.id))
-  }
+  // member_id → ФИО из того, что пришло со страницей
+  const memberNames = computed(() => {
+    const names = new Map<string, string>()
+    for (const p of participationItems.value) {
+      for (const a of p.attendances) names.set(a.member_id, formatPersonName(a.member.person))
+      for (const m of p.addableMembers) names.set(m.id, formatPersonName(m.person))
+    }
+    return names
+  })
 
-  // Формат «Фамилия И.О.»; null — имя ещё грузится (на его месте скелетон)
-  function memberLabel(memberId: string): string | null {
-    const full = memberNames[memberId]
-    if (full) return shortenName(full)
-    return namesLoading.has(memberId) ? null : `#${shortId(memberId)}`
+  function availableMembers(p: ParticipationItem): RosterMember[] {
+    return p.addableMembers
   }
 
   function memberText(memberId: string): string {
-    return memberLabel(memberId) ?? `#${shortId(memberId)}`
-  }
-
-  function attendancesLoading(p: ParticipationItem): boolean {
-    return p.attendances.some((a) => namesLoading.has(a.member_id))
+    const full = memberNames.value.get(memberId)
+    return full ? shortenName(full) : `#${shortId(memberId)}`
   }
 
   // Сортировка/группировка отметок по тому же порядку ролей, что задан руководителем
   // в панели (localStorage, отдельно на коллектив). В режиме «по ролям» каждый участник
   // попадает только в свою высшую по приоритету роль.
   function attendanceGroups(p: ParticipationItem): AttendanceGroup[] {
-    const byName = (a: AttendanceRead, b: AttendanceRead) =>
+    const byName = (a: PageAttendance, b: PageAttendance) =>
       memberText(a.member_id).localeCompare(memberText(b.member_id), 'ru')
     const flat = (): AttendanceGroup[] => [
       { key: 'all', label: null, items: p.attendances.slice().sort(byName) },
     ]
 
-    const members = collectiveMembers[p.collectiveId]
     const order = loadStoredRoleOrder(p.collectiveId)
-    if (loadSortMode(p.collectiveId) === 'alpha' || !members?.length || !order.length) {
-      return flat()
-    }
+    if (loadSortMode(p.collectiveId) === 'alpha' || !order.length) return flat()
 
-    const rolesByMember = new Map(members.map((m) => [m.id, m.roles.map((r) => r.id)]))
     const roleNames = new Map<string, string>()
-    for (const m of members) for (const r of m.roles) roleNames.set(r.id, r.name)
-
-    const byRole = new Map<string, AttendanceRead[]>()
-    const noRole: AttendanceRead[] = []
+    const byRole = new Map<string, PageAttendance[]>()
+    const noRole: PageAttendance[] = []
     for (const a of p.attendances) {
       let bestIdx = Number.POSITIVE_INFINITY
       let bestRole: string | null = null
-      for (const rid of rolesByMember.get(a.member_id) || []) {
-        const idx = order.indexOf(rid)
-        if (idx >= 0 && idx < bestIdx) { bestIdx = idx; bestRole = rid }
+      for (const role of a.member.roles) {
+        roleNames.set(role.id, role.name)
+        const idx = order.indexOf(role.id)
+        if (idx >= 0 && idx < bestIdx) { bestIdx = idx; bestRole = role.id }
       }
       if (bestRole === null) noRole.push(a)
       else (byRole.get(bestRole) ?? byRole.set(bestRole, []).get(bestRole)!).push(a)
@@ -133,132 +141,59 @@ export function useEventParticipations(eventId: string) {
     return groups
   }
 
-  async function loadMemberNames(items: ParticipationItem[]) {
-    // For own (principal) collectives the member list gives member→person mapping in one request
-    await Promise.all(
-      items
-        .filter((p) => p.isPrincipal)
-        .map(async (p) => {
-          try {
-            const resp = await getMyCollectiveMembersEventV1MeCollectivesCollectiveIdMembersGet(p.collectiveId, { limit: 100 })
-            collectiveMembers[p.collectiveId] = resp.data.items
-            for (const m of resp.data.items) {
-              rememberMemberPerson(m.id, m.person_id)
-              if (!memberNames[m.id]) namesLoading.add(m.id)
-            }
-          } catch { /* ignore */ }
-        }),
-    )
-    const memberIds = new Set([
-      ...items.flatMap((p) => p.attendances.map((a) => a.member_id)),
-      ...Object.values(collectiveMembers).flat().map((m) => m.id),
-    ])
-    await Promise.all(
-      Array.from(memberIds).map(async (id) => {
-        if (memberNames[id]) return
-        namesLoading.add(id)
-        try {
-          const name = await resolveMemberName(id)
-          if (name) memberNames[id] = name
-        } finally {
-          namesLoading.delete(id)
-        }
-      }),
-    )
+  async function loadPage() {
+    page.value = (await getEventPageEventV2EventsEventIdGet(eventId)).data
   }
 
-  async function loadParticipations() {
-    const resp = await getParticipationsEventV1ParticipationsGet({ event_id__in: eventId, limit: 100 })
-    const participations = resp.data.items
-
-    const myMemberIds = new Set(principal.userMemberIds.values())
-    const collectiveNames = new Map(principal.collectives.map((c) => [c.id, c.name]))
-
-    const items: ParticipationItem[] = await Promise.all(
-      participations.map(async (part) => {
-        const isPrincipal = principal.principalCollectiveIds.has(part.collective_id)
-        const isMember = principal.userMemberIds.has(part.collective_id)
-        let attendances: AttendanceRead[] = []
-        if (isPrincipal || isMember) {
-          try {
-            const aResp = await getAttendancesEventV1AttendancesGet({ participation_id: part.id, limit: 100 })
-            // Стабильный порядок: иначе записи перемешиваются после каждого изменения
-            attendances = aResp.data.items
-              .slice()
-              .sort((a, b) => (memberNames[a.member_id] || a.member_id).localeCompare(memberNames[b.member_id] || b.member_id, 'ru'))
-          } catch { /* not allowed to see attendances */ }
-        }
-        const myAttendance = attendances.find((a) => myMemberIds.has(a.member_id)) || null
-        return {
-          participationId: part.id,
-          collectiveId: part.collective_id,
-          collectiveName:
-            part.collective_name
-            || collectiveNames.get(part.collective_id)
-            || `Коллектив ${part.collective_id.slice(0, 8)}`,
-          attendances,
-          myAttendance,
-          isPrincipal,
-          isMember,
-          canExpand: isPrincipal || isMember,
-        }
-      }),
-    )
-
-    // Свои коллективы первыми, далее стабильно по названию
-    items.sort((a, b) =>
-      Number(b.canExpand) - Number(a.canExpand) ||
-      a.collectiveName.localeCompare(b.collectiveName, 'ru'))
-    for (const p of items) {
-      for (const a of p.attendances) if (!memberNames[a.member_id]) namesLoading.add(a.member_id)
-    }
-    participationItems.value = items
-    namesSettled = loadMemberNames(items)
+  function participationOf(participationId: string): PageParticipation | undefined {
+    return page.value?.participations.find((p) => p.id === participationId)
   }
 
-  // Руководитель меняет attendance через эндпоинт своего коллектива, участник — только свою запись.
-  // Перезагрузка данных идёт внутри withPending — спиннер исчезает одновременно с обновлением чипа
-  async function patchAttendance(p: ParticipationItem, a: AttendanceRead, body: { is_attended?: boolean; comment?: string }) {
-    await withPending(a.id, async () => {
-      if (p.isPrincipal) {
-        await patchMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdAttendanceAttendanceIdPatch(p.collectiveId, a.id, body)
-      } else {
-        await patchMyAttendanceEventV1MeMembersMemberIdAttendanceAttendanceIdPatch(a.member_id, a.id, body)
-      }
-      await loadParticipations()
+  function recount(p: PageParticipation) {
+    p.total_count = p.attendances.length
+    p.attended_count = p.attendances.filter((a) => a.is_attended).length
+  }
+
+  // Ответ сервера несёт новую отметку и счётчики участия: страницу не нужно загружать заново
+  function applyChange(change: AttendanceChanged) {
+    const p = participationOf(change.participation.id)
+    if (!p) return
+    p.attendances = p.attendances.map((a) => (a.id === change.attendance.id ? { ...a, ...change.attendance } : a))
+    p.attended_count = change.participation.attended_count
+    p.total_count = change.participation.total_count
+  }
+
+  async function change(key: string, attendanceId: string, body: { is_attended?: boolean; comment?: string | null; is_verified?: boolean }) {
+    await withPending(key, async () => {
+      applyChange((await changeAttendanceEventV2AttendancesAttendanceIdPatch(attendanceId, body)).data)
     })
   }
 
-  async function toggleAttendance(p: ParticipationItem, a: AttendanceRead, value: boolean) {
+  async function toggleAttendance(_p: ParticipationItem, a: PageAttendance, value: boolean) {
     try {
-      await patchAttendance(p, a, { is_attended: value })
+      await change(a.id, a.id, { is_attended: value })
     } catch (err) {
       showError(err, 'Не удалось изменить отметку')
     }
   }
 
-  async function saveComment(p: ParticipationItem, a: AttendanceRead, comment: string) {
+  async function saveComment(_p: ParticipationItem, a: PageAttendance, comment: string) {
     try {
-      await patchAttendance(p, a, { comment })
+      await change(a.id, a.id, { comment })
     } catch (err) {
       showError(err, 'Не удалось сохранить комментарий')
     }
   }
 
-  async function deleteComment(p: ParticipationItem, a: AttendanceRead) {
+  async function deleteComment(p: ParticipationItem, a: PageAttendance) {
     await saveComment(p, a, '')
   }
 
   // Заверение/снятие заверения отдельной отметки — отдельный ключ pending,
   // чтобы спиннер появлялся на кнопке-щите, а не на чипе отметки
-  async function toggleVerify(p: ParticipationItem, a: AttendanceRead) {
+  async function toggleVerify(_p: ParticipationItem, a: PageAttendance) {
     try {
-      await withPending(`verify:${a.id}`, async () => {
-        await patchMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdAttendanceAttendanceIdPatch(
-          p.collectiveId, a.id, { is_verified: !a.is_verified },
-        )
-        await loadParticipations()
-      })
+      await change(`verify:${a.id}`, a.id, { is_verified: !a.is_verified })
     } catch (err) {
       showError(err, 'Не удалось изменить заверение')
     }
@@ -266,24 +201,33 @@ export function useEventParticipations(eventId: string) {
 
   async function addAttendance(p: ParticipationItem) {
     const memberId = addMemberSel[p.participationId]
-    if (!memberId) return
+    const target = participationOf(p.participationId)
+    const member = p.addableMembers.find((m) => m.id === memberId)
+    if (!memberId || !target || !member) return
     try {
-      await createMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdParticipationParticipationIdAttendancePost(
-        p.collectiveId, p.participationId, { member_id: memberId },
-      )
+      const { data } = await declareAttendanceEventV2AttendancesPost({
+        participation_id: p.participationId, member_id: memberId,
+      })
       addMemberSel[p.participationId] = ''
-      await loadParticipations()
+      target.attendances = [...target.attendances, { ...data.attendance, member }]
+      target.addable_members = target.addable_members.filter((m) => m.id !== memberId)
+      target.attended_count = data.participation.attended_count
+      target.total_count = data.participation.total_count
     } catch (err) {
       showError(err, 'Не удалось добавить отметку')
     }
   }
 
-  async function removeAttendance(p: ParticipationItem, a: AttendanceRead) {
+  async function removeAttendance(p: ParticipationItem, a: PageAttendance) {
     const ok = await confirmAction('Удалить отметку?', `Запись присутствия «${memberText(a.member_id)}» будет удалена.`)
     if (!ok) return
+    const target = participationOf(p.participationId)
     try {
       await deleteMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdAttendanceAttendanceIdDelete(p.collectiveId, a.id)
-      await loadParticipations()
+      if (!target) return
+      target.attendances = target.attendances.filter((row) => row.id !== a.id)
+      if (a.member.is_active) target.addable_members = [...target.addable_members, a.member]
+      recount(target)
     } catch (err) {
       showError(err, 'Не удалось удалить отметку')
     }
@@ -291,11 +235,25 @@ export function useEventParticipations(eventId: string) {
 
   async function verifyAll(p: ParticipationItem) {
     try {
-      await verifyMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdParticipationParticipationIdAttendanceVerifyPost(
+      const { data } = await verifyMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdParticipationParticipationIdAttendanceVerifyPost(
         p.collectiveId,
         p.participationId,
       )
-      await loadParticipations()
+      const target = participationOf(p.participationId)
+      if (target) {
+        const fresh = new Map(data.map((row) => [row.id, row]))
+        target.attendances = target.attendances.map((row) => {
+          const next = fresh.get(row.id)
+          if (!next) return row
+          return {
+            ...row,
+            is_attended: next.is_attended ?? row.is_attended,
+            is_verified: next.is_verified ?? row.is_verified,
+            edited_at: next.edited_at,
+          }
+        })
+        recount(target)
+      }
       showSuccess('Присутствия заверены')
     } catch (err) {
       showError(err, 'Не удалось заверить присутствия')
@@ -316,17 +274,15 @@ export function useEventParticipations(eventId: string) {
         p.collectiveId, eventId,
       )
       showSuccess(isLast ? 'Мероприятие удалено' : 'Участие отменено')
-      if (isLast) {
-        router.replace('/')
-      } else {
-        await loadParticipations()
-      }
+      if (isLast) router.replace('/')
+      else await loadPage()
     } catch (err) {
       showError(err, 'Не удалось отменить участие')
     }
   }
 
   return {
+    page,
     participationItems,
     expanded,
     addMemberSel,
@@ -334,12 +290,9 @@ export function useEventParticipations(eventId: string) {
     joinableCollectives,
     editableCollectiveId,
     availableMembers,
-    memberLabel,
     memberText,
-    attendancesLoading,
-    whenNamesSettled: () => namesSettled,
     attendanceGroups,
-    loadParticipations,
+    loadPage,
     toggleAttendance,
     saveComment,
     deleteComment,

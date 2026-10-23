@@ -222,13 +222,12 @@ import { usePendingAttendance } from '@/composables/usePendingAttendance'
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import {
-  getEventsEventV1EventsGet,
-  patchMyAttendanceEventV1MeMembersMemberIdAttendanceAttendanceIdPatch,
-  patchMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdAttendanceAttendanceIdPatch,
+  getFeedEventV2FeedGet,
+  changeAttendanceEventV2AttendancesAttendanceIdPatch,
 } from '@/api/generated/almaEventFlow'
 import type {
-  EventRead, PageV1EventRead, EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1,
-  GetEventsEventV1EventsGetParams,
+  EventFeed, EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1,
+  GetFeedEventV2FeedGetParams,
 } from '@/api/generated/almaEventFlow'
 import CalendarGrid from '@/components/calendar/CalendarGrid.vue'
 import MiniCalendar from '@/components/calendar/MiniCalendar.vue'
@@ -236,8 +235,6 @@ import EventList from '@/components/event/EventList.vue'
 import HomeFilters from '@/components/event/HomeFilters.vue'
 import AppFab from '@/components/common/AppFab.vue'
 import PendingAttendanceModal from '@/components/event/PendingAttendanceModal.vue'
-import { buildEventWindow } from '@/utils/eventWindow'
-import type { EventWindow } from '@/utils/eventWindow'
 import {
   HOME_FILTER_DEFAULTS, countActiveFilters, homeFilterParams, matchesHomeFilters, parseHomeFilters, statusesToQuery,
 } from '@/utils/homeFilters'
@@ -252,7 +249,7 @@ const { syncSelectedDateToCalendar } = useCalendarSync()
 const { withPending } = useAttendancePending()
 const {
   showPendingModal, pendingLoading, pendingCount, pendingEvents, allPendingDone,
-  refreshPendingCount, fetchPendingRemoteEventIds, mergePendingEvents, maybeAutoShow,
+  refreshPendingCount, fetchPending, mergePendingEvents, maybeAutoShow,
   openPending, resetPending,
 } = usePendingAttendance()
 
@@ -270,8 +267,6 @@ const mobileCalendarVisible = ref(true)
 const loading = ref(false)
 const hasMoreUp = ref(true)
 const hasMoreDown = ref(true)
-
-const collectives = computed(() => principal.collectives)
 
 // Нет выбора коллективов (и не «Все мероприятия») → показывать нечего
 const noSelection = computed(
@@ -359,17 +354,6 @@ function onSelectEvent(id: string) {
   router.push(`/event/${id}`)
 }
 
-async function fetchAttendanceForEvents(eventList: Array<{ id: string }>) {
-  if (eventList.length === 0) return
-  const ids = eventList.map((e) => e.id)
-  await Promise.all([
-    collectives.value.length > 0
-      ? calendar.fetchAttendances(collectives.value, ids, principal.userMemberIds)
-      : Promise.resolve(),
-    calendar.fetchStageTimes(ids),
-  ])
-}
-
 const loadingUp = ref(false)
 const loadingDown = ref(false)
 // Пока initLoad выставляет коллективы (fetchCollectives → выбор), watch фильтра
@@ -380,47 +364,31 @@ let loadSeq = 0
 let reloadTimer: ReturnType<typeof setTimeout> | undefined
 
 const EVENTS_PAGE_SIZE = 10
+// Курсоры ленты: от них, а не от краёв загруженного списка, продолжается подгрузка --
+// карточки, добавленные из «требуют отметки», не сдвигают границу.
+let pastCursor: string | null = null
+let futureCursor: string | null = null
 
 // Параметры запроса: фильтры страницы + выбранные коллективы + то, что нужно конкретному запросу
-function listParams(extra: GetEventsEventV1EventsGetParams): GetEventsEventV1EventsGetParams {
+function feedParams(extra: GetFeedEventV2FeedGetParams): GetFeedEventV2FeedGetParams {
   const params = homeFilterParams(filters.value, principal.isPrincipal, toDateString(new Date()))
   if (!principal.showAllEvents && principal.selectedCollectiveIds.length) {
-    params.participant_id__in = principal.selectedCollectiveIds.join(',')
+    params.collective_id = [...principal.selectedCollectiveIds]
   }
-  return { ...params, ...extra }
+  return { ...params, limit: EVENTS_PAGE_SIZE, ...extra }
 }
 
-async function fetchPage(extra: GetEventsEventV1EventsGetParams): Promise<EventRead[]> {
-  const response = await getEventsEventV1EventsGet(listParams(extra))
-  return (response.data as PageV1EventRead).items
+async function fetchFeed(extra: GetFeedEventV2FeedGetParams): Promise<EventFeed> {
+  return (await getFeedEventV2FeedGet(feedParams(extra))).data
 }
 
-// Окно событий вокруг даты: прошлое (<=) и будущее (>=) с теми же фильтрами; дедуп +
-// сортировка + признаки "есть ли ещё" -- общая логика с «Участиями» (матрицей),
-// см. utils/eventWindow. «Только предстоящие» не уходит раньше сегодня (listParams).
-async function fetchEventWindow(anchorStr: string): Promise<EventWindow<EventRead>> {
-  const today = toDateString(new Date())
-  const noPast = filters.value.upcoming && anchorStr <= today
-  const from = filters.value.upcoming && anchorStr < today ? today : anchorStr
-  const [past, future] = await Promise.all([
-    noPast
-      ? Promise.resolve<EventRead[]>([])
-      : fetchPage({ date__lte: anchorStr, order_by: '-date', limit: EVENTS_PAGE_SIZE }),
-    fetchPage({ date__gte: from, order_by: 'date', limit: EVENTS_PAGE_SIZE }),
-  ])
-  return buildEventWindow(past, future, EVENTS_PAGE_SIZE)
-}
-
-// Новые события специально попадают в calendar.events ПОСЛЕДНИМ шагом, уже
-// после того как для них подтянуты attendance и stageTimes -- иначе карточка
-// сперва рендерится "пустой" (без отметок/времени этапов), а через сетевой
-// круг внезапно дозаполняется контентом. Это само по себе выглядит как рывок
-// списка, даже когда scrollTop не прыгает (см. captureAnchor/restoreAnchor
-// в EventList.vue, которые гасят только сдвиг позиции, а не смену контента
-// уже показанной карточки).
-function newEventIds(items: EventRead[]): string[] {
-  const existingIds = new Set(calendar.events.map((e) => e.id))
-  return items.filter((e) => !existingIds.has(e.id)).map((e) => e.id)
+// Окно мероприятий вокруг даты: прошлое и будущее с теми же фильтрами одним запросом;
+// сервер сам знает, есть ли что-то дальше, и не уходит раньше «Только предстоящие».
+async function loadWindow(anchorStr: string): Promise<EventFeed> {
+  const feed = await fetchFeed({ anchor: anchorStr, direction: 'around' })
+  pastCursor = feed.past_cursor
+  futureCursor = feed.future_cursor
+  return feed
 }
 
 // loading (в отличие от loadingUp/loadingDown ниже) сюда намеренно не трогаем:
@@ -430,27 +398,16 @@ function newEventIds(items: EventRead[]): string[] {
 // только внешняя граница initLoad()/reloadWindow(), а повторный вход
 // уже прикрыт loadingUp/loadingDown (см. loadAtEdges в EventList).
 async function loadMoreUp(): Promise<boolean> {
-  if (!hasMoreUp.value || loadingUp.value || noSelection.value) return false
+  if (!hasMoreUp.value || loadingUp.value || noSelection.value || !pastCursor) return false
   const seq = loadSeq
   loadingUp.value = true
   try {
-    const firstDate = calendar.events[0]?.date
-    if (!firstDate) return false
-    const items = await fetchPage({ date__lte: firstDate, limit: EVENTS_PAGE_SIZE, order_by: '-date' })
+    const feed = await fetchFeed({ direction: 'past', cursor: pastCursor })
     if (seq !== loadSeq) return false
-    hasMoreUp.value = items.length === EVENTS_PAGE_SIZE
-    if (items.length === 0) return false
-    const ids = newEventIds(items)
-    if (ids.length === 0) {
-      hasMoreUp.value = false // защита от зацикливания -- вся страница уже была загружена
-      return false
-    }
-    await Promise.all([
-      calendar.fetchAttendances(collectives.value, ids, principal.userMemberIds),
-      calendar.fetchStageTimes(ids),
-    ])
-    if (seq !== loadSeq) return false
-    calendar.addEvents(items)
+    hasMoreUp.value = feed.has_more_past
+    pastCursor = feed.past_cursor ?? pastCursor
+    if (feed.items.length === 0) return false
+    calendar.addEvents(feed.items)
     return true
   } finally {
     loadingUp.value = false
@@ -459,27 +416,16 @@ async function loadMoreUp(): Promise<boolean> {
 
 // см. коммент у loadMoreUp -- loading общий флаг здесь тоже не трогаем.
 async function loadMoreDown(): Promise<boolean> {
-  if (!hasMoreDown.value || loadingDown.value || noSelection.value) return false
+  if (!hasMoreDown.value || loadingDown.value || noSelection.value || !futureCursor) return false
   const seq = loadSeq
   loadingDown.value = true
   try {
-    const lastDate = calendar.events[calendar.events.length - 1]?.date
-    if (!lastDate) return false
-    const items = await fetchPage({ date__gte: lastDate, limit: EVENTS_PAGE_SIZE, order_by: 'date' })
+    const feed = await fetchFeed({ direction: 'future', cursor: futureCursor })
     if (seq !== loadSeq) return false
-    hasMoreDown.value = items.length === EVENTS_PAGE_SIZE
-    if (items.length === 0) return false
-    const ids = newEventIds(items)
-    if (ids.length === 0) {
-      hasMoreDown.value = false // защита от зацикливания -- вся страница уже была загружена
-      return false
-    }
-    await Promise.all([
-      calendar.fetchAttendances(collectives.value, ids, principal.userMemberIds),
-      calendar.fetchStageTimes(ids),
-    ])
-    if (seq !== loadSeq) return false
-    calendar.addEvents(items)
+    hasMoreDown.value = feed.has_more_future
+    futureCursor = feed.future_cursor ?? futureCursor
+    if (feed.items.length === 0) return false
+    calendar.addEvents(feed.items)
     return true
   } finally {
     loadingDown.value = false
@@ -492,9 +438,8 @@ async function loadMoreDown(): Promise<boolean> {
 // onNextMonth) — туда нельзя доскроллить постепенно, поэтому диапазон
 // догружается заранее. Начальная загрузка (initLoad/reloadWindow)
 // эту функцию не вызывает: там достаточно одного окна вокруг даты
-// (fetchEventWindow) + бесшовной подгрузки по достижении края списка
-// (loadMoreUp/loadMoreDown) — тот же принцип, что и в матрице «Участий»
-// (см. DashboardPage.vue/positionMatrixScroll + loadMorePast/loadMoreFuture).
+// (loadWindow) + бесшовной подгрузки по достижении края списка
+// (loadMoreUp/loadMoreDown) -- тот же принцип, что и в матрице «Участий».
 async function checkCalendarFill() {
   for (let i = 0; i < 20; i++) {
     let loaded = false
@@ -512,27 +457,6 @@ async function checkCalendarFill() {
     }
 
     if (!loaded) break
-  }
-
-  // Edge-probe: проверяем, есть ли события СТРОГО за границей видимого диапазона.
-  // date__lt/date__gt нет в API, поэтому фильтруем по строгому сравнению дат в ответе.
-  if (hasMoreUp.value && calendar.events.length > 0) {
-    const firstDate = calendar.events[0].date
-    if (firstDate) {
-      try {
-        const items = await fetchPage({ date__lte: firstDate, limit: 3, order_by: '-date' })
-        if (!items.some((e) => e.date && e.date < firstDate)) hasMoreUp.value = false
-      } catch { /* ignore */ }
-    }
-  }
-  if (hasMoreDown.value && calendar.events.length > 0) {
-    const lastDate = calendar.events[calendar.events.length - 1].date
-    if (lastDate) {
-      try {
-        const items = await fetchPage({ date__gte: lastDate, limit: 3, order_by: 'date' })
-        if (!items.some((e) => e.date && e.date > lastDate)) hasMoreDown.value = false
-      } catch { /* ignore */ }
-    }
   }
 }
 
@@ -609,30 +533,11 @@ async function showMonth() {
   await checkCalendarFill()
 }
 
-// Находит коллектив и запись attendance по её id среди загруженных
-function findAttendanceContext(attendanceId: string): { collectiveId: string; memberId: string } | null {
-  for (const items of calendar.attendances.values()) {
-    for (const item of items) {
-      if (item.attendance?.id === attendanceId) {
-        return { collectiveId: item.collectiveId, memberId: item.attendance.member_id }
-      }
-    }
-  }
-  return null
-}
-
-// Руководитель правит через эндпоинт своего коллектива, участник — только свою запись
+// Ответ несёт и новую отметку, и счётчики участия: список обновляется без повторных запросов
 async function patchAttendance(attendanceId: string, body: { is_attended?: boolean; comment?: string | null }) {
-  const ctx = findAttendanceContext(attendanceId)
-  if (!ctx) return
-  // Обновление данных внутри withPending: спиннер исчезает вместе со сменой значения чипа
   await withPending(attendanceId, async () => {
-    if (principal.principalCollectiveIds.has(ctx.collectiveId)) {
-      await patchMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdAttendanceAttendanceIdPatch(ctx.collectiveId, attendanceId, body)
-    } else {
-      await patchMyAttendanceEventV1MeMembersMemberIdAttendanceAttendanceIdPatch(ctx.memberId, attendanceId, body)
-    }
-    await fetchAttendanceForEvents(calendar.events)
+    const { data } = await changeAttendanceEventV2AttendancesAttendanceIdPatch(attendanceId, body)
+    calendar.applyAttendanceChange(data)
     refreshPendingCount()
   })
 }
@@ -687,24 +592,23 @@ async function initLoad() {
   calendar.setSelectedDate(today)
   calendar.setCurrentMonth(today)
 
-  // Гарантируем, что коллективы текущего аккаунта загружены до запроса посещаемости
+  // Коллективы аккаунта нужны, чтобы знать выбор в фильтре
   await principal.fetchCollectives()
   initializing = false
 
-  // Резолв ожидающих отметок стартует параллельно с основным списком (только чтение),
-  // чтобы модалка появилась как можно раньше — не дожидаясь полной пагинации
-  const pendingIdsPromise = fetchPendingRemoteEventIds()
+  // Ожидающие отметки стартуют параллельно с основным списком (только чтение),
+  // чтобы модалка появилась как можно раньше
+  const pendingPromise = fetchPending()
 
   if (noSelection.value) {
     calendar.setEvents([])
   } else {
     try {
-      const eventWindow = await fetchEventWindow(todayStr)
+      const feed = await loadWindow(todayStr)
       if (seq !== loadSeq) return
-      calendar.setEvents(eventWindow.events)
-      hasMoreUp.value = eventWindow.hasMorePast
-      hasMoreDown.value = eventWindow.hasMoreFuture
-      if (eventWindow.events.length > 0) await fetchAttendanceForEvents(eventWindow.events)
+      calendar.setEvents(feed.items)
+      hasMoreUp.value = feed.has_more_past
+      hasMoreDown.value = feed.has_more_future
     } catch {
       /* ignore */
     }
@@ -712,8 +616,7 @@ async function initLoad() {
 
   // Сразу показываем модалку, если есть АКТИВНЫЕ мероприятия с неотмеченной записью
   // (статус проверяется внутри mergePendingEvents — для неактивных модалка не нужна)
-  const remoteIds = await pendingIdsPromise
-  maybeAutoShow(await mergePendingEvents(remoteIds))
+  maybeAutoShow(mergePendingEvents(await pendingPromise))
   refreshPendingCount()
 
   if (seq !== loadSeq) return
@@ -738,12 +641,11 @@ async function reloadWindow(anchorStr: string) {
     return
   }
   try {
-    const eventWindow = await fetchEventWindow(anchorStr)
+    const feed = await loadWindow(anchorStr)
     if (seq !== loadSeq) return
-    calendar.setEvents(eventWindow.events)
-    hasMoreUp.value = eventWindow.hasMorePast
-    hasMoreDown.value = eventWindow.hasMoreFuture
-    if (eventWindow.events.length > 0) await fetchAttendanceForEvents(eventWindow.events)
+    calendar.setEvents(feed.items)
+    hasMoreUp.value = feed.has_more_past
+    hasMoreDown.value = feed.has_more_future
   } catch {
     /* ignore */
   }

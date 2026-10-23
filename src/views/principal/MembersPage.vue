@@ -96,7 +96,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, reactive, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import {
   IonHeader, IonToolbar, IonButtons, IonTitle, IonContent, IonSearchbar,
   IonButton, IonIcon, IonModal, IonReorderGroup, IonReorder,
@@ -108,22 +108,18 @@ import { usePrincipalStore } from '@/stores/principal'
 import { usePrincipalNavigate } from '@/composables/usePrincipalNavigate'
 import { useLayoutAddButton } from '@/composables/usePrincipalPageActions'
 import { reconcileRoleOrder, saveRoleOrder as persistRoleOrder, rankByRoleIds, loadSortMode, saveSortMode, type SortMode } from '@/utils/roleSort'
-import {
-  getMyCollectiveMembersEventV1MeCollectivesCollectiveIdMembersGet,
-  getMyCollectiveRolesEventV1MeCollectivesCollectiveIdRolesGet,
-} from '@/api/generated/almaEventFlow'
+import { getCollectiveRosterEventV2CollectivesCollectiveIdRosterGet } from '@/api/generated/almaEventFlow'
 import HelpTip from '@/components/common/HelpTip.vue'
 import MemberDeleteAlert from '@/components/member/MemberDeleteAlert.vue'
 import MemberEditorModal from '@/components/member/MemberEditorModal.vue'
-import { resolvePersonName, shortId } from '@/utils/names'
-import type { MemberRead, RoleRead } from '@/api/generated/almaEventFlow'
+import { formatPersonName } from '@/utils/names'
+import type { RosterMember, RoleRead } from '@/api/generated/almaEventFlow'
 
 const principal = usePrincipalStore()
 const navigate = usePrincipalNavigate()
 const searchQuery = ref('')
-const members = ref<MemberRead[]>([])
+const members = ref<RosterMember[]>([])
 const roles = ref<RoleRead[]>([])
-const personNames = reactive<Record<string, string>>({})
 
 // ---- Сортировка участников по ролям (порядок настраивается руководителем) ----
 // Общая логика порядка/ключей в @/utils/roleSort — тот же порядок применяется
@@ -164,34 +160,33 @@ function openSort() {
 }
 
 // Минимальный индекс роли участника в заданном порядке; без ролей/неизвестные — в конец.
-function memberRoleRank(m: MemberRead): number {
+function memberRoleRank(m: RosterMember): number {
   return rankByRoleIds(roleOrder.value, m.roles.map((r) => r.id))
 }
 
 const displayMembers = computed(() => {
-  const byName = (a: MemberRead, b: MemberRead) =>
+  const byName = (a: RosterMember, b: RosterMember) =>
     displayName(a).localeCompare(displayName(b), 'ru')
+  const former = (a: RosterMember, b: RosterMember) => Number(!a.is_active) - Number(!b.is_active)
   const sorted = filteredMembers.value.slice()
-  if (sortMode.value === 'alpha') return sorted.sort(byName)
-  return sorted.sort((a, b) => memberRoleRank(a) - memberRoleRank(b) || byName(a, b))
+  if (sortMode.value === 'alpha') return sorted.sort((a, b) => former(a, b) || byName(a, b))
+  return sorted.sort((a, b) => former(a, b) || memberRoleRank(a) - memberRoleRank(b) || byName(a, b))
 })
 
 const collectiveId = computed(() => principal.activePrincipalCollectiveId)
 
 const editorOpen = ref(false)
-const editingMember = ref<MemberRead | null>(null)
+const editingMember = ref<RosterMember | null>(null)
 
 const deleteOpen = ref(false)
-const deletingMember = ref<MemberRead | null>(null)
+const deletingMember = ref<RosterMember | null>(null)
 
-function displayName(m: MemberRead): string {
-  return personNames[m.person_id] || `#${shortId(m.person_id)}`
+function displayName(m: RosterMember): string {
+  return formatPersonName(m.person)
 }
 
-function initials(m: MemberRead): string {
-  const name = personNames[m.person_id]
-  if (!name) return '·'
-  return name.split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase()
+function initials(m: RosterMember): string {
+  return displayName(m).split(' ').slice(0, 2).map((w) => w[0]).join('').toUpperCase()
 }
 
 const filteredMembers = computed(() => {
@@ -208,16 +203,16 @@ function openAdd() {
   editorOpen.value = true
 }
 
-function openEdit(m: MemberRead) {
+function openEdit(m: RosterMember) {
   editingMember.value = m
   editorOpen.value = true
 }
 
-function openProfile(m: MemberRead) {
+function openProfile(m: RosterMember) {
   navigate(`/principal/members/${m.id}`)
 }
 
-function confirmDelete(m: MemberRead) {
+function confirmDelete(m: RosterMember) {
   deletingMember.value = m
   deleteOpen.value = true
 }
@@ -228,17 +223,10 @@ async function reload() {
 
 async function loadMembers(collectiveId: string) {
   try {
-    const [membersRes, rolesRes] = await Promise.all([
-      getMyCollectiveMembersEventV1MeCollectivesCollectiveIdMembersGet(collectiveId, { limit: 100 }),
-      getMyCollectiveRolesEventV1MeCollectivesCollectiveIdRolesGet(collectiveId, { limit: 100 }),
-    ])
-    members.value = membersRes.data.items
-    roles.value = rolesRes.data.items
+    const { data } = await getCollectiveRosterEventV2CollectivesCollectiveIdRosterGet(collectiveId)
+    members.value = data.members
+    roles.value = data.roles
     loadRoleOrder(collectiveId)
-    await Promise.all(membersRes.data.items.map(async (m) => {
-      const name = await resolvePersonName(m.person_id)
-      if (name) personNames[m.person_id] = name
-    }))
   } catch (err) {
     console.error('Failed to load members', err)
   }
