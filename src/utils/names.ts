@@ -1,5 +1,5 @@
-import { getPersonProfileV1PersonsPersonIdGet } from '@/api/generated/almaEventFlow'
-import { getMemberEventV1MembersMemberIdGet } from '@/api/generated/almaEventFlow'
+import { getMembersEventV1MembersGet, getPersonProfileV1PersonsPersonIdGet } from '@/api/generated/almaEventFlow'
+import { createBatcher } from '@/utils/batch'
 
 // Caches survive for the app session — entity names change rarely
 const personNameCache = new Map<string, string | null>()
@@ -9,6 +9,15 @@ const memberPersonCache = new Map<string, string | null>()
 // без этого каждая бьёт по сети отдельно вместо того чтобы дождаться одной.
 const personNameInFlight = new Map<string, Promise<string | null>>()
 const memberPersonInFlight = new Map<string, Promise<string | null>>()
+
+const memberPersons = createBatcher<string>(async (ids) => {
+  const { data } = await getMembersEventV1MembersGet({ id__in: ids.join(','), limit: ids.length, include_inactive: true })
+  return new Map(data.items.map((m) => [m.id, m.person_id]))
+})
+
+async function fetchPersonName(personId: string): Promise<string | null> {
+  return formatPersonName((await getPersonProfileV1PersonsPersonIdGet(personId)).data)
+}
 
 export function shortId(id: string): string {
   return id.slice(0, 8)
@@ -44,9 +53,8 @@ export function resolvePersonName(personId: string): Promise<string | null> {
   if (inFlight) return inFlight
   const promise = (async () => {
     try {
-      const resp = await getPersonProfileV1PersonsPersonIdGet(personId)
-      const name = formatPersonName(resp.data)
-      personNameCache.set(personId, name)
+      const name = await fetchPersonName(personId)
+      if (name !== null) personNameCache.set(personId, name)
       return name
     } catch {
       return null
@@ -67,9 +75,10 @@ export function resolveMemberName(memberId: string, knownPersonId?: string): Pro
   if (inFlight) return inFlight
   const promise = (async () => {
     try {
-      const resp = await getMemberEventV1MembersMemberIdGet(memberId)
-      memberPersonCache.set(memberId, resp.data.person_id)
-      return resolvePersonName(resp.data.person_id)
+      const personId = await memberPersons(memberId)
+      if (personId === null) return null
+      memberPersonCache.set(memberId, personId)
+      return resolvePersonName(personId)
     } catch {
       // Не кешируем неудачу -- см. resolvePersonName выше.
       return null

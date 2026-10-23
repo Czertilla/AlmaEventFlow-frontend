@@ -1,16 +1,18 @@
 import {
-  getCollectiveOrgV1CollectivesCollectiveIdGet,
-  getEventEventV1EventsEventIdGet,
+  getEventsEventV1EventsGet,
+  getMembersEventV1MembersGet,
+  getParticipationsEventV1ParticipationsGet,
+  getRolesEventV1RolesGet,
+  listCollectivesOrgV1CollectivesGet,
   getOrganizationOrgV1OrganizationsOrganizationIdGet,
-  getParticipationEventV1ParticipationsParticipationIdGet,
   getCityGeoV1CitiesCityIdGet,
   getAddressGeoV1AddressesAddressIdGet,
   getLocationGeoV1LocationsLocationIdGet,
-  getRoleEventV1RolesRoleIdGet,
-  getMemberEventV1MembersMemberIdGet,
   getStudentGroupProfileV1StudentsGroupsGroupIdGet,
   getStudentDegreeProfileV1StudentsDegreesDegreeIdGet,
 } from '@/api/generated/almaEventFlow'
+import type { ParticipationRead } from '@/api/generated/almaEventFlow'
+import { createBatcher } from '@/utils/batch'
 import { resolvePersonName, resolveMemberName } from '@/utils/names'
 
 export type ResourceKind =
@@ -63,12 +65,39 @@ function cached(
   return promise
 }
 
+// Подписи для таблицы идут пачками: десяток строк с одним видом ресурса -- один запрос
+// (списки принимают id__in), а не по запросу на строку.
+const collectiveNames = createBatcher<string>(async (ids) => {
+  const { data } = await listCollectivesOrgV1CollectivesGet({ id__in: ids.join(','), limit: ids.length })
+  return new Map(data.items.map((c) => [c.id, c.name]))
+})
+
+const eventNames = createBatcher<string>(async (ids) => {
+  const { data } = await getEventsEventV1EventsGet({ id__in: ids.join(','), limit: ids.length })
+  return new Map(data.items.map((e) => [e.id, e.name]))
+})
+
+const participations = createBatcher<ParticipationRead>(async (ids) => {
+  const { data } = await getParticipationsEventV1ParticipationsGet({ id__in: ids.join(','), limit: ids.length })
+  return new Map(data.items.map((p) => [p.id, p]))
+})
+
+const roles = createBatcher<{ name: string; collective_id: string }>(async (ids) => {
+  const { data } = await getRolesEventV1RolesGet({ id__in: ids.join(','), limit: ids.length })
+  return new Map(data.items.map((r) => [r.id, { name: r.name, collective_id: r.collective_id }]))
+})
+
+const members = createBatcher<{ person_id: string; collective_id: string }>(async (ids) => {
+  const { data } = await getMembersEventV1MembersGet({ id__in: ids.join(','), limit: ids.length, include_inactive: true })
+  return new Map(data.items.map((m) => [m.id, { person_id: m.person_id, collective_id: m.collective_id }]))
+})
+
 async function resolveCollectiveName(id: string): Promise<string | null> {
-  return cached('collective', id, async () => (await getCollectiveOrgV1CollectivesCollectiveIdGet(id)).data.name)
+  return cached('collective', id, () => collectiveNames(id))
 }
 
 async function resolveEventName(id: string): Promise<string | null> {
-  return cached('event', id, async () => (await getEventEventV1EventsEventIdGet(id)).data.name)
+  return cached('event', id, () => eventNames(id))
 }
 
 async function resolveOrganizationName(id: string): Promise<string | null> {
@@ -87,7 +116,8 @@ async function resolveAddressName(id: string): Promise<string | null> {
 // collective_name часто уже приходит денормализованным в самой записи участия.
 async function resolveParticipationLabel(id: string): Promise<string | null> {
   return cached('participation', id, async () => {
-    const { data } = await getParticipationEventV1ParticipationsParticipationIdGet(id)
+    const data = await participations(id)
+    if (!data) return null
     const [collective, event] = await Promise.all([
       data.collective_name ? Promise.resolve(data.collective_name) : resolveCollectiveName(data.collective_id),
       resolveEventName(data.event_id),
@@ -115,7 +145,8 @@ async function resolveLocationName(id: string): Promise<string | null> {
 // Роль живёт внутри коллектива, а названия вроде «Хормейстер» повторяются.
 async function resolveRoleName(id: string): Promise<string | null> {
   return cached('role', id, async () => {
-    const { data } = await getRoleEventV1RolesRoleIdGet(id)
+    const data = await roles(id)
+    if (!data) return null
     const collective = await resolveCollectiveName(data.collective_id)
     return [data.name, collective].filter(Boolean).join(' · ')
   })
@@ -124,7 +155,8 @@ async function resolveRoleName(id: string): Promise<string | null> {
 // Один человек состоит в нескольких коллективах: участник -- это «ФИО · Коллектив».
 async function resolveMemberInCollective(id: string): Promise<string | null> {
   return cached('memberInCollective', id, async () => {
-    const { data } = await getMemberEventV1MembersMemberIdGet(id)
+    const data = await members(id)
+    if (!data) return null
     const [person, collective] = await Promise.all([
       resolvePersonName(data.person_id),
       resolveCollectiveName(data.collective_id),
