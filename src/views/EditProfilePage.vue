@@ -72,6 +72,24 @@
                 <span v-else>Привязать</span>
               </button>
             </div>
+
+            <div v-if="telegramLink" class="tg-fallback">
+              <p class="tg-fallback-text">
+                {{ telegramBlocked
+                  ? 'Браузер не открыл Telegram. Скопируйте ссылку и откройте её вручную.'
+                  : 'Если Telegram не открылся, скопируйте ссылку и откройте её вручную.' }}
+              </p>
+              <a
+                class="tg-link"
+                :href="telegramLink"
+                target="_blank"
+                rel="noopener"
+              >{{ telegramLink }}</a>
+              <button class="ui-btn ui-btn--ghost ui-btn--sm tg-copy" @click="copyTelegramLink">
+                <ion-icon :icon="telegramCopied ? checkmarkOutline : copyOutline" />
+                {{ telegramCopied ? 'Скопировано' : 'Скопировать ссылку' }}
+              </button>
+            </div>
           </div>
         </div>
 
@@ -107,7 +125,7 @@ import {
 } from '@ionic/vue'
 import {
   personOutline, mailOutline, alertCircleOutline,
-  paperPlaneOutline,
+  paperPlaneOutline, copyOutline, checkmarkOutline,
 } from 'ionicons/icons'
 import { createTelegramLinkTokenUserV1UsersMeTelegramLinkTokenPost } from '@/api/generated/almaEventFlow'
 import type { UserUpdate } from '@/api/generated/almaEventFlow'
@@ -125,6 +143,9 @@ const currentPassword = ref('')
 const error = ref('')
 const loading = ref(false)
 const telegramLoading = ref(false)
+const telegramLink = ref('')
+const telegramBlocked = ref(false)
+const telegramCopied = ref(false)
 
 // Каждый показ страницы начинается с актуальных данных пользователя и пустых
 // полей пароля; при уходе чувствительные поля очищаются (страница кэшируется).
@@ -135,6 +156,9 @@ function resetForm() {
   confirm.value = ''
   currentPassword.value = ''
   error.value = ''
+  telegramLink.value = ''
+  telegramBlocked.value = false
+  telegramCopied.value = false
 }
 
 onIonViewWillEnter(resetForm)
@@ -160,16 +184,41 @@ async function toast(message: string, color = 'success') {
 
 async function handleLinkTelegram() {
   telegramLoading.value = true
+  telegramLink.value = ''
+  telegramBlocked.value = false
+  telegramCopied.value = false
+  // Safari blocks a window opened after an await: the tab is opened in the click itself.
+  const pending = window.open('', '_blank')
   try {
     const response = await createTelegramLinkTokenUserV1UsersMeTelegramLinkTokenPost()
-    window.open(response.data.deep_link, '_blank')
+    telegramLink.value = response.data.deep_link
+    if (pending) {
+      try {
+        pending.location.href = telegramLink.value
+      } catch {
+        telegramBlocked.value = true
+      }
+    } else {
+      telegramBlocked.value = true
+    }
   } catch (err: any) {
+    pending?.close()
     await toast(
       err?.response?.data?.detail || 'Не удалось получить ссылку для привязки Telegram',
       'danger',
     )
   } finally {
     telegramLoading.value = false
+  }
+}
+
+async function copyTelegramLink() {
+  try {
+    await navigator.clipboard.writeText(telegramLink.value)
+    telegramCopied.value = true
+    setTimeout(() => { telegramCopied.value = false }, 1500)
+  } catch {
+    await toast('Не удалось скопировать — выделите ссылку и скопируйте вручную', 'danger')
   }
 }
 
@@ -319,6 +368,39 @@ async function handleSave() {
 .telegram-btn:disabled {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.tg-fallback {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: var(--radius-md);
+  border: var(--border-w) solid var(--ion-border-color);
+  background: var(--ion-background-color);
+}
+
+.tg-fallback-text {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--ion-color-medium);
+}
+
+.tg-link {
+  font-family: var(--font-mono);
+  font-size: var(--fs-xs);
+  color: var(--ion-color-primary);
+  word-break: break-all;
+  text-decoration: underline;
+}
+
+.tg-copy {
+  align-self: flex-start;
+  gap: 6px;
+}
+
+.tg-copy ion-icon {
+  font-size: var(--fs-lg);
 }
 
 .btn-spinner--small {
