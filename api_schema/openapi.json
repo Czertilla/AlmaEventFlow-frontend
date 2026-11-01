@@ -453,7 +453,8 @@
                             }
                         }
                     }
-                }
+                },
+                "description": "Places of the collectives the caller leads or belongs to; superusers see all."
             },
             "post": {
                 "tags": [
@@ -3863,7 +3864,8 @@
                             }
                         }
                     }
-                }
+                },
+                "description": "Only a superuser adds a person to a collective; a leader asks them to."
             }
         },
         "/event/v1/me/collectives/{collective_id}/members/{member_id}": {
@@ -6760,7 +6762,8 @@
                             }
                         }
                     }
-                }
+                },
+                "description": "Members of the collectives the caller leads or belongs to; superusers see all."
             },
             "post": {
                 "tags": [
@@ -21030,11 +21033,11 @@
                                     "type": "null"
                                 }
                             ],
-                            "description": "Comma-separated fields, prefix a field with `-` for descending order. Allowed: expire_date, issued_date, number, is_foreign, created_at, edited_at.",
-                            "default": "expire_date",
+                            "description": "Comma-separated fields, prefix a field with `-` for descending order. Allowed: is_foreign, created_at, edited_at.",
+                            "default": "created_at",
                             "title": "Order By"
                         },
-                        "description": "Comma-separated fields, prefix a field with `-` for descending order. Allowed: expire_date, issued_date, number, is_foreign, created_at, edited_at."
+                        "description": "Comma-separated fields, prefix a field with `-` for descending order. Allowed: is_foreign, created_at, edited_at."
                     },
                     {
                         "name": "search",
@@ -21086,74 +21089,6 @@
                         }
                     },
                     {
-                        "name": "expire_date__gte",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "format": "date"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Expire Date  Gte"
-                        }
-                    },
-                    {
-                        "name": "expire_date__lte",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "format": "date"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Expire Date  Lte"
-                        }
-                    },
-                    {
-                        "name": "issued_date__gte",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "format": "date"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Issued Date  Gte"
-                        }
-                    },
-                    {
-                        "name": "issued_date__lte",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "format": "date"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Issued Date  Lte"
-                        }
-                    },
-                    {
                         "name": "page",
                         "in": "query",
                         "required": false,
@@ -21183,24 +21118,6 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/PageV1_PassportItemRead_"
-                                }
-                            }
-                        }
-                    },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
                                 }
                             }
                         }
@@ -21238,6 +21155,42 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "PERSONAL_DATA_UNAVAILABLE",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "PERSONAL_DATA_UNAVAILABLE": {
+                                        "summary": "PERSONAL_DATA_UNAVAILABLE",
+                                        "value": {
+                                            "detail": "PERSONAL_DATA_UNAVAILABLE"
                                         }
                                     }
                                 },
@@ -21291,24 +21244,6 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -21342,6 +21277,42 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "PERSONAL_DATA_UNAVAILABLE",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "PERSONAL_DATA_UNAVAILABLE": {
+                                        "summary": "PERSONAL_DATA_UNAVAILABLE",
+                                        "value": {
+                                            "detail": "PERSONAL_DATA_UNAVAILABLE"
                                         }
                                     }
                                 },
@@ -21399,24 +21370,6 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -21450,6 +21403,42 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "PERSONAL_DATA_UNAVAILABLE",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "PERSONAL_DATA_UNAVAILABLE": {
+                                        "summary": "PERSONAL_DATA_UNAVAILABLE",
+                                        "value": {
+                                            "detail": "PERSONAL_DATA_UNAVAILABLE"
                                         }
                                     }
                                 },
@@ -21533,24 +21522,6 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -21584,6 +21555,42 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "PERSONAL_DATA_UNAVAILABLE",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "PERSONAL_DATA_UNAVAILABLE": {
+                                        "summary": "PERSONAL_DATA_UNAVAILABLE",
+                                        "value": {
+                                            "detail": "PERSONAL_DATA_UNAVAILABLE"
                                         }
                                     }
                                 },
@@ -21667,24 +21674,6 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -21718,6 +21707,42 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "PERSONAL_DATA_UNAVAILABLE",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "PERSONAL_DATA_UNAVAILABLE": {
+                                        "summary": "PERSONAL_DATA_UNAVAILABLE",
+                                        "value": {
+                                            "detail": "PERSONAL_DATA_UNAVAILABLE"
                                         }
                                     }
                                 },
@@ -21789,24 +21814,6 @@
                             }
                         }
                     },
-                    "400": {
-                        "description": "ATTACHED_PERSON_REQUIRED",
-                        "content": {
-                            "application/json": {
-                                "examples": {
-                                    "ATTACHED_PERSON_REQUIRED": {
-                                        "summary": "ATTACHED_PERSON_REQUIRED",
-                                        "value": {
-                                            "detail": "ATTACHED_PERSON_REQUIRED"
-                                        }
-                                    }
-                                },
-                                "schema": {
-                                    "$ref": "#/components/schemas/ErrorModel"
-                                }
-                            }
-                        }
-                    },
                     "401": {
                         "description": "Missing or invalid authentication token",
                         "content": {
@@ -21840,6 +21847,42 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "ATTACHED_PERSON_REQUIRED",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "ATTACHED_PERSON_REQUIRED": {
+                                        "summary": "ATTACHED_PERSON_REQUIRED",
+                                        "value": {
+                                            "detail": "ATTACHED_PERSON_REQUIRED"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "PERSONAL_DATA_UNAVAILABLE",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "PERSONAL_DATA_UNAVAILABLE": {
+                                        "summary": "PERSONAL_DATA_UNAVAILABLE",
+                                        "value": {
+                                            "detail": "PERSONAL_DATA_UNAVAILABLE"
                                         }
                                     }
                                 },
@@ -21990,11 +22033,11 @@
                                     "type": "null"
                                 }
                             ],
-                            "description": "Comma-separated fields, prefix a field with `-` for descending order. Allowed: expire_date, issued_date, number, is_foreign, created_at, edited_at.",
-                            "default": "expire_date",
+                            "description": "Comma-separated fields, prefix a field with `-` for descending order. Allowed: is_foreign, created_at, edited_at.",
+                            "default": "created_at",
                             "title": "Order By"
                         },
-                        "description": "Comma-separated fields, prefix a field with `-` for descending order. Allowed: expire_date, issued_date, number, is_foreign, created_at, edited_at."
+                        "description": "Comma-separated fields, prefix a field with `-` for descending order. Allowed: is_foreign, created_at, edited_at."
                     },
                     {
                         "name": "search",
@@ -22043,74 +22086,6 @@
                                 }
                             ],
                             "title": "Is Foreign"
-                        }
-                    },
-                    {
-                        "name": "expire_date__gte",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "format": "date"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Expire Date  Gte"
-                        }
-                    },
-                    {
-                        "name": "expire_date__lte",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "format": "date"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Expire Date  Lte"
-                        }
-                    },
-                    {
-                        "name": "issued_date__gte",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "format": "date"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Issued Date  Gte"
-                        }
-                    },
-                    {
-                        "name": "issued_date__lte",
-                        "in": "query",
-                        "required": false,
-                        "schema": {
-                            "anyOf": [
-                                {
-                                    "type": "string",
-                                    "format": "date"
-                                },
-                                {
-                                    "type": "null"
-                                }
-                            ],
-                            "title": "Issued Date  Lte"
                         }
                     },
                     {
@@ -22180,6 +22155,24 @@
                                         "summary": "Not superuser or not verified",
                                         "value": {
                                             "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "PERSONAL_DATA_UNAVAILABLE",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "PERSONAL_DATA_UNAVAILABLE": {
+                                        "summary": "PERSONAL_DATA_UNAVAILABLE",
+                                        "value": {
+                                            "detail": "PERSONAL_DATA_UNAVAILABLE"
                                         }
                                     }
                                 },
@@ -22288,6 +22281,24 @@
                                         "summary": "PASSPORT_NOT_FOUND",
                                         "value": {
                                             "detail": "PASSPORT_NOT_FOUND"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "PERSONAL_DATA_UNAVAILABLE",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "PERSONAL_DATA_UNAVAILABLE": {
+                                        "summary": "PERSONAL_DATA_UNAVAILABLE",
+                                        "value": {
+                                            "detail": "PERSONAL_DATA_UNAVAILABLE"
                                         }
                                     }
                                 },
@@ -22413,6 +22424,24 @@
                             }
                         }
                     },
+                    "503": {
+                        "description": "PERSONAL_DATA_UNAVAILABLE",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "PERSONAL_DATA_UNAVAILABLE": {
+                                        "summary": "PERSONAL_DATA_UNAVAILABLE",
+                                        "value": {
+                                            "detail": "PERSONAL_DATA_UNAVAILABLE"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
                     "422": {
                         "description": "Validation Error",
                         "content": {
@@ -22529,6 +22558,24 @@
                             }
                         }
                     },
+                    "503": {
+                        "description": "PERSONAL_DATA_UNAVAILABLE",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "PERSONAL_DATA_UNAVAILABLE": {
+                                        "summary": "PERSONAL_DATA_UNAVAILABLE",
+                                        "value": {
+                                            "detail": "PERSONAL_DATA_UNAVAILABLE"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
                     "422": {
                         "description": "Validation Error",
                         "content": {
@@ -22624,6 +22671,24 @@
                                         "summary": "PASSPORT_NOT_FOUND",
                                         "value": {
                                             "detail": "PASSPORT_NOT_FOUND"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "PERSONAL_DATA_UNAVAILABLE",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "PERSONAL_DATA_UNAVAILABLE": {
+                                        "summary": "PERSONAL_DATA_UNAVAILABLE",
+                                        "value": {
+                                            "detail": "PERSONAL_DATA_UNAVAILABLE"
                                         }
                                     }
                                 },
@@ -23320,7 +23385,8 @@
                             }
                         }
                     }
-                }
+                },
+                "description": "Persons whose full name the caller may see."
             },
             "post": {
                 "tags": [
@@ -23803,7 +23869,13 @@
                             }
                         }
                     }
-                }
+                },
+                "description": "A person whose full name the caller may see; else `404 PERSON_NOT_FOUND`.",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
             },
             "put": {
                 "tags": [
@@ -25367,7 +25439,8 @@
                             }
                         }
                     }
-                }
+                },
+                "description": "Read by the owner or a superuser; for anyone else `404 PROFILE_NOT_FOUND`."
             },
             "put": {
                 "tags": [
@@ -26231,7 +26304,8 @@
                             }
                         }
                     }
-                }
+                },
+                "description": "Read by the owner or a superuser; for anyone else `404 STUDENT_NOT_FOUND`."
             },
             "put": {
                 "tags": [
@@ -27994,6 +28068,38 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/v2/health/keys": {
+            "get": {
+                "tags": [
+                    "health"
+                ],
+                "summary": "Get Key Health",
+                "description": "Whether personal data can be encrypted and decrypted now; `503` when a key\nprovider does not answer. The liveness probe stays `/profile/v1/health`.",
+                "operationId": "get_key_health_profile_v2_health_keys_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/KeyHealthRead"
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/KeyHealthRead"
                                 }
                             }
                         }
@@ -33495,6 +33601,906 @@
                         "HTTPBearer": []
                     }
                 ]
+            }
+        },
+        "/profile/v2/invites/preview": {
+            "post": {
+                "tags": [
+                    "invite"
+                ],
+                "summary": "Preview Invite",
+                "description": "Whom an invitation is for, read by whoever holds the token.\n\n`400 INVITE_TOKEN_EXPIRED` for an old token and `400 PERSON_ALREADY_HAS_ACCOUNT`\nwhen the person has registered already.",
+                "operationId": "preview_invite_profile_v2_invites_preview_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/InvitePreviewData"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/InvitePreviewRead"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "INVITE_TOKEN_INVALID",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "INVITE_TOKEN_INVALID": {
+                                        "summary": "INVITE_TOKEN_INVALID",
+                                        "value": {
+                                            "detail": "INVITE_TOKEN_INVALID"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "INVITE_PERSON_NOT_FOUND",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "INVITE_PERSON_NOT_FOUND": {
+                                        "summary": "INVITE_PERSON_NOT_FOUND",
+                                        "value": {
+                                            "detail": "INVITE_PERSON_NOT_FOUND"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/v2/persons/names": {
+            "post": {
+                "tags": [
+                    "person"
+                ],
+                "summary": "Get Person Names",
+                "description": "The full names of the requested persons.\n\nEvery requested id gets an entry. The name is left out when the caller may not see\nit or the person does not exist: the two look the same.",
+                "operationId": "get_person_names_profile_v2_persons_names_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/PersonNamesData"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PersonNamesRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/profile/v2/persons/{person_id}/visibility": {
+            "get": {
+                "tags": [
+                    "visibility",
+                    "person"
+                ],
+                "summary": "Get Person Visibility",
+                "operationId": "get_person_visibility_profile_v2_persons__person_id__visibility_get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "person_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Person Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VisibilityRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/v2/persons/{person_id}/visibility/{field_key}": {
+            "put": {
+                "tags": [
+                    "visibility",
+                    "person"
+                ],
+                "summary": "Set Person Visibility",
+                "description": "An administrator sets the audience; the change is kept with `source=admin`.",
+                "operationId": "set_person_visibility_profile_v2_persons__person_id__visibility__field_key__put",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "person_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Person Id"
+                        }
+                    },
+                    {
+                        "name": "field_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Field Key"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VisibilitySetData"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VisibilityEntryRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "VISIBILITY_FIELD_NOT_FOUND",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "VISIBILITY_FIELD_NOT_FOUND": {
+                                        "summary": "VISIBILITY_FIELD_NOT_FOUND",
+                                        "value": {
+                                            "detail": "VISIBILITY_FIELD_NOT_FOUND"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "VISIBILITY_COOLDOWN",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "VISIBILITY_COOLDOWN": {
+                                        "summary": "VISIBILITY_COOLDOWN",
+                                        "value": {
+                                            "detail": "VISIBILITY_COOLDOWN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "VISIBILITY_OUT_OF_RANGE",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "VISIBILITY_OUT_OF_RANGE": {
+                                        "summary": "VISIBILITY_OUT_OF_RANGE",
+                                        "value": {
+                                            "detail": "VISIBILITY_OUT_OF_RANGE"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "visibility",
+                    "person"
+                ],
+                "summary": "Reset Person Visibility",
+                "operationId": "reset_person_visibility_profile_v2_persons__person_id__visibility__field_key__delete",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "person_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Person Id"
+                        }
+                    },
+                    {
+                        "name": "field_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Field Key"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VisibilityEntryRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "VISIBILITY_FIELD_NOT_FOUND",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "VISIBILITY_FIELD_NOT_FOUND": {
+                                        "summary": "VISIBILITY_FIELD_NOT_FOUND",
+                                        "value": {
+                                            "detail": "VISIBILITY_FIELD_NOT_FOUND"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "VISIBILITY_COOLDOWN",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "VISIBILITY_COOLDOWN": {
+                                        "summary": "VISIBILITY_COOLDOWN",
+                                        "value": {
+                                            "detail": "VISIBILITY_COOLDOWN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "VISIBILITY_OUT_OF_RANGE",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "VISIBILITY_OUT_OF_RANGE": {
+                                        "summary": "VISIBILITY_OUT_OF_RANGE",
+                                        "value": {
+                                            "detail": "VISIBILITY_OUT_OF_RANGE"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/v2/visibility/my": {
+            "get": {
+                "tags": [
+                    "visibility"
+                ],
+                "summary": "Get My Visibility",
+                "description": "Who may see each personal field of the caller; the defaults without a person.",
+                "operationId": "get_my_visibility_profile_v2_visibility_my_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VisibilityRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/profile/v2/visibility/my/{field_key}": {
+            "put": {
+                "tags": [
+                    "visibility"
+                ],
+                "summary": "Set My Visibility",
+                "description": "Sets the audience of a field. Narrowing is always allowed; widening is held\nback (`409 VISIBILITY_COOLDOWN`) for a while after the account link changed.",
+                "operationId": "set_my_visibility_profile_v2_visibility_my__field_key__put",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "field_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Field Key"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/VisibilitySetData"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VisibilityEntryRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "VISIBILITY_FIELD_NOT_FOUND",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "VISIBILITY_FIELD_NOT_FOUND": {
+                                        "summary": "VISIBILITY_FIELD_NOT_FOUND",
+                                        "value": {
+                                            "detail": "VISIBILITY_FIELD_NOT_FOUND"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "VISIBILITY_COOLDOWN",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "VISIBILITY_COOLDOWN": {
+                                        "summary": "VISIBILITY_COOLDOWN",
+                                        "value": {
+                                            "detail": "VISIBILITY_COOLDOWN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "VISIBILITY_OUT_OF_RANGE",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "VISIBILITY_OUT_OF_RANGE": {
+                                        "summary": "VISIBILITY_OUT_OF_RANGE",
+                                        "value": {
+                                            "detail": "VISIBILITY_OUT_OF_RANGE"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "visibility"
+                ],
+                "summary": "Reset My Visibility",
+                "description": "Returns the field to its default audience.",
+                "operationId": "reset_my_visibility_profile_v2_visibility_my__field_key__delete",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "field_key",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "title": "Field Key"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VisibilityEntryRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "VISIBILITY_FIELD_NOT_FOUND",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "VISIBILITY_FIELD_NOT_FOUND": {
+                                        "summary": "VISIBILITY_FIELD_NOT_FOUND",
+                                        "value": {
+                                            "detail": "VISIBILITY_FIELD_NOT_FOUND"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "VISIBILITY_COOLDOWN",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "VISIBILITY_COOLDOWN": {
+                                        "summary": "VISIBILITY_COOLDOWN",
+                                        "value": {
+                                            "detail": "VISIBILITY_COOLDOWN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "VISIBILITY_OUT_OF_RANGE",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "VISIBILITY_OUT_OF_RANGE": {
+                                        "summary": "VISIBILITY_OUT_OF_RANGE",
+                                        "value": {
+                                            "detail": "VISIBILITY_OUT_OF_RANGE"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     },
@@ -40636,8 +41642,8 @@
                     },
                     "limit": {
                         "type": "integer",
-                        "maximum": 100,
-                        "exclusiveMinimum": 0,
+                        "maximum": 100.0,
+                        "exclusiveMinimum": 0.0,
                         "title": "Limit",
                         "default": 10
                     },
@@ -41455,14 +42461,14 @@
                 "properties": {
                     "lat": {
                         "type": "number",
-                        "maximum": 90,
-                        "minimum": -90,
+                        "maximum": 90.0,
+                        "minimum": -90.0,
                         "title": "Lat"
                     },
                     "lon": {
                         "type": "number",
-                        "maximum": 180,
-                        "minimum": -180,
+                        "maximum": 180.0,
+                        "minimum": -180.0,
                         "title": "Lon"
                     }
                 },
@@ -44101,6 +45107,236 @@
                     "name"
                 ],
                 "title": "OrganizationRead"
+            },
+            "Audience": {
+                "type": "string",
+                "enum": [
+                    "private",
+                    "context",
+                    "all_users"
+                ],
+                "title": "Audience"
+            },
+            "InvitePreviewData": {
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "maxLength": 4096,
+                        "minLength": 1,
+                        "title": "Token"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "token"
+                ],
+                "title": "InvitePreviewData"
+            },
+            "InvitePreviewRead": {
+                "properties": {
+                    "surname": {
+                        "type": "string",
+                        "title": "Surname"
+                    },
+                    "name": {
+                        "type": "string",
+                        "title": "Name"
+                    },
+                    "patronymic": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Patronymic"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "surname",
+                    "name",
+                    "patronymic"
+                ],
+                "title": "InvitePreviewRead"
+            },
+            "PersonNameRead": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "surname": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Surname"
+                    },
+                    "name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Name"
+                    },
+                    "patronymic": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Patronymic"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "surname",
+                    "name",
+                    "patronymic"
+                ],
+                "title": "PersonNameRead"
+            },
+            "PersonNamesData": {
+                "properties": {
+                    "ids": {
+                        "items": {
+                            "type": "string",
+                            "format": "uuid"
+                        },
+                        "type": "array",
+                        "maxItems": 200,
+                        "title": "Ids"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "ids"
+                ],
+                "title": "PersonNamesData"
+            },
+            "PersonNamesRead": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/PersonNameRead"
+                        },
+                        "type": "array",
+                        "title": "Items"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "items"
+                ],
+                "title": "PersonNamesRead"
+            },
+            "VisibilityEntryRead": {
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "title": "Key"
+                    },
+                    "label": {
+                        "type": "string",
+                        "title": "Label"
+                    },
+                    "configurable": {
+                        "type": "boolean",
+                        "title": "Configurable"
+                    },
+                    "audience_min": {
+                        "$ref": "#/components/schemas/Audience"
+                    },
+                    "audience_max": {
+                        "$ref": "#/components/schemas/Audience"
+                    },
+                    "audience_default": {
+                        "$ref": "#/components/schemas/Audience"
+                    },
+                    "audience": {
+                        "$ref": "#/components/schemas/Audience"
+                    },
+                    "is_default": {
+                        "type": "boolean",
+                        "title": "Is Default"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "key",
+                    "label",
+                    "configurable",
+                    "audience_min",
+                    "audience_max",
+                    "audience_default",
+                    "audience",
+                    "is_default"
+                ],
+                "title": "VisibilityEntryRead"
+            },
+            "VisibilityRead": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/VisibilityEntryRead"
+                        },
+                        "type": "array",
+                        "title": "Items"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "items"
+                ],
+                "title": "VisibilityRead"
+            },
+            "VisibilitySetData": {
+                "properties": {
+                    "audience": {
+                        "$ref": "#/components/schemas/Audience"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "audience"
+                ],
+                "title": "VisibilitySetData"
+            },
+            "Health": {
+                "type": "string",
+                "enum": [
+                    "ok",
+                    "unavailable"
+                ],
+                "title": "Health"
+            },
+            "KeyHealthRead": {
+                "properties": {
+                    "status": {
+                        "$ref": "#/components/schemas/Health"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "status"
+                ],
+                "title": "KeyHealthRead"
             }
         },
         "securitySchemes": {

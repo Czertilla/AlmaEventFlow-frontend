@@ -2259,6 +2259,76 @@ export interface ViewerContext {
   collectives: ViewerCollective[];
 }
 
+export type Audience = typeof Audience[keyof typeof Audience];
+
+
+export const Audience = {
+  private: 'private',
+  context: 'context',
+  all_users: 'all_users',
+} as const;
+
+export interface InvitePreviewData {
+  /**
+     * @minLength 1
+     * @maxLength 4096
+     */
+  token: string;
+}
+
+export interface InvitePreviewRead {
+  surname: string;
+  name: string;
+  patronymic: string | null;
+}
+
+export interface PersonNameRead {
+  id: string;
+  surname: string | null;
+  name: string | null;
+  patronymic: string | null;
+}
+
+export interface PersonNamesData {
+  /** @maxItems 200 */
+  ids: string[];
+}
+
+export interface PersonNamesRead {
+  items: PersonNameRead[];
+}
+
+export interface VisibilityEntryRead {
+  key: string;
+  label: string;
+  configurable: boolean;
+  audience_min: Audience;
+  audience_max: Audience;
+  audience_default: Audience;
+  audience: Audience;
+  is_default: boolean;
+}
+
+export interface VisibilityRead {
+  items: VisibilityEntryRead[];
+}
+
+export interface VisibilitySetData {
+  audience: Audience;
+}
+
+export type Health = typeof Health[keyof typeof Health];
+
+
+export const Health = {
+  ok: 'ok',
+  unavailable: 'unavailable',
+} as const;
+
+export interface KeyHealthRead {
+  status: Health;
+}
+
 export type GetAttendancesEventV1AttendancesGetParams = {
 id?: string | null;
 id__in?: string | null;
@@ -2945,16 +3015,12 @@ edited_at__gte?: string | null;
 edited_at__lte?: string | null;
 edited_at__isnull?: boolean | null;
 /**
- * Comma-separated fields, prefix a field with `-` for descending order. Allowed: expire_date, issued_date, number, is_foreign, created_at, edited_at.
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: is_foreign, created_at, edited_at.
  */
 order_by?: string | null;
 search?: string | null;
 profile_id?: string | null;
 is_foreign?: boolean | null;
-expire_date__gte?: string | null;
-expire_date__lte?: string | null;
-issued_date__gte?: string | null;
-issued_date__lte?: string | null;
 page?: number;
 /**
  * @maximum 100
@@ -2970,16 +3036,12 @@ edited_at__gte?: string | null;
 edited_at__lte?: string | null;
 edited_at__isnull?: boolean | null;
 /**
- * Comma-separated fields, prefix a field with `-` for descending order. Allowed: expire_date, issued_date, number, is_foreign, created_at, edited_at.
+ * Comma-separated fields, prefix a field with `-` for descending order. Allowed: is_foreign, created_at, edited_at.
  */
 order_by?: string | null;
 search?: string | null;
 profile_id?: string | null;
 is_foreign?: boolean | null;
-expire_date__gte?: string | null;
-expire_date__lte?: string | null;
-issued_date__gte?: string | null;
-issued_date__lte?: string | null;
 page?: number;
 /**
  * @maximum 100
@@ -3301,6 +3363,7 @@ id: string[];
 };
 
 /**
+ * Places of the collectives the caller leads or belongs to; superusers see all.
  * @summary Get Attendances
  */
 export const getAttendancesEventV1AttendancesGet = (
@@ -3583,6 +3646,7 @@ export const getMyCollectiveMembersEventV1MeCollectivesCollectiveIdMembersGet = 
   }
 
 /**
+ * Only a superuser adds a person to a collective; a leader asks them to.
  * @summary Create My Collective Member
  */
 export const createMyCollectiveMemberEventV1MeCollectivesCollectiveIdMembersPost = (
@@ -3900,6 +3964,7 @@ export const createMyCollectiveAttendanceEventV1MeCollectivesCollectiveIdPartici
   }
 
 /**
+ * Members of the collectives the caller leads or belongs to; superusers see all.
  * @summary Get Members
  */
 export const getMembersEventV1MembersGet = (
@@ -5535,6 +5600,7 @@ export const deleteNameVariantProfileV1PassportsPassportIdNameVariantDelete = (
   }
 
 /**
+ * Persons whose full name the caller may see.
  * @summary Search Person
  */
 export const searchPersonProfileV1PersonsGet = (
@@ -5595,6 +5661,7 @@ export const patchMyPersonProfileV1PersonsMyPatch = (
   }
 
 /**
+ * A person whose full name the caller may see; else `404 PERSON_NOT_FOUND`.
  * @summary Get Person
  */
 export const getPersonProfileV1PersonsPersonIdGet = (
@@ -5730,6 +5797,7 @@ export const patchMyProfileProfileV1ProfilesMyPatch = (
   }
 
 /**
+ * Read by the owner or a superuser; for anyone else `404 PROFILE_NOT_FOUND`.
  * @summary Get Profile
  */
 export const getProfileProfileV1ProfilesProfileIdGet = (
@@ -5803,6 +5871,7 @@ export const createStudentProfileV1StudentsPost = (
   }
 
 /**
+ * Read by the owner or a superuser; for anyone else `404 STUDENT_NOT_FOUND`.
  * @summary Get Student
  */
 export const getStudentProfileV1StudentsStudentIdGet = (
@@ -5993,6 +6062,19 @@ export const deleteStudentGroupProfileV1StudentsGroupsGroupIdDelete = (
  ): Promise<AxiosResponse<unknown>> => {
     return axios.delete(
       `/profile/v1/students/groups/${groupId}`,options
+    );
+  }
+
+/**
+ * Whether personal data can be encrypted and decrypted now; `503` when a key
+ * provider does not answer. The liveness probe stays `/profile/v1/health`.
+ * @summary Get Key Health
+ */
+export const getKeyHealthProfileV2HealthKeysGet = (
+     options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<KeyHealthRead>> => {
+    return axios.get(
+      `/profile/v2/health/keys`,options
     );
   }
 
@@ -6785,6 +6867,115 @@ export const declareAttendanceEventV2AttendancesPost = (
     );
   }
 
+/**
+ * Whom an invitation is for, read by whoever holds the token.
+ *
+ * `400 INVITE_TOKEN_EXPIRED` for an old token and `400 PERSON_ALREADY_HAS_ACCOUNT`
+ * when the person has registered already.
+ * @summary Preview Invite
+ */
+export const previewInviteProfileV2InvitesPreviewPost = (
+    invitePreviewData: InvitePreviewData, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<InvitePreviewRead>> => {
+    return axios.post(
+      `/profile/v2/invites/preview`,
+      invitePreviewData,options
+    );
+  }
+
+/**
+ * The full names of the requested persons.
+ *
+ * Every requested id gets an entry. The name is left out when the caller may not see
+ * it or the person does not exist: the two look the same.
+ * @summary Get Person Names
+ */
+export const getPersonNamesProfileV2PersonsNamesPost = (
+    personNamesData: PersonNamesData, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<PersonNamesRead>> => {
+    return axios.post(
+      `/profile/v2/persons/names`,
+      personNamesData,options
+    );
+  }
+
+/**
+ * @summary Get Person Visibility
+ */
+export const getPersonVisibilityProfileV2PersonsPersonIdVisibilityGet = (
+    personId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<VisibilityRead>> => {
+    return axios.get(
+      `/profile/v2/persons/${personId}/visibility`,options
+    );
+  }
+
+/**
+ * An administrator sets the audience; the change is kept with `source=admin`.
+ * @summary Set Person Visibility
+ */
+export const setPersonVisibilityProfileV2PersonsPersonIdVisibilityFieldKeyPut = (
+    personId: string,
+    fieldKey: string,
+    visibilitySetData: VisibilitySetData, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<VisibilityEntryRead>> => {
+    return axios.put(
+      `/profile/v2/persons/${personId}/visibility/${fieldKey}`,
+      visibilitySetData,options
+    );
+  }
+
+/**
+ * @summary Reset Person Visibility
+ */
+export const resetPersonVisibilityProfileV2PersonsPersonIdVisibilityFieldKeyDelete = (
+    personId: string,
+    fieldKey: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<VisibilityEntryRead>> => {
+    return axios.delete(
+      `/profile/v2/persons/${personId}/visibility/${fieldKey}`,options
+    );
+  }
+
+/**
+ * Who may see each personal field of the caller; the defaults without a person.
+ * @summary Get My Visibility
+ */
+export const getMyVisibilityProfileV2VisibilityMyGet = (
+     options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<VisibilityRead>> => {
+    return axios.get(
+      `/profile/v2/visibility/my`,options
+    );
+  }
+
+/**
+ * Sets the audience of a field. Narrowing is always allowed; widening is held
+ * back (`409 VISIBILITY_COOLDOWN`) for a while after the account link changed.
+ * @summary Set My Visibility
+ */
+export const setMyVisibilityProfileV2VisibilityMyFieldKeyPut = (
+    fieldKey: string,
+    visibilitySetData: VisibilitySetData, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<VisibilityEntryRead>> => {
+    return axios.put(
+      `/profile/v2/visibility/my/${fieldKey}`,
+      visibilitySetData,options
+    );
+  }
+
+/**
+ * Returns the field to its default audience.
+ * @summary Reset My Visibility
+ */
+export const resetMyVisibilityProfileV2VisibilityMyFieldKeyDelete = (
+    fieldKey: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<VisibilityEntryRead>> => {
+    return axios.delete(
+      `/profile/v2/visibility/my/${fieldKey}`,options
+    );
+  }
+
 export type GetAttendancesEventV1AttendancesGetResult = AxiosResponse<PageV1AttendanceRead>
 export type CreateAttendanceEventV1AttendancesPostResult = AxiosResponse<AttendanceRead>
 export type GetAttendanceEventV1AttendancesAttendanceIdGetResult = AxiosResponse<AttendanceRead>
@@ -6998,6 +7189,7 @@ export type GetStudentGroupProfileV1StudentsGroupsGroupIdGetResult = AxiosRespon
 export type PutStudentGroupProfileV1StudentsGroupsGroupIdPutResult = AxiosResponse<StudentGroupRead>
 export type PatchStudentGroupProfileV1StudentsGroupsGroupIdPatchResult = AxiosResponse<StudentGroupRead>
 export type DeleteStudentGroupProfileV1StudentsGroupsGroupIdDeleteResult = AxiosResponse<unknown>
+export type GetKeyHealthProfileV2HealthKeysGetResult = AxiosResponse<KeyHealthRead>
 export type GetMyProfileProfileV2ProfilesMyGetResult = AxiosResponse<MyProfileRead>
 export type CreateMyProfileProfileV2ProfilesMyPostResult = AxiosResponse<MyProfileRead>
 export type PutMyProfileProfileV2ProfilesMyPutResult = AxiosResponse<MyProfileRead>
@@ -7055,3 +7247,11 @@ export type GetCardsEventV2FeedCardsGetResult = AxiosResponse<EventCard[]>
 export type GetPendingEventV2FeedPendingGetResult = AxiosResponse<EventCard[]>
 export type GetMyContextEventV2MeContextGetResult = AxiosResponse<ViewerContext>
 export type DeclareAttendanceEventV2AttendancesPostResult = AxiosResponse<AttendanceChanged>
+export type PreviewInviteProfileV2InvitesPreviewPostResult = AxiosResponse<InvitePreviewRead>
+export type GetPersonNamesProfileV2PersonsNamesPostResult = AxiosResponse<PersonNamesRead>
+export type GetPersonVisibilityProfileV2PersonsPersonIdVisibilityGetResult = AxiosResponse<VisibilityRead>
+export type SetPersonVisibilityProfileV2PersonsPersonIdVisibilityFieldKeyPutResult = AxiosResponse<VisibilityEntryRead>
+export type ResetPersonVisibilityProfileV2PersonsPersonIdVisibilityFieldKeyDeleteResult = AxiosResponse<VisibilityEntryRead>
+export type GetMyVisibilityProfileV2VisibilityMyGetResult = AxiosResponse<VisibilityRead>
+export type SetMyVisibilityProfileV2VisibilityMyFieldKeyPutResult = AxiosResponse<VisibilityEntryRead>
+export type ResetMyVisibilityProfileV2VisibilityMyFieldKeyDeleteResult = AxiosResponse<VisibilityEntryRead>
