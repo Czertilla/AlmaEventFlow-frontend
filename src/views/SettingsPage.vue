@@ -119,6 +119,21 @@
         </div>
 
         <div class="settings-section">
+          <h3 class="settings-section-title">Конфиденциальность</h3>
+          <div class="settings-card">
+            <button class="settings-row settings-row--link" @click="router.push('/visibility')">
+              <div class="settings-row-icon" style="background: rgba(0, 217, 166, 0.1); color: #00BF92;">
+                <ion-icon :icon="eyeOutline" />
+              </div>
+              <div class="settings-row-text">
+                <span class="settings-row-label">Видимость данных</span>
+              </div>
+              <ion-icon :icon="chevronForwardOutline" class="settings-row-arrow" />
+            </button>
+          </div>
+        </div>
+
+        <div class="settings-section">
           <h3 class="settings-section-title">Календарь</h3>
           <div class="settings-card">
             <button class="settings-row settings-row--link" @click="router.push('/calendar-subscriptions')">
@@ -161,7 +176,7 @@ import {
 } from '@ionic/vue'
 import {
   moonOutline, calendarOutline, todayOutline, calendarNumberOutline,
-  chevronForwardOutline, helpCircleOutline, notificationsOutline, sparklesOutline, swapVerticalOutline,
+  chevronForwardOutline, eyeOutline, helpCircleOutline, notificationsOutline, sparklesOutline, swapVerticalOutline,
 } from 'ionicons/icons'
 import { usePlatform } from '@/composables/usePlatform'
 import HelpTip from '@/components/common/HelpTip.vue'

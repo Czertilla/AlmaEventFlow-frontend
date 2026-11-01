@@ -57,7 +57,7 @@ import { alertCircleOutline, checkmarkCircleOutline, linkOutline } from 'ionicon
 import { useAuthStore } from '@/stores/auth'
 import { useToast } from '@/composables/useToast'
 import { decodeJwt } from '@/utils/jwt'
-import { resolvePersonName } from '@/utils/names'
+import { resolveInviteName } from '@/utils/names'
 import { linkInviteUserV1UsersMeLinkInvitePost } from '@/api/generated/almaEventFlow'
 
 const route = useRoute()
@@ -99,7 +99,7 @@ onMounted(async () => {
     checking.value = false
     return
   }
-  const name = await resolvePersonName(personId)
+  const name = await resolveInviteName(raw)
   if (!name) {
     error.value = 'Не удалось загрузить подробную информацию для привязки'
     checking.value = false

@@ -91,7 +91,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { checkUsernameUserV1UsersCheckUsernameGet } from '@/api/generated/almaEventFlow'
 import { decodeJwt } from '@/utils/jwt'
-import { resolvePersonName } from '@/utils/names'
+import { resolveInviteName } from '@/utils/names'
 import { validatePassword } from '@/utils/password'
 import PasswordStrengthMeter from '@/components/common/PasswordStrengthMeter.vue'
 import PasswordField from '@/components/common/PasswordField.vue'
@@ -121,7 +121,7 @@ onMounted(async () => {
     return
   }
   inviteToken.value = token
-  const name = await resolvePersonName(personId)
+  const name = await resolveInviteName(token)
   if (name) {
     invitePersonName.value = name
   } else {

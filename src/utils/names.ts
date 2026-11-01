@@ -1,4 +1,8 @@
-import { getMembersEventV1MembersGet, getPersonProfileV1PersonsPersonIdGet } from '@/api/generated/almaEventFlow'
+import {
+  getMembersEventV1MembersGet,
+  getPersonNamesProfileV2PersonsNamesPost,
+  previewInviteProfileV2InvitesPreviewPost,
+} from '@/api/generated/almaEventFlow'
 import { createBatcher } from '@/utils/batch'
 
 // Caches survive for the app session — entity names change rarely
@@ -15,8 +19,15 @@ const memberPersons = createBatcher<string>(async (ids) => {
   return new Map(data.items.map((m) => [m.id, m.person_id]))
 })
 
-async function fetchPersonName(personId: string): Promise<string | null> {
-  return formatPersonName((await getPersonProfileV1PersonsPersonIdGet(personId)).data)
+// Сервер не различает скрытое имя и несуществующего человека: у обоих имени нет
+const personNames = createBatcher<string>(async (ids) => {
+  const { data } = await getPersonNamesProfileV2PersonsNamesPost({ ids })
+  const named = data.items.filter((p) => p.surname && p.name)
+  return new Map(named.map((p) => [p.id, formatPersonName({ surname: p.surname!, name: p.name!, patronymic: p.patronymic })]))
+})
+
+function fetchPersonName(personId: string): Promise<string | null> {
+  return personNames(personId)
 }
 
 export function shortId(id: string): string {
@@ -64,6 +75,15 @@ export function resolvePersonName(personId: string): Promise<string | null> {
   })()
   personNameInFlight.set(personId, promise)
   return promise
+}
+
+/** ФИО того, для кого выпущено приглашение; без входа в аккаунт, по самому токену. */
+export async function resolveInviteName(token: string): Promise<string | null> {
+  try {
+    return formatPersonName((await previewInviteProfileV2InvitesPreviewPost({ token })).data)
+  } catch {
+    return null
+  }
 }
 
 /** ФИО участника коллектива по member id (member → person → ФИО). */

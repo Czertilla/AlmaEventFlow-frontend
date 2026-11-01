@@ -12,6 +12,11 @@ const MESSAGES: Record<string, string> = {
   STUDENT_GROUP_NOT_FOUND: 'Группа не найдена',
   STUDENT_GROUP_ALREADY_EXISTS: 'На этом факультете уже есть группа с таким названием',
   STUDENT_GROUP_IN_USE: 'Группу нельзя удалить: в ней есть студенты',
+  ATTACHED_PERSON_REQUIRED: 'Сначала заполните подробную информацию',
+  VISIBILITY_FIELD_NOT_FOUND: 'Такого поля нет',
+  VISIBILITY_NOT_CONFIGURABLE: 'Это поле нельзя открыть',
+  VISIBILITY_OUT_OF_RANGE: 'Этот вариант недоступен для поля',
+  VISIBILITY_COOLDOWN: 'Расширить видимость пока нельзя: недавно менялась привязка аккаунта',
 }
 
 export function apiErrorMessage(err: unknown, fallback: string): string {

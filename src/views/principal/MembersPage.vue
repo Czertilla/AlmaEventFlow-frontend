@@ -104,6 +104,7 @@ import {
 } from '@ionic/vue'
 import type { ItemReorderEventDetail } from '@ionic/vue'
 import { pencilOutline, trashOutline, closeOutline, swapVerticalOutline, statsChartOutline } from 'ionicons/icons'
+import { useAuthStore } from '@/stores/auth'
 import { usePrincipalStore } from '@/stores/principal'
 import { usePrincipalNavigate } from '@/composables/usePrincipalNavigate'
 import { useLayoutAddButton } from '@/composables/usePrincipalPageActions'
@@ -115,6 +116,7 @@ import MemberEditorModal from '@/components/member/MemberEditorModal.vue'
 import { formatPersonName } from '@/utils/names'
 import type { RosterMember, RoleRead } from '@/api/generated/almaEventFlow'
 
+const auth = useAuthStore()
 const principal = usePrincipalStore()
 const navigate = usePrincipalNavigate()
 const searchQuery = ref('')
@@ -241,7 +243,7 @@ watch(() => principal.activePrincipalCollectiveId, async (collectiveId) => {
   await loadMembers(collectiveId)
 }, { immediate: true })
 
-useLayoutAddButton('Добавить участника', openAdd)
+if (auth.isSuperuser) useLayoutAddButton('Добавить участника', openAdd)
 </script>
 
 <style scoped>

@@ -79,6 +79,11 @@ const appRoutes: Array<RouteRecordRaw> = [
     meta: { auth: true },
   },
   {
+    path: '/visibility',
+    component: () => import('@/views/VisibilityPage.vue'),
+    meta: { auth: true },
+  },
+  {
     path: '/changelog',
     component: () => import('@/views/ChangelogPage.vue'),
     meta: { auth: true },
