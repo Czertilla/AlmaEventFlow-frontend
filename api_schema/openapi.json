@@ -28075,6 +28075,109 @@
                 }
             }
         },
+        "/profile/v2/access-log/my": {
+            "get": {
+                "tags": [
+                    "access-log"
+                ],
+                "summary": "Get My Access Log",
+                "description": "Who opened the caller's sensitive data, or tried to, and when; newest first.\nEmpty for an account without a person.",
+                "operationId": "get_my_access_log_profile_v2_access_log_my_get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 0,
+                            "title": "Page"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
+                            "exclusiveMinimum": 0,
+                            "default": 10,
+                            "title": "Limit"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PageV1_AccessLogEntryRead_"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/profile/v2/health/keys": {
             "get": {
                 "tags": [
@@ -45337,6 +45440,157 @@
                     "status"
                 ],
                 "title": "KeyHealthRead"
+            },
+            "AccessAction": {
+                "type": "string",
+                "enum": [
+                    "read",
+                    "export",
+                    "request_created",
+                    "grant_approved",
+                    "grant_declined",
+                    "grant_revoked",
+                    "key_destroyed",
+                    "denied"
+                ],
+                "title": "AccessAction"
+            },
+            "AccessFieldRead": {
+                "properties": {
+                    "key": {
+                        "type": "string",
+                        "title": "Key"
+                    },
+                    "label": {
+                        "type": "string",
+                        "title": "Label"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "key",
+                    "label"
+                ],
+                "title": "AccessFieldRead"
+            },
+            "AccessLogEntryRead": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "action": {
+                        "$ref": "#/components/schemas/AccessAction"
+                    },
+                    "outcome": {
+                        "type": "string",
+                        "title": "Outcome",
+                        "description": "`ok`, or the code of the refusal."
+                    },
+                    "fields": {
+                        "items": {
+                            "$ref": "#/components/schemas/AccessFieldRead"
+                        },
+                        "type": "array",
+                        "title": "Fields"
+                    },
+                    "by_self": {
+                        "type": "boolean",
+                        "title": "By Self"
+                    },
+                    "by_administrator": {
+                        "type": "boolean",
+                        "title": "By Administrator"
+                    },
+                    "actor_person_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Actor Person Id"
+                    },
+                    "actor_name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Actor Name"
+                    },
+                    "request_id": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "uuid"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Request Id"
+                    },
+                    "comment": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Comment",
+                        "description": "Why the data was asked for, as the requester wrote it."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "created_at",
+                    "action",
+                    "outcome",
+                    "fields",
+                    "by_self",
+                    "by_administrator",
+                    "actor_person_id",
+                    "actor_name",
+                    "request_id",
+                    "comment"
+                ],
+                "title": "AccessLogEntryRead"
+            },
+            "PageV1_AccessLogEntryRead_": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/AccessLogEntryRead"
+                        },
+                        "type": "array",
+                        "title": "Items"
+                    },
+                    "pagination": {
+                        "$ref": "#/components/schemas/PaginationV1"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "items",
+                    "pagination"
+                ],
+                "title": "PageV1[AccessLogEntryRead]"
             }
         },
         "securitySchemes": {

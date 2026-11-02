@@ -2329,6 +2329,46 @@ export interface KeyHealthRead {
   status: Health;
 }
 
+export type AccessAction = typeof AccessAction[keyof typeof AccessAction];
+
+
+export const AccessAction = {
+  read: 'read',
+  export: 'export',
+  request_created: 'request_created',
+  grant_approved: 'grant_approved',
+  grant_declined: 'grant_declined',
+  grant_revoked: 'grant_revoked',
+  key_destroyed: 'key_destroyed',
+  denied: 'denied',
+} as const;
+
+export interface AccessFieldRead {
+  key: string;
+  label: string;
+}
+
+export interface AccessLogEntryRead {
+  id: string;
+  created_at: string;
+  action: AccessAction;
+  /** `ok`, or the code of the refusal. */
+  outcome: string;
+  fields: AccessFieldRead[];
+  by_self: boolean;
+  by_administrator: boolean;
+  actor_person_id: string | null;
+  actor_name: string | null;
+  request_id: string | null;
+  /** Why the data was asked for, as the requester wrote it. */
+  comment: string | null;
+}
+
+export interface PageV1AccessLogEntryRead {
+  items: AccessLogEntryRead[];
+  pagination: PaginationV1;
+}
+
 export type GetAttendancesEventV1AttendancesGetParams = {
 id?: string | null;
 id__in?: string | null;
@@ -3169,6 +3209,15 @@ degree_id__in?: string | null;
 faculty_id?: string | null;
 grade?: number | null;
 grade__in?: string | null;
+page?: number;
+/**
+ * @maximum 100
+ * @exclusiveMinimum 0
+ */
+limit?: number;
+};
+
+export type GetMyAccessLogProfileV2AccessLogMyGetParams = {
 page?: number;
 /**
  * @maximum 100
@@ -6066,6 +6115,21 @@ export const deleteStudentGroupProfileV1StudentsGroupsGroupIdDelete = (
   }
 
 /**
+ * Who opened the caller's sensitive data, or tried to, and when; newest first.
+ * Empty for an account without a person.
+ * @summary Get My Access Log
+ */
+export const getMyAccessLogProfileV2AccessLogMyGet = (
+    params?: GetMyAccessLogProfileV2AccessLogMyGetParams, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<PageV1AccessLogEntryRead>> => {
+    return axios.get(
+      `/profile/v2/access-log/my`,{
+    ...options,
+        params: {...params, ...options?.params},}
+    );
+  }
+
+/**
  * Whether personal data can be encrypted and decrypted now; `503` when a key
  * provider does not answer. The liveness probe stays `/profile/v1/health`.
  * @summary Get Key Health
@@ -7189,6 +7253,7 @@ export type GetStudentGroupProfileV1StudentsGroupsGroupIdGetResult = AxiosRespon
 export type PutStudentGroupProfileV1StudentsGroupsGroupIdPutResult = AxiosResponse<StudentGroupRead>
 export type PatchStudentGroupProfileV1StudentsGroupsGroupIdPatchResult = AxiosResponse<StudentGroupRead>
 export type DeleteStudentGroupProfileV1StudentsGroupsGroupIdDeleteResult = AxiosResponse<unknown>
+export type GetMyAccessLogProfileV2AccessLogMyGetResult = AxiosResponse<PageV1AccessLogEntryRead>
 export type GetKeyHealthProfileV2HealthKeysGetResult = AxiosResponse<KeyHealthRead>
 export type GetMyProfileProfileV2ProfilesMyGetResult = AxiosResponse<MyProfileRead>
 export type CreateMyProfileProfileV2ProfilesMyPostResult = AxiosResponse<MyProfileRead>
