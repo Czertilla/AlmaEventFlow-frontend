@@ -2362,10 +2362,125 @@ export interface AccessLogEntryRead {
   request_id: string | null;
   /** Why the data was asked for, as the requester wrote it. */
   comment: string | null;
+  /** The collective the request was made in. */
+  collective_name?: string | null;
 }
 
 export interface PageV1AccessLogEntryRead {
   items: AccessLogEntryRead[];
+  pagination: PaginationV1;
+}
+
+export interface AccessExportCreate {
+  /** Fields of the request to export; all of them when omitted. */
+  fields?: string[] | null;
+}
+
+export type ExportedSubjectReadRecordsItem = { [key: string]: unknown };
+
+export interface ExportedSubjectRead {
+  person_id: string;
+  /** One record per stored row (a passport with its name variant, a contact, the person's profile): field key to value, a field of several columns as an object of them. */
+  records: ExportedSubjectReadRecordsItem[];
+}
+
+export type SkipReason = typeof SkipReason[keyof typeof SkipReason];
+
+
+export const SkipReason = {
+  pending: 'pending',
+  declined: 'declined',
+  revoked: 'revoked',
+  expired: 'expired',
+  not_member: 'not_member',
+} as const;
+
+export interface SkippedSubjectRead {
+  person_id: string;
+  status: SkipReason;
+}
+
+export interface AccessExportRead {
+  request_id: string;
+  exported_at: string;
+  fields: AccessFieldRead[];
+  subjects: ExportedSubjectRead[];
+  skipped: SkippedSubjectRead[];
+}
+
+export interface AccessRequestCreate {
+  collective_id: string;
+  /**
+     * Keys of grantable fields (`GET /access-requests/fields`).
+     * @minItems 1
+     * @maxItems 64
+     */
+  fields: string[];
+  /**
+     * Why the data is needed. Shown to every member as written; its length after trimming is bounded by the server settings.
+     * @maxLength 4000
+     */
+  comment: string;
+  /** When the grants of this request stop opening the data. */
+  expires_at: string;
+}
+
+/**
+ * What a subject or a grantee sees: the stored status, or `expired` once the
+ * request has run out.
+ */
+export type GrantState = typeof GrantState[keyof typeof GrantState];
+
+
+export const GrantState = {
+  pending: 'pending',
+  active: 'active',
+  declined: 'declined',
+  revoked: 'revoked',
+  expired: 'expired',
+} as const;
+
+export interface GrantStateRead {
+  person_id: string;
+  status: GrantState;
+}
+
+export interface AccessRequestRead {
+  id: string;
+  collective_id: string;
+  collective_name: string;
+  fields: AccessFieldRead[];
+  comment: string;
+  expires_at: string;
+  created_at: string;
+  is_expired: boolean;
+  /** One per member asked: who and how they answered, no data. */
+  grants: GrantStateRead[];
+}
+
+export interface IncomingGrantRead {
+  id: string;
+  status: GrantState;
+  created_at: string;
+  decided_at: string | null;
+  revoked_at: string | null;
+  request_id: string;
+  grantee_person_id: string;
+  grantee_name: string | null;
+  collective_id: string;
+  collective_name: string;
+  fields: AccessFieldRead[];
+  comment: string;
+  expires_at: string;
+}
+
+export interface PageV1AccessRequestRead {
+  items: AccessRequestRead[];
+  pagination: PaginationV1;
+}
+
+export interface PageV1IncomingGrantRead {
+  items: IncomingGrantRead[];
   pagination: PaginationV1;
 }
 
@@ -3218,6 +3333,25 @@ limit?: number;
 };
 
 export type GetMyAccessLogProfileV2AccessLogMyGetParams = {
+page?: number;
+/**
+ * @maximum 100
+ * @exclusiveMinimum 0
+ */
+limit?: number;
+};
+
+export type GetMyAccessRequestsProfileV2AccessRequestsGetParams = {
+collective_id?: string | null;
+page?: number;
+/**
+ * @maximum 100
+ * @exclusiveMinimum 0
+ */
+limit?: number;
+};
+
+export type GetIncomingGrantsProfileV2GrantsIncomingGetParams = {
 page?: number;
 /**
  * @maximum 100
@@ -6130,6 +6264,130 @@ export const getMyAccessLogProfileV2AccessLogMyGet = (
   }
 
 /**
+ * The fields a leader may ask the members of a collective for.
+ * @summary Get Access Fields
+ */
+export const getAccessFieldsProfileV2AccessRequestsFieldsGet = (
+     options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<AccessFieldRead[]>> => {
+    return axios.get(
+      `/profile/v2/access-requests/fields`,options
+    );
+  }
+
+/**
+ * The leader of a confirmed collective asks its active members for fields, with
+ * a comment that says why. Every member gets a pending grant and a notice; the
+ * request, its fields, comment and term never change.
+ * @summary Create Access Request
+ */
+export const createAccessRequestProfileV2AccessRequestsPost = (
+    accessRequestCreate: AccessRequestCreate, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<AccessRequestRead>> => {
+    return axios.post(
+      `/profile/v2/access-requests`,
+      accessRequestCreate,options
+    );
+  }
+
+/**
+ * The caller's own requests, newest first.
+ * @summary Get My Access Requests
+ */
+export const getMyAccessRequestsProfileV2AccessRequestsGet = (
+    params?: GetMyAccessRequestsProfileV2AccessRequestsGetParams, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<PageV1AccessRequestRead>> => {
+    return axios.get(
+      `/profile/v2/access-requests`,{
+    ...options,
+        params: {...params, ...options?.params},}
+    );
+  }
+
+/**
+ * How each member answered; no data. Only for the one who asked.
+ * @summary Get Access Request
+ */
+export const getAccessRequestProfileV2AccessRequestsRequestIdGet = (
+    requestId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<AccessRequestRead>> => {
+    return axios.get(
+      `/profile/v2/access-requests/${requestId}`,options
+    );
+  }
+
+/**
+ * The fields of the members whose grant is active, for the leader who asked
+ * while they still lead the collective and the members still belong to it. The
+ * rest are listed in `skipped`. Each export is journaled and told to every member
+ * it covers.
+ * @summary Export Access Request
+ */
+export const exportAccessRequestProfileV2AccessRequestsRequestIdExportPost = (
+    requestId: string,
+    accessExportCreateNull?: AccessExportCreate | null, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<AccessExportRead>> => {
+    return axios.post(
+      `/profile/v2/access-requests/${requestId}/export`,
+      accessExportCreateNull,options
+    );
+  }
+
+/**
+ * Requests for the caller's data: who asks, in which collective, for what,
+ * why and until when; newest first.
+ * @summary Get Incoming Grants
+ */
+export const getIncomingGrantsProfileV2GrantsIncomingGet = (
+    params?: GetIncomingGrantsProfileV2GrantsIncomingGetParams, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<PageV1IncomingGrantRead>> => {
+    return axios.get(
+      `/profile/v2/grants/incoming`,{
+    ...options,
+        params: {...params, ...options?.params},}
+    );
+  }
+
+/**
+ * Opens the asked fields to the leader until the request expires. Held back
+ * (`409 GRANT_COOLDOWN`) for a while after the account link changed.
+ * @summary Approve Grant
+ */
+export const approveGrantProfileV2GrantsGrantIdApprovePost = (
+    grantId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<IncomingGrantRead>> => {
+    return axios.post(
+      `/profile/v2/grants/${grantId}/approve`,
+      undefined,options
+    );
+  }
+
+/**
+ * @summary Decline Grant
+ */
+export const declineGrantProfileV2GrantsGrantIdDeclinePost = (
+    grantId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<IncomingGrantRead>> => {
+    return axios.post(
+      `/profile/v2/grants/${grantId}/decline`,
+      undefined,options
+    );
+  }
+
+/**
+ * Closes an approved grant for good; a new request is needed to ask again.
+ * @summary Revoke Grant
+ */
+export const revokeGrantProfileV2GrantsGrantIdRevokePost = (
+    grantId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<IncomingGrantRead>> => {
+    return axios.post(
+      `/profile/v2/grants/${grantId}/revoke`,
+      undefined,options
+    );
+  }
+
+/**
  * Whether personal data can be encrypted and decrypted now; `503` when a key
  * provider does not answer. The liveness probe stays `/profile/v1/health`.
  * @summary Get Key Health
@@ -7254,6 +7512,15 @@ export type PutStudentGroupProfileV1StudentsGroupsGroupIdPutResult = AxiosRespon
 export type PatchStudentGroupProfileV1StudentsGroupsGroupIdPatchResult = AxiosResponse<StudentGroupRead>
 export type DeleteStudentGroupProfileV1StudentsGroupsGroupIdDeleteResult = AxiosResponse<unknown>
 export type GetMyAccessLogProfileV2AccessLogMyGetResult = AxiosResponse<PageV1AccessLogEntryRead>
+export type GetAccessFieldsProfileV2AccessRequestsFieldsGetResult = AxiosResponse<AccessFieldRead[]>
+export type CreateAccessRequestProfileV2AccessRequestsPostResult = AxiosResponse<AccessRequestRead>
+export type GetMyAccessRequestsProfileV2AccessRequestsGetResult = AxiosResponse<PageV1AccessRequestRead>
+export type GetAccessRequestProfileV2AccessRequestsRequestIdGetResult = AxiosResponse<AccessRequestRead>
+export type ExportAccessRequestProfileV2AccessRequestsRequestIdExportPostResult = AxiosResponse<AccessExportRead>
+export type GetIncomingGrantsProfileV2GrantsIncomingGetResult = AxiosResponse<PageV1IncomingGrantRead>
+export type ApproveGrantProfileV2GrantsGrantIdApprovePostResult = AxiosResponse<IncomingGrantRead>
+export type DeclineGrantProfileV2GrantsGrantIdDeclinePostResult = AxiosResponse<IncomingGrantRead>
+export type RevokeGrantProfileV2GrantsGrantIdRevokePostResult = AxiosResponse<IncomingGrantRead>
 export type GetKeyHealthProfileV2HealthKeysGetResult = AxiosResponse<KeyHealthRead>
 export type GetMyProfileProfileV2ProfilesMyGetResult = AxiosResponse<MyProfileRead>
 export type CreateMyProfileProfileV2ProfilesMyPostResult = AxiosResponse<MyProfileRead>

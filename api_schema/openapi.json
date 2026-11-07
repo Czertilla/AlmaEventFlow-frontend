@@ -28178,6 +28178,1164 @@
                 }
             }
         },
+        "/profile/v2/access-requests/fields": {
+            "get": {
+                "tags": [
+                    "access-requests"
+                ],
+                "summary": "Get Access Fields",
+                "description": "The fields a leader may ask the members of a collective for.",
+                "operationId": "get_access_fields_profile_v2_access_requests_fields_get",
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "items": {
+                                        "$ref": "#/components/schemas/AccessFieldRead"
+                                    },
+                                    "type": "array",
+                                    "title": "Response Get Access Fields Profile V2 Access Requests Fields Get"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ]
+            }
+        },
+        "/profile/v2/access-requests": {
+            "post": {
+                "tags": [
+                    "access-requests"
+                ],
+                "summary": "Create Access Request",
+                "description": "The leader of a confirmed collective asks its active members for fields, with\na comment that says why. Every member gets a pending grant and a notice; the\nrequest, its fields, comment and term never change.",
+                "operationId": "create_access_request_profile_v2_access_requests_post",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AccessRequestCreate"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AccessRequestRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "COLLECTIVE_NOT_VERIFIED, FORBIDDEN, NOT_COLLECTIVE_PRINCIPAL",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    },
+                                    "NOT_COLLECTIVE_PRINCIPAL": {
+                                        "summary": "NOT_COLLECTIVE_PRINCIPAL",
+                                        "value": {
+                                            "detail": "NOT_COLLECTIVE_PRINCIPAL"
+                                        }
+                                    },
+                                    "COLLECTIVE_NOT_VERIFIED": {
+                                        "summary": "COLLECTIVE_NOT_VERIFIED",
+                                        "value": {
+                                            "detail": "COLLECTIVE_NOT_VERIFIED"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "ACCESS_FIELD_NOT_GRANTABLE, ACCESS_COMMENT_LENGTH, ACCESS_EXPIRES_OUT_OF_RANGE",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "ACCESS_FIELD_NOT_GRANTABLE": {
+                                        "summary": "ACCESS_FIELD_NOT_GRANTABLE",
+                                        "value": {
+                                            "detail": "ACCESS_FIELD_NOT_GRANTABLE"
+                                        }
+                                    },
+                                    "ACCESS_COMMENT_LENGTH": {
+                                        "summary": "ACCESS_COMMENT_LENGTH",
+                                        "value": {
+                                            "detail": "ACCESS_COMMENT_LENGTH"
+                                        }
+                                    },
+                                    "ACCESS_EXPIRES_OUT_OF_RANGE": {
+                                        "summary": "ACCESS_EXPIRES_OUT_OF_RANGE",
+                                        "value": {
+                                            "detail": "ACCESS_EXPIRES_OUT_OF_RANGE"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "TOO_MANY_REQUESTS",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "TOO_MANY_REQUESTS": {
+                                        "summary": "TOO_MANY_REQUESTS",
+                                        "value": {
+                                            "detail": "TOO_MANY_REQUESTS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "EVENT_SERVICE_UNAVAILABLE",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "EVENT_SERVICE_UNAVAILABLE": {
+                                        "summary": "EVENT_SERVICE_UNAVAILABLE",
+                                        "value": {
+                                            "detail": "EVENT_SERVICE_UNAVAILABLE"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "get": {
+                "tags": [
+                    "access-requests"
+                ],
+                "summary": "Get My Access Requests",
+                "description": "The caller's own requests, newest first.",
+                "operationId": "get_my_access_requests_profile_v2_access_requests_get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "collective_id",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string",
+                                    "format": "uuid"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "Collective Id"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 0,
+                            "title": "Page"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
+                            "exclusiveMinimum": 0,
+                            "default": 10,
+                            "title": "Limit"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PageV1_AccessRequestRead_"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/v2/access-requests/{request_id}": {
+            "get": {
+                "tags": [
+                    "access-requests"
+                ],
+                "summary": "Get Access Request",
+                "description": "How each member answered; no data. Only for the one who asked.",
+                "operationId": "get_access_request_profile_v2_access_requests__request_id__get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "request_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Request Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AccessRequestRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "ACCESS_REQUEST_NOT_FOUND",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "ACCESS_REQUEST_NOT_FOUND": {
+                                        "summary": "ACCESS_REQUEST_NOT_FOUND",
+                                        "value": {
+                                            "detail": "ACCESS_REQUEST_NOT_FOUND"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/v2/access-requests/{request_id}/export": {
+            "post": {
+                "tags": [
+                    "access-requests"
+                ],
+                "summary": "Export Access Request",
+                "description": "The fields of the members whose grant is active, for the leader who asked\nwhile they still lead the collective and the members still belong to it. The\nrest are listed in `skipped`. Each export is journaled and told to every member\nit covers.",
+                "operationId": "export_access_request_profile_v2_access_requests__request_id__export_post",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "request_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Request Id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "anyOf": [
+                                    {
+                                        "$ref": "#/components/schemas/AccessExportCreate"
+                                    },
+                                    {
+                                        "type": "null"
+                                    }
+                                ],
+                                "title": "Data"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AccessExportRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "COLLECTIVE_NOT_VERIFIED, FORBIDDEN, NOT_COLLECTIVE_PRINCIPAL",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    },
+                                    "NOT_COLLECTIVE_PRINCIPAL": {
+                                        "summary": "NOT_COLLECTIVE_PRINCIPAL",
+                                        "value": {
+                                            "detail": "NOT_COLLECTIVE_PRINCIPAL"
+                                        }
+                                    },
+                                    "COLLECTIVE_NOT_VERIFIED": {
+                                        "summary": "COLLECTIVE_NOT_VERIFIED",
+                                        "value": {
+                                            "detail": "COLLECTIVE_NOT_VERIFIED"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "ACCESS_REQUEST_NOT_FOUND",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "ACCESS_REQUEST_NOT_FOUND": {
+                                        "summary": "ACCESS_REQUEST_NOT_FOUND",
+                                        "value": {
+                                            "detail": "ACCESS_REQUEST_NOT_FOUND"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "ACCESS_REQUEST_EXPIRED",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "ACCESS_REQUEST_EXPIRED": {
+                                        "summary": "ACCESS_REQUEST_EXPIRED",
+                                        "value": {
+                                            "detail": "ACCESS_REQUEST_EXPIRED"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "ACCESS_FIELD_NOT_REQUESTED",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "ACCESS_FIELD_NOT_REQUESTED": {
+                                        "summary": "ACCESS_FIELD_NOT_REQUESTED",
+                                        "value": {
+                                            "detail": "ACCESS_FIELD_NOT_REQUESTED"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "429": {
+                        "description": "TOO_MANY_REQUESTS",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "TOO_MANY_REQUESTS": {
+                                        "summary": "TOO_MANY_REQUESTS",
+                                        "value": {
+                                            "detail": "TOO_MANY_REQUESTS"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "503": {
+                        "description": "EVENT_SERVICE_UNAVAILABLE, PERSONAL_DATA_UNAVAILABLE",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "EVENT_SERVICE_UNAVAILABLE": {
+                                        "summary": "EVENT_SERVICE_UNAVAILABLE",
+                                        "value": {
+                                            "detail": "EVENT_SERVICE_UNAVAILABLE"
+                                        }
+                                    },
+                                    "PERSONAL_DATA_UNAVAILABLE": {
+                                        "summary": "PERSONAL_DATA_UNAVAILABLE",
+                                        "value": {
+                                            "detail": "PERSONAL_DATA_UNAVAILABLE"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/v2/grants/incoming": {
+            "get": {
+                "tags": [
+                    "grants"
+                ],
+                "summary": "Get Incoming Grants",
+                "description": "Requests for the caller's data: who asks, in which collective, for what,\nwhy and until when; newest first.",
+                "operationId": "get_incoming_grants_profile_v2_grants_incoming_get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 0,
+                            "title": "Page"
+                        }
+                    },
+                    {
+                        "name": "limit",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "maximum": 100,
+                            "exclusiveMinimum": 0,
+                            "default": 10,
+                            "title": "Limit"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PageV1_IncomingGrantRead_"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/v2/grants/{grant_id}/approve": {
+            "post": {
+                "tags": [
+                    "grants"
+                ],
+                "summary": "Approve Grant",
+                "description": "Opens the asked fields to the leader until the request expires. Held back\n(`409 GRANT_COOLDOWN`) for a while after the account link changed.",
+                "operationId": "approve_grant_profile_v2_grants__grant_id__approve_post",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "grant_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Grant Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/IncomingGrantRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "GRANT_NOT_FOUND",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "GRANT_NOT_FOUND": {
+                                        "summary": "GRANT_NOT_FOUND",
+                                        "value": {
+                                            "detail": "GRANT_NOT_FOUND"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "ACCESS_REQUEST_EXPIRED, GRANT_COOLDOWN, GRANT_STATE_CONFLICT",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "GRANT_STATE_CONFLICT": {
+                                        "summary": "GRANT_STATE_CONFLICT",
+                                        "value": {
+                                            "detail": "GRANT_STATE_CONFLICT"
+                                        }
+                                    },
+                                    "ACCESS_REQUEST_EXPIRED": {
+                                        "summary": "ACCESS_REQUEST_EXPIRED",
+                                        "value": {
+                                            "detail": "ACCESS_REQUEST_EXPIRED"
+                                        }
+                                    },
+                                    "GRANT_COOLDOWN": {
+                                        "summary": "GRANT_COOLDOWN",
+                                        "value": {
+                                            "detail": "GRANT_COOLDOWN"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/v2/grants/{grant_id}/decline": {
+            "post": {
+                "tags": [
+                    "grants"
+                ],
+                "summary": "Decline Grant",
+                "operationId": "decline_grant_profile_v2_grants__grant_id__decline_post",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "grant_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Grant Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/IncomingGrantRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "GRANT_NOT_FOUND",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "GRANT_NOT_FOUND": {
+                                        "summary": "GRANT_NOT_FOUND",
+                                        "value": {
+                                            "detail": "GRANT_NOT_FOUND"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "GRANT_STATE_CONFLICT",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "GRANT_STATE_CONFLICT": {
+                                        "summary": "GRANT_STATE_CONFLICT",
+                                        "value": {
+                                            "detail": "GRANT_STATE_CONFLICT"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/profile/v2/grants/{grant_id}/revoke": {
+            "post": {
+                "tags": [
+                    "grants"
+                ],
+                "summary": "Revoke Grant",
+                "description": "Closes an approved grant for good; a new request is needed to ask again.",
+                "operationId": "revoke_grant_profile_v2_grants__grant_id__revoke_post",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "grant_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Grant Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/IncomingGrantRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "GRANT_NOT_FOUND",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "GRANT_NOT_FOUND": {
+                                        "summary": "GRANT_NOT_FOUND",
+                                        "value": {
+                                            "detail": "GRANT_NOT_FOUND"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "GRANT_STATE_CONFLICT",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "GRANT_STATE_CONFLICT": {
+                                        "summary": "GRANT_STATE_CONFLICT",
+                                        "value": {
+                                            "detail": "GRANT_STATE_CONFLICT"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/profile/v2/health/keys": {
             "get": {
                 "tags": [
@@ -45554,6 +46712,18 @@
                         ],
                         "title": "Comment",
                         "description": "Why the data was asked for, as the requester wrote it."
+                    },
+                    "collective_name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Collective Name",
+                        "description": "The collective the request was made in."
                     }
                 },
                 "type": "object",
@@ -45591,6 +46761,402 @@
                     "pagination"
                 ],
                 "title": "PageV1[AccessLogEntryRead]"
+            },
+            "AccessExportCreate": {
+                "properties": {
+                    "fields": {
+                        "anyOf": [
+                            {
+                                "items": {
+                                    "type": "string"
+                                },
+                                "type": "array",
+                                "maxItems": 64
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Fields",
+                        "description": "Fields of the request to export; all of them when omitted."
+                    }
+                },
+                "type": "object",
+                "title": "AccessExportCreate"
+            },
+            "AccessExportRead": {
+                "properties": {
+                    "request_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Request Id"
+                    },
+                    "exported_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Exported At"
+                    },
+                    "fields": {
+                        "items": {
+                            "$ref": "#/components/schemas/AccessFieldRead"
+                        },
+                        "type": "array",
+                        "title": "Fields"
+                    },
+                    "subjects": {
+                        "items": {
+                            "$ref": "#/components/schemas/ExportedSubjectRead"
+                        },
+                        "type": "array",
+                        "title": "Subjects"
+                    },
+                    "skipped": {
+                        "items": {
+                            "$ref": "#/components/schemas/SkippedSubjectRead"
+                        },
+                        "type": "array",
+                        "title": "Skipped"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "request_id",
+                    "exported_at",
+                    "fields",
+                    "subjects",
+                    "skipped"
+                ],
+                "title": "AccessExportRead"
+            },
+            "AccessRequestCreate": {
+                "properties": {
+                    "collective_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Collective Id"
+                    },
+                    "fields": {
+                        "items": {
+                            "type": "string"
+                        },
+                        "type": "array",
+                        "maxItems": 64,
+                        "minItems": 1,
+                        "title": "Fields",
+                        "description": "Keys of grantable fields (`GET /access-requests/fields`)."
+                    },
+                    "comment": {
+                        "type": "string",
+                        "maxLength": 4000,
+                        "title": "Comment",
+                        "description": "Why the data is needed. Shown to every member as written; its length after trimming is bounded by the server settings."
+                    },
+                    "expires_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Expires At",
+                        "description": "When the grants of this request stop opening the data."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "collective_id",
+                    "fields",
+                    "comment",
+                    "expires_at"
+                ],
+                "title": "AccessRequestCreate"
+            },
+            "AccessRequestRead": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "collective_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Collective Id"
+                    },
+                    "collective_name": {
+                        "type": "string",
+                        "title": "Collective Name"
+                    },
+                    "fields": {
+                        "items": {
+                            "$ref": "#/components/schemas/AccessFieldRead"
+                        },
+                        "type": "array",
+                        "title": "Fields"
+                    },
+                    "comment": {
+                        "type": "string",
+                        "title": "Comment"
+                    },
+                    "expires_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Expires At"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "is_expired": {
+                        "type": "boolean",
+                        "title": "Is Expired"
+                    },
+                    "grants": {
+                        "items": {
+                            "$ref": "#/components/schemas/GrantStateRead"
+                        },
+                        "type": "array",
+                        "title": "Grants",
+                        "description": "One per member asked: who and how they answered, no data."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "collective_id",
+                    "collective_name",
+                    "fields",
+                    "comment",
+                    "expires_at",
+                    "created_at",
+                    "is_expired",
+                    "grants"
+                ],
+                "title": "AccessRequestRead"
+            },
+            "ExportedSubjectRead": {
+                "properties": {
+                    "person_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Person Id"
+                    },
+                    "records": {
+                        "items": {
+                            "additionalProperties": true,
+                            "type": "object"
+                        },
+                        "type": "array",
+                        "title": "Records",
+                        "description": "One record per stored row (a passport with its name variant, a contact, the person's profile): field key to value, a field of several columns as an object of them."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "person_id",
+                    "records"
+                ],
+                "title": "ExportedSubjectRead"
+            },
+            "GrantState": {
+                "type": "string",
+                "enum": [
+                    "pending",
+                    "active",
+                    "declined",
+                    "revoked",
+                    "expired"
+                ],
+                "title": "GrantState",
+                "description": "What a subject or a grantee sees: the stored status, or `expired` once the\nrequest has run out."
+            },
+            "GrantStateRead": {
+                "properties": {
+                    "person_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Person Id"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/GrantState"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "person_id",
+                    "status"
+                ],
+                "title": "GrantStateRead"
+            },
+            "IncomingGrantRead": {
+                "properties": {
+                    "id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Id"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/GrantState"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Created At"
+                    },
+                    "decided_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Decided At"
+                    },
+                    "revoked_at": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date-time"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Revoked At"
+                    },
+                    "request_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Request Id"
+                    },
+                    "grantee_person_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Grantee Person Id"
+                    },
+                    "grantee_name": {
+                        "anyOf": [
+                            {
+                                "type": "string"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Grantee Name"
+                    },
+                    "collective_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Collective Id"
+                    },
+                    "collective_name": {
+                        "type": "string",
+                        "title": "Collective Name"
+                    },
+                    "fields": {
+                        "items": {
+                            "$ref": "#/components/schemas/AccessFieldRead"
+                        },
+                        "type": "array",
+                        "title": "Fields"
+                    },
+                    "comment": {
+                        "type": "string",
+                        "title": "Comment"
+                    },
+                    "expires_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Expires At"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "id",
+                    "status",
+                    "created_at",
+                    "decided_at",
+                    "revoked_at",
+                    "request_id",
+                    "grantee_person_id",
+                    "grantee_name",
+                    "collective_id",
+                    "collective_name",
+                    "fields",
+                    "comment",
+                    "expires_at"
+                ],
+                "title": "IncomingGrantRead"
+            },
+            "PageV1_AccessRequestRead_": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/AccessRequestRead"
+                        },
+                        "type": "array",
+                        "title": "Items"
+                    },
+                    "pagination": {
+                        "$ref": "#/components/schemas/PaginationV1"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "items",
+                    "pagination"
+                ],
+                "title": "PageV1[AccessRequestRead]"
+            },
+            "PageV1_IncomingGrantRead_": {
+                "properties": {
+                    "items": {
+                        "items": {
+                            "$ref": "#/components/schemas/IncomingGrantRead"
+                        },
+                        "type": "array",
+                        "title": "Items"
+                    },
+                    "pagination": {
+                        "$ref": "#/components/schemas/PaginationV1"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "items",
+                    "pagination"
+                ],
+                "title": "PageV1[IncomingGrantRead]"
+            },
+            "SkipReason": {
+                "type": "string",
+                "enum": [
+                    "pending",
+                    "declined",
+                    "revoked",
+                    "expired",
+                    "not_member"
+                ],
+                "title": "SkipReason"
+            },
+            "SkippedSubjectRead": {
+                "properties": {
+                    "person_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Person Id"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/SkipReason"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "person_id",
+                    "status"
+                ],
+                "title": "SkippedSubjectRead"
             }
         },
         "securitySchemes": {
