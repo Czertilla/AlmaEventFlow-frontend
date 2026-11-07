@@ -29368,6 +29368,152 @@
                 }
             }
         },
+        "/profile/v2/persons/{person_id}/destroy-key": {
+            "post": {
+                "tags": [
+                    "person",
+                    "personal-data"
+                ],
+                "summary": "Destroy Person Key",
+                "description": "Destroys the person's data key and the encrypted data with it, for good: a\npassport is deleted, an optional encrypted value is emptied. The person is\ntold; new data is sealed with a new key.",
+                "operationId": "destroy_person_key_profile_v2_persons__person_id__destroy_key_post",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "person_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Person Id"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/DestroyKeyData"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/DestroyedKeyRead"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "PERSON_NOT_FOUND",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "PERSON_NOT_FOUND": {
+                                        "summary": "PERSON_NOT_FOUND",
+                                        "value": {
+                                            "detail": "PERSON_NOT_FOUND"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "PERSON_KEY_ABSENT",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "PERSON_KEY_ABSENT": {
+                                        "summary": "PERSON_KEY_ABSENT",
+                                        "value": {
+                                            "detail": "PERSON_KEY_ABSENT"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "DESTROY_NOT_CONFIRMED",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                },
+                                "examples": {
+                                    "DESTROY_NOT_CONFIRMED": {
+                                        "summary": "DESTROY_NOT_CONFIRMED",
+                                        "value": {
+                                            "detail": "DESTROY_NOT_CONFIRMED"
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/profile/v2/profiles/my": {
             "get": {
                 "tags": [
@@ -47157,6 +47303,68 @@
                     "status"
                 ],
                 "title": "SkippedSubjectRead"
+            },
+            "DestroyKeyData": {
+                "properties": {
+                    "confirm_person_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Confirm Person Id",
+                        "description": "The id of the person once more: a mistyped path destroys nothing."
+                    },
+                    "reason": {
+                        "type": "string",
+                        "maxLength": 500,
+                        "minLength": 10,
+                        "title": "Reason",
+                        "description": "Why; told to the person with the notice."
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "confirm_person_id",
+                    "reason"
+                ],
+                "title": "DestroyKeyData"
+            },
+            "DestroyedKeyRead": {
+                "properties": {
+                    "person_id": {
+                        "type": "string",
+                        "format": "uuid",
+                        "title": "Person Id"
+                    },
+                    "destroyed_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "title": "Destroyed At"
+                    },
+                    "fields": {
+                        "items": {
+                            "$ref": "#/components/schemas/AccessFieldRead"
+                        },
+                        "type": "array",
+                        "title": "Fields",
+                        "description": "The encrypted fields destroyed."
+                    },
+                    "rows_deleted": {
+                        "type": "integer",
+                        "title": "Rows Deleted"
+                    },
+                    "rows_cleared": {
+                        "type": "integer",
+                        "title": "Rows Cleared"
+                    }
+                },
+                "type": "object",
+                "required": [
+                    "person_id",
+                    "destroyed_at",
+                    "fields",
+                    "rows_deleted",
+                    "rows_cleared"
+                ],
+                "title": "DestroyedKeyRead"
             }
         },
         "securitySchemes": {

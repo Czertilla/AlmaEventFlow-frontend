@@ -2484,6 +2484,26 @@ export interface PageV1IncomingGrantRead {
   pagination: PaginationV1;
 }
 
+export interface DestroyKeyData {
+  /** The id of the person once more: a mistyped path destroys nothing. */
+  confirm_person_id: string;
+  /**
+     * Why; told to the person with the notice.
+     * @minLength 10
+     * @maxLength 500
+     */
+  reason: string;
+}
+
+export interface DestroyedKeyRead {
+  person_id: string;
+  destroyed_at: string;
+  /** The encrypted fields destroyed. */
+  fields: AccessFieldRead[];
+  rows_deleted: number;
+  rows_cleared: number;
+}
+
 export type GetAttendancesEventV1AttendancesGetParams = {
 id?: string | null;
 id__in?: string | null;
@@ -6401,6 +6421,22 @@ export const getKeyHealthProfileV2HealthKeysGet = (
   }
 
 /**
+ * Destroys the person's data key and the encrypted data with it, for good: a
+ * passport is deleted, an optional encrypted value is emptied. The person is
+ * told; new data is sealed with a new key.
+ * @summary Destroy Person Key
+ */
+export const destroyPersonKeyProfileV2PersonsPersonIdDestroyKeyPost = (
+    personId: string,
+    destroyKeyData: DestroyKeyData, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<DestroyedKeyRead>> => {
+    return axios.post(
+      `/profile/v2/persons/${personId}/destroy-key`,
+      destroyKeyData,options
+    );
+  }
+
+/**
  * The caller's whole profile: name, birthdate, diet, student card, contacts.
  *
  * `404 PROFILE_NOT_FOUND` until the user has made one.
@@ -7522,6 +7558,7 @@ export type ApproveGrantProfileV2GrantsGrantIdApprovePostResult = AxiosResponse<
 export type DeclineGrantProfileV2GrantsGrantIdDeclinePostResult = AxiosResponse<IncomingGrantRead>
 export type RevokeGrantProfileV2GrantsGrantIdRevokePostResult = AxiosResponse<IncomingGrantRead>
 export type GetKeyHealthProfileV2HealthKeysGetResult = AxiosResponse<KeyHealthRead>
+export type DestroyPersonKeyProfileV2PersonsPersonIdDestroyKeyPostResult = AxiosResponse<DestroyedKeyRead>
 export type GetMyProfileProfileV2ProfilesMyGetResult = AxiosResponse<MyProfileRead>
 export type CreateMyProfileProfileV2ProfilesMyPostResult = AxiosResponse<MyProfileRead>
 export type PutMyProfileProfileV2ProfilesMyPutResult = AxiosResponse<MyProfileRead>
