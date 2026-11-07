@@ -2755,41 +2755,6 @@ page?: number;
 limit?: number;
 };
 
-export type CreateRewardEventV1RewardsPostParams = {
-endpoint_url?: string;
-bucket_name?: string;
-access_key?: string;
-secret_key?: string;
-};
-
-export type GetRewardEventV1RewardsRewardIdGetParams = {
-endpoint_url?: string;
-bucket_name?: string;
-access_key?: string;
-secret_key?: string;
-};
-
-export type PutRewardEventV1RewardsRewardIdPutParams = {
-endpoint_url?: string;
-bucket_name?: string;
-access_key?: string;
-secret_key?: string;
-};
-
-export type PatchRewardEventV1RewardsRewardIdPatchParams = {
-endpoint_url?: string;
-bucket_name?: string;
-access_key?: string;
-secret_key?: string;
-};
-
-export type DeleteRewardEventV1RewardsRewardIdDeleteParams = {
-endpoint_url?: string;
-bucket_name?: string;
-access_key?: string;
-secret_key?: string;
-};
-
 export type GetRolesEventV1RolesGetParams = {
 id?: string | null;
 id__in?: string | null;
@@ -4330,8 +4295,7 @@ export const getRewardsEventV1RewardsGet = (
  * @summary Create Reward
  */
 export const createRewardEventV1RewardsPost = (
-    bodyCreateRewardEventV1RewardsPost: BodyCreateRewardEventV1RewardsPost,
-    params?: CreateRewardEventV1RewardsPostParams, options?: AxiosRequestConfig
+    bodyCreateRewardEventV1RewardsPost: BodyCreateRewardEventV1RewardsPost, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<RewardRead>> => {const formData = new FormData();
 formData.append(`participation_id`, bodyCreateRewardEventV1RewardsPost.participation_id);
 formData.append(`name`, bodyCreateRewardEventV1RewardsPost.name);
@@ -4344,9 +4308,7 @@ if(bodyCreateRewardEventV1RewardsPost.file !== undefined && bodyCreateRewardEven
 
     return axios.post(
       `/event/v1/rewards`,
-      formData,{
-    ...options,
-        params: {...params, ...options?.params},}
+      formData,options
     );
   }
 
@@ -4354,13 +4316,10 @@ if(bodyCreateRewardEventV1RewardsPost.file !== undefined && bodyCreateRewardEven
  * @summary Get Reward
  */
 export const getRewardEventV1RewardsRewardIdGet = (
-    rewardId: string,
-    params?: GetRewardEventV1RewardsRewardIdGetParams, options?: AxiosRequestConfig
+    rewardId: string, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<RewardRead>> => {
     return axios.get(
-      `/event/v1/rewards/${rewardId}`,{
-    ...options,
-        params: {...params, ...options?.params},}
+      `/event/v1/rewards/${rewardId}`,options
     );
   }
 
@@ -4369,14 +4328,11 @@ export const getRewardEventV1RewardsRewardIdGet = (
  */
 export const putRewardEventV1RewardsRewardIdPut = (
     rewardId: string,
-    rewardPutData: RewardPutData,
-    params?: PutRewardEventV1RewardsRewardIdPutParams, options?: AxiosRequestConfig
+    rewardPutData: RewardPutData, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<RewardRead>> => {
     return axios.put(
       `/event/v1/rewards/${rewardId}`,
-      rewardPutData,{
-    ...options,
-        params: {...params, ...options?.params},}
+      rewardPutData,options
     );
   }
 
@@ -4385,8 +4341,7 @@ export const putRewardEventV1RewardsRewardIdPut = (
  */
 export const patchRewardEventV1RewardsRewardIdPatch = (
     rewardId: string,
-    bodyPatchRewardEventV1RewardsRewardIdPatch?: BodyPatchRewardEventV1RewardsRewardIdPatch,
-    params?: PatchRewardEventV1RewardsRewardIdPatchParams, options?: AxiosRequestConfig
+    bodyPatchRewardEventV1RewardsRewardIdPatch?: BodyPatchRewardEventV1RewardsRewardIdPatch, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<RewardRead>> => {const formData = new FormData();
 if(bodyPatchRewardEventV1RewardsRewardIdPatch?.name !== undefined && bodyPatchRewardEventV1RewardsRewardIdPatch.name !== null) {
  formData.append(`name`, bodyPatchRewardEventV1RewardsRewardIdPatch.name);
@@ -4400,9 +4355,7 @@ if(bodyPatchRewardEventV1RewardsRewardIdPatch?.file !== undefined && bodyPatchRe
 
     return axios.patch(
       `/event/v1/rewards/${rewardId}`,
-      formData,{
-    ...options,
-        params: {...params, ...options?.params},}
+      formData,options
     );
   }
 
@@ -4410,13 +4363,10 @@ if(bodyPatchRewardEventV1RewardsRewardIdPatch?.file !== undefined && bodyPatchRe
  * @summary Delete Reward
  */
 export const deleteRewardEventV1RewardsRewardIdDelete = (
-    rewardId: string,
-    params?: DeleteRewardEventV1RewardsRewardIdDeleteParams, options?: AxiosRequestConfig
+    rewardId: string, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<unknown>> => {
     return axios.delete(
-      `/event/v1/rewards/${rewardId}`,{
-    ...options,
-        params: {...params, ...options?.params},}
+      `/event/v1/rewards/${rewardId}`,options
     );
   }
 
