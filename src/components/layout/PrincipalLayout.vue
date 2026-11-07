@@ -103,6 +103,7 @@ import {
 } from '@ionic/vue'
 import {
   peopleOutline, ribbonOutline, calendarOutline, chevronDownOutline, addOutline, statsChartOutline, gridOutline,
+  keyOutline,
 } from 'ionicons/icons'
 import { usePrincipalStore } from '@/stores/principal'
 import { usePlatform } from '@/composables/usePlatform'
@@ -145,6 +146,9 @@ const PAGES: Record<string, PrincipalPageEntry> = {
   '/principal/events': {
     component: defineAsyncComponent(() => import('@/views/principal/EventsPage.vue')),
   },
+  '/principal/access': {
+    component: defineAsyncComponent(() => import('@/views/principal/AccessRequestsPage.vue')),
+  },
 }
 
 // Активный раздел живёт в локальном состоянии, а не в route.path -- см.
@@ -180,6 +184,7 @@ const TABS = [
   { key: '/principal/members', label: 'Участники', icon: peopleOutline },
   { key: '/principal/roles', label: 'Роли', icon: ribbonOutline },
   { key: '/principal/events', label: 'Мероприятия', icon: calendarOutline },
+  { key: '/principal/access', label: 'Доступ к данным', icon: keyOutline },
 ]
 
 function navigate(target: string) {

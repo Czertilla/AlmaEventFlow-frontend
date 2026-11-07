@@ -130,6 +130,16 @@
               </div>
               <ion-icon :icon="chevronForwardOutline" class="settings-row-arrow" />
             </button>
+            <div class="settings-divider" />
+            <button class="settings-row settings-row--link" @click="router.push('/data-access')">
+              <div class="settings-row-icon" style="background: rgba(0, 217, 166, 0.1); color: #00BF92;">
+                <ion-icon :icon="keyOutline" />
+              </div>
+              <div class="settings-row-text">
+                <span class="settings-row-label">Доступ к данным</span>
+              </div>
+              <ion-icon :icon="chevronForwardOutline" class="settings-row-arrow" />
+            </button>
           </div>
         </div>
 
@@ -176,7 +186,7 @@ import {
 } from '@ionic/vue'
 import {
   moonOutline, calendarOutline, todayOutline, calendarNumberOutline,
-  chevronForwardOutline, eyeOutline, helpCircleOutline, notificationsOutline, sparklesOutline, swapVerticalOutline,
+  chevronForwardOutline, eyeOutline, helpCircleOutline, keyOutline, notificationsOutline, sparklesOutline, swapVerticalOutline,
 } from 'ionicons/icons'
 import { usePlatform } from '@/composables/usePlatform'
 import HelpTip from '@/components/common/HelpTip.vue'

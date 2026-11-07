@@ -84,6 +84,11 @@ const appRoutes: Array<RouteRecordRaw> = [
     meta: { auth: true },
   },
   {
+    path: '/data-access',
+    component: () => import('@/views/DataAccessPage.vue'),
+    meta: { auth: true },
+  },
+  {
     path: '/changelog',
     component: () => import('@/views/ChangelogPage.vue'),
     meta: { auth: true },

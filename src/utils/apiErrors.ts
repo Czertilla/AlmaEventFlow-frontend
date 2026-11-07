@@ -17,6 +17,19 @@ const MESSAGES: Record<string, string> = {
   VISIBILITY_NOT_CONFIGURABLE: 'Это поле нельзя открыть',
   VISIBILITY_OUT_OF_RANGE: 'Этот вариант недоступен для поля',
   VISIBILITY_COOLDOWN: 'Расширить видимость пока нельзя: недавно менялась привязка аккаунта',
+  NOT_COLLECTIVE_PRINCIPAL: 'Это может только руководитель коллектива',
+  ACCESS_REQUEST_NOT_FOUND: 'Запрос не найден',
+  ACCESS_REQUEST_EXPIRED: 'Срок запроса истёк',
+  ACCESS_FIELD_NOT_GRANTABLE: 'Эти данные нельзя запросить',
+  ACCESS_FIELD_NOT_REQUESTED: 'Этих данных нет в запросе',
+  ACCESS_COMMENT_LENGTH: 'Комментарий слишком короткий или слишком длинный',
+  ACCESS_EXPIRES_OUT_OF_RANGE: 'Такой срок выбрать нельзя',
+  GRANT_NOT_FOUND: 'Запрос не найден',
+  GRANT_STATE_CONFLICT: 'На запрос уже ответили',
+  GRANT_COOLDOWN: 'Разрешить доступ пока нельзя: недавно менялась привязка аккаунта',
+  EVENT_SERVICE_UNAVAILABLE: 'Сервис коллективов не отвечает, попробуйте позже',
+  TOO_MANY_REQUESTS: 'Слишком часто, попробуйте позже',
+  PERSONAL_DATA_UNAVAILABLE: 'Данные сейчас недоступны, попробуйте позже',
 }
 
 export function apiErrorMessage(err: unknown, fallback: string): string {
