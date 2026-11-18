@@ -62,6 +62,7 @@
           :key="value"
           class="ui-chip"
           :class="{ 'ui-chip--active': statuses.includes(value) }"
+          :style="statuses.includes(value) ? colorStyle(statusColor(value)) : undefined"
           @click="statuses = toggled(statuses, value)"
         >
           {{ label }}
@@ -124,7 +125,7 @@ import { IonToggle } from '@ionic/vue'
 import HelpTip from '@/components/common/HelpTip.vue'
 import { usePrincipalStore } from '@/stores/principal'
 import { getCollectiveColor } from '@/utils/colors'
-import { typeOptions, levelOptions, formatOptions, statusOptions, typeColor } from '@/utils/eventLabels'
+import { typeOptions, levelOptions, formatOptions, statusOptions, typeColor, statusColor } from '@/utils/eventLabels'
 import { LISTED_STATUSES, toggled } from '@/utils/homeFilters'
 import type {
   EventStatusEnumV1, EventTypeEnumV1, EventLevelEnumV1, EventFormatEnumV1,
@@ -149,9 +150,12 @@ const getColor = getCollectiveColor
 // Статус доступен только руководителю (участник всегда видит лишь активные), шаблоны в списке не показываются
 const STATUS_OPTIONS = computed(() => statusOptions.filter(([value]) => LISTED_STATUSES.includes(value)))
 
-function typeStyle(value: EventTypeEnumV1) {
-  const color = typeColor(value)
+function colorStyle(color: string) {
   return { borderColor: color, color, background: `${color}1A` }
+}
+
+function typeStyle(value: EventTypeEnumV1) {
+  return colorStyle(typeColor(value))
 }
 
 // Роль пользователя в коллективе для подписи на чипе фильтра

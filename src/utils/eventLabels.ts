@@ -3,7 +3,7 @@ import type {
 } from '@/api/generated/almaEventFlow'
 
 export const statusLabels: Record<EventStatusEnumV1, string> = {
-  draft: 'Черновик', active: 'Активно', template: 'Шаблон', archived: 'Архив',
+  draft: 'Черновик', planned: 'Запланировано', active: 'Активно', template: 'Шаблон', archived: 'Архив',
 }
 export const levelLabels: Record<EventLevelEnumV1, string> = {
   internal: 'ВУЗовский', regional: 'Региональный', national: 'Национальный', international: 'Международный',
@@ -26,7 +26,7 @@ export const formatOptions = Object.entries(formatLabels) as [EventFormatEnumV1,
 export const priorityOptions = Object.entries(priorityLabels) as [EventPriorityEnumV1, string][]
 
 const statusColors: Record<EventStatusEnumV1, string> = {
-  draft: '#92949c', template: '#6C63FF', active: '#00D9A6', archived: '#FF4757',
+  draft: '#92949c', planned: '#FFB800', template: '#6C63FF', active: '#00D9A6', archived: '#FF4757',
 }
 
 export function statusColor(status: EventStatusEnumV1 | null | undefined): string {

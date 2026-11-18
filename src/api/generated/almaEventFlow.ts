@@ -265,6 +265,7 @@ export type EventStatusEnumV1 = typeof EventStatusEnumV1[keyof typeof EventStatu
 export const EventStatusEnumV1 = {
   draft: 'draft',
   template: 'template',
+  planned: 'planned',
   active: 'active',
   archived: 'archived',
 } as const;

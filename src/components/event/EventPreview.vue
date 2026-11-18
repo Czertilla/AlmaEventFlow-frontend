@@ -1,5 +1,10 @@
 <template>
-  <div class="event-card" @click="$emit('click')">
+  <div
+    class="event-card"
+    :class="{ 'event-card--highlighted': highlighted, 'event-card--past': isPast }"
+    :data-nearest="highlighted ? 'true' : undefined"
+    @click="$emit('click')"
+  >
     <div class="event-card-header">
       <div v-if="isPrincipal" class="event-status" :style="{ background: statusColor }" :title="statusLabel" />
       <div class="event-info">
@@ -29,7 +34,7 @@
               :verified="item.attendance.is_verified"
               :attendance-id="item.attendance.id"
               :show-lock="false"
-              glow
+              :glow="event.status === 'active'"
               @toggle="(v) => $emit('toggleAttendance', item.attendance!.id, v)"
             />
             <EventCommentChip
@@ -57,7 +62,7 @@
               :verified="item.attendance.is_verified"
               :attendance-id="item.attendance.id"
               :show-lock="false"
-              glow
+              :glow="event.status === 'active'"
               @toggle="(v) => $emit('toggleAttendance', item.attendance!.id, v)"
             />
             <EventCommentChip
@@ -104,10 +109,19 @@ const props = defineProps<{
   items: CollectiveAttendanceItem[]
   timeRange?: EventTimeRange
   isPrincipal: boolean
+  /** Выделяет ближайшее предстоящее мероприятие. */
+  highlighted?: boolean
   /** Опционально: карточка не делает запрос сама (список карточек не должен
    * плодить N+1) -- показывает локацию, только если родитель уже её загрузил. */
   location?: LocationRead | null
 }>()
+
+const isPast = computed(() => {
+  if (!props.event.date) return false
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  return new Date(`${props.event.date.slice(0, 10)}T00:00:00`) < today
+})
 
 defineEmits<{
   click: []
@@ -135,6 +149,7 @@ const statusColor = computed(() => {
   const map: Record<EventStatusEnumV1, string> = {
     draft: '#92949c',
     template: '#6C63FF',
+    planned: '#FFB800',
     active: '#00D9A6',
     archived: '#FF4757',
   }
@@ -145,6 +160,7 @@ const statusLabel = computed(() => {
   const map: Record<EventStatusEnumV1, string> = {
     draft: 'Черновик',
     template: 'Шаблон',
+    planned: 'Запланировано',
     active: 'Активно',
     archived: 'Архив',
   }
@@ -162,6 +178,22 @@ const statusLabel = computed(() => {
   cursor: pointer;
   transition: all 0.2s;
   margin: 8px 0;
+}
+
+.event-card--highlighted {
+  box-shadow:
+    0 0 0 var(--border-w) var(--ion-color-primary),
+    0 4px 18px rgba(var(--ion-color-primary-rgb), 0.18);
+  background: linear-gradient(rgba(var(--ion-color-primary-rgb), 0.06), rgba(var(--ion-color-primary-rgb), 0.06)),
+    var(--ion-card-background);
+}
+
+.event-card--past {
+  opacity: 0.65;
+}
+
+.event-card--past:hover {
+  opacity: 1;
 }
 
 .event-card:hover {

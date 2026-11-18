@@ -54,6 +54,7 @@
           :items="getItems(event)"
           :time-range="stageTimes.get(event.id)"
           :is-principal="isPrincipal"
+          :highlighted="event.id === nearestUpcomingId"
           @click="emit('selectEvent', event.id)"
           @toggle-attendance="(id, v) => emit('toggleAttendance', id, v)"
           @save-comment="(id, c) => emit('saveComment', id, c)"
@@ -81,7 +82,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue'
+import { ref, computed, nextTick, onMounted, onBeforeUnmount } from 'vue'
 import { IonIcon } from '@ionic/vue'
 import { checkmarkDoneOutline } from 'ionicons/icons'
 import EventPreview from './EventPreview.vue'
@@ -135,6 +136,19 @@ function skeletonWidth(n: number): string {
 }
 
 const { isDesktop } = usePlatform()
+
+const nearestUpcomingId = computed(() => {
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  let nearest: { id: string; date: Date } | null = null
+  for (const event of props.events) {
+    if (!event.date) continue
+    const d = parseISO(event.date)
+    if (d < today) continue
+    if (!nearest || d < nearest.date) nearest = { id: event.id, date: d }
+  }
+  return nearest?.id ?? null
+})
 
 const containerRef = ref<HTMLElement | null>(null)
 // Обёртка вокруг содержимого списка -- см. комментарий в шаблоне и
@@ -267,6 +281,9 @@ onMounted(() => {
     captureAnchor()
   })
   if (contentRef.value) resizeObserver.observe(contentRef.value)
+  // При первой загрузке чип месяца появляется, но сразу же должен пропасть
+  if (scrollEndTimer) clearTimeout(scrollEndTimer)
+  scrollEndTimer = setTimeout(() => { showLocator.value = false }, HIDE_HOLD)
 })
 onBeforeUnmount(() => {
   settleToken++
@@ -325,6 +342,10 @@ function scrollListToDate(day: Date, smooth = true): Promise<boolean> {
     positioned = true
     const root = containerRef.value
     const reached = !root || !target || Math.abs(target.getBoundingClientRect().top - root.getBoundingClientRect().top) <= 2
+    activeMonthIdx.value = findActiveMonthIdx()
+    showLocator.value = true
+    if (scrollEndTimer) clearTimeout(scrollEndTimer)
+    scrollEndTimer = setTimeout(() => { showLocator.value = false }, HIDE_HOLD)
     captureAnchor()
     handleScroll()
     settleScrollPromise(reached)

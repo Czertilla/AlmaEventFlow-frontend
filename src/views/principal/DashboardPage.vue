@@ -391,7 +391,7 @@ const SORT_OPTIONS: SelectOption<'date' | 'name' | 'status'>[] = [
 const sortKey = ref<'date' | 'name' | 'status'>('date')
 const sortOrder = ref<'asc' | 'desc'>('asc')
 const STATUS_RANK: Record<EventStatusEnumV1, number> = {
-  active: 0, draft: 1, template: 2, archived: 3,
+  active: 0, planned: 1, draft: 2, template: 3, archived: 4,
 }
 
 // Восстановить сохранённые фильтры коллектива (или дефолты, если их ещё нет).

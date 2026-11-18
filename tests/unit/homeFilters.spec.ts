@@ -28,9 +28,9 @@ function event(patch: Partial<EventCard>): EventCard {
 }
 
 describe('parseHomeFilters', () => {
-  test('the defaults show active events of every kind, past ones too', () => {
+  test('the defaults show planned and active events of every kind, past ones too', () => {
     expect(parseHomeFilters(query())).toEqual({
-      statuses: ['active'],
+      statuses: ['planned', 'active'],
       types: [],
       levels: [],
       formats: [],
@@ -71,12 +71,12 @@ describe('toggled', () => {
 
 describe('homeFilterParams', () => {
   test('a participant asks for active events only', () => {
-    expect(homeFilterParams(parseHomeFilters(query({ statuses: 'any' })), false, TODAY)).toEqual({ status: ['active'] })
+    expect(homeFilterParams(parseHomeFilters(query({ statuses: 'any' })), false, TODAY)).toEqual({ status: ['active', 'planned'] })
   })
 
   test('a leader asks for the chosen statuses, never for templates', () => {
     expect(homeFilterParams(parseHomeFilters(query({ statuses: 'draft,active' })), true, TODAY).status).toEqual(['draft', 'active'])
-    expect(homeFilterParams(parseHomeFilters(query({ statuses: 'any' })), true, TODAY).status).toEqual(['draft', 'active', 'archived'])
+    expect(homeFilterParams(parseHomeFilters(query({ statuses: 'any' })), true, TODAY).status).toEqual(['draft', 'planned', 'active', 'archived'])
   })
 
   test('several types, levels and formats go as lists', () => {

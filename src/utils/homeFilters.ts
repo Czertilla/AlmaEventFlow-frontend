@@ -21,12 +21,14 @@ export type HomeFilterQuery = Record<'statuses' | 'types' | 'levels' | 'formats'
 export const ANY_STATUS = 'any'
 
 export const HOME_FILTER_DEFAULTS: HomeFilterQuery = {
-  statuses: 'active',
+  statuses: 'planned,active',
   types: '',
   levels: '',
   formats: '',
   upcoming: '',
 }
+
+const DEFAULT_STATUSES: readonly EventStatusEnumV1[] = ['planned', 'active']
 
 export const LISTED_STATUSES: readonly EventStatusEnumV1[] = statusOptions
   .map(([value]) => value)
@@ -61,7 +63,11 @@ export function toggled<T>(list: readonly T[], value: T): T[] {
 
 export function countActiveFilters(state: HomeFilterState, isPrincipal: boolean): number {
   const statusChanged =
-    isPrincipal && !(state.statuses.length === 1 && state.statuses[0] === 'active')
+    isPrincipal &&
+    !(
+      state.statuses.length === DEFAULT_STATUSES.length &&
+      DEFAULT_STATUSES.every((status) => state.statuses.includes(status))
+    )
   return [
     statusChanged,
     state.types.length > 0,
@@ -78,7 +84,7 @@ export function homeFilterParams(
   today: string,
 ): GetFeedEventV2FeedGetParams {
   const params: GetFeedEventV2FeedGetParams = {}
-  params.status = isPrincipal ? [...(state.statuses.length ? state.statuses : LISTED_STATUSES)] : ['active']
+  params.status = isPrincipal ? [...(state.statuses.length ? state.statuses : LISTED_STATUSES)] : ['active', 'planned']
   if (state.types.length) params.type = [...state.types]
   if (state.levels.length) params.level = [...state.levels]
   if (state.formats.length) params.format = [...state.formats]
@@ -97,7 +103,7 @@ export function matchesHomeFilters(
   today: string,
 ): boolean {
   if (event.status === 'template') return false
-  if (!isPrincipal && event.status !== 'active') return false
+  if (!isPrincipal && event.status !== 'active' && event.status !== 'planned') return false
   if (isPrincipal && state.statuses.length && !includes(state.statuses, event.status)) return false
   if (state.types.length && !includes(state.types, event.type)) return false
   if (state.levels.length && !includes(state.levels, event.level)) return false

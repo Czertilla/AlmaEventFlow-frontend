@@ -119,7 +119,7 @@ const SORT_OPTIONS: SelectOption<'date' | 'name' | 'status'>[] = [
 
 // Порядок статусов для сортировки «по статусу»
 const STATUS_RANK: Record<EventStatusEnumV1, number> = {
-  active: 0, draft: 1, template: 2, archived: 3,
+  active: 0, planned: 1, draft: 2, template: 3, archived: 4,
 }
 
 const filteredEvents = computed(() => {
