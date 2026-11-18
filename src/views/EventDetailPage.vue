@@ -19,7 +19,7 @@
           <div class="detail-info">
             <div class="info-card">
               <div class="info-card-top">
-                <h2>{{ event.name }}</h2>
+                <div class="info-card-title"><DefaultAvatar kind="event" :seed="event.id" :size="40" /><h2>{{ event.name }}</h2></div>
                 <div class="info-card-actions">
                   <span v-if="principal.isPrincipal" class="status-badge" :style="{ color: statusColor, background: statusColor + '1A' }">
                     {{ statusLabel }}
@@ -86,7 +86,7 @@
             <div v-for="p in participationItems" :key="p.participationId" class="collective-card">
               <div class="collective-card-header">
                 <div class="collective-card-title">
-                  <span class="collective-dot" :style="{ background: getCollectiveColor(p.collectiveId) }" />
+                  <DefaultAvatar kind="collective" :seed="p.collectiveId" :size="28" />
                   <span class="collective-name">{{ p.collectiveName }}</span>
                 </div>
                 <div class="collective-card-head-right">
@@ -288,6 +288,7 @@
 </template>
 
 <script setup lang="ts">
+import DefaultAvatar from '@/components/common/DefaultAvatar.vue'
 import { ref, computed, reactive, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
@@ -306,7 +307,6 @@ import { useToast } from '@/composables/useToast'
 import { useEventParticipations, type ParticipationItem } from '@/composables/useEventParticipations'
 import { formatDate, formatTime } from '@/utils/date'
 import { locationPoint, placeAsLocation } from '@/utils/geo'
-import { getCollectiveColor } from '@/utils/colors'
 import {
   statusColor as statusColorOf, statusLabel as statusLabelOf,
   priorityOptions,
@@ -839,18 +839,18 @@ onIonViewWillEnter(async () => {
   gap: 10px;
 }
 
+.info-card-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
 .collective-card-title {
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
-}
-
-.collective-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  flex-shrink: 0;
 }
 
 .collective-name {

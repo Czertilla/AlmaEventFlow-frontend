@@ -28,7 +28,8 @@
           @mousemove="onHover(index)"
           @click="onPick(index)"
         >
-          <ion-icon v-if="option.icon" class="ui-option-icon" :icon="option.icon" />
+          <DefaultAvatar v-if="option.avatar" class="ui-option-avatar" v-bind="option.avatar" :size="24" />
+          <ion-icon v-else-if="option.icon" class="ui-option-icon" :icon="option.icon" />
           <span class="ui-option-label">{{ option.label }}</span>
           <ion-icon v-if="index === selectedIndex" class="ui-option-check" :icon="checkmarkOutline" />
         </div>
@@ -42,6 +43,7 @@
 import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 import { IonIcon } from '@ionic/vue'
 import { checkmarkOutline } from 'ionicons/icons'
+import DefaultAvatar from '@/components/common/DefaultAvatar.vue'
 import type { SelectOption } from '@/utils/selectOptions'
 
 const props = withDefaults(

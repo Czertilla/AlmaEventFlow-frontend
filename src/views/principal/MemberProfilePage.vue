@@ -110,6 +110,7 @@
 </template>
 
 <script setup lang="ts">
+import UserAvatar from '@/components/common/UserAvatar.vue'
 import { computed, inject, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { IonIcon } from '@ionic/vue'
@@ -121,7 +122,6 @@ import {
 import type { MemberProfileRead, RoleRead } from '@/api/generated/almaEventFlow'
 import BackLink from '@/components/common/BackLink.vue'
 import PageState from '@/components/common/PageState.vue'
-import UserAvatar from '@/components/common/UserAvatar.vue'
 import AttendanceActivity from '@/components/member/AttendanceActivity.vue'
 import AttendanceHead from '@/components/member/AttendanceHead.vue'
 import AttendanceHistory from '@/components/member/AttendanceHistory.vue'

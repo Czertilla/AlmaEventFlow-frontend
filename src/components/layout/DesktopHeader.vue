@@ -56,7 +56,7 @@
         </div>
         <div class="header-right">
           <button v-if="auth.isAuthenticated" class="header-profile" id="profile-trigger" @click="toggleProfileMenu">
-            <div class="avatar-sm">{{ initials }}</div>
+            <UserAvatar :user="auth.user" :size="36" />
           </button>
           <router-link v-else to="/auth/login" class="nav-link nav-link--login">Войти</router-link>
         </div>
@@ -65,11 +65,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { usePrincipalStore } from '@/stores/principal'
 import { useSectionNav } from '@/composables/useSectionNav'
-import { getInitials } from '@/utils/names'
+import UserAvatar from '@/components/common/UserAvatar.vue'
 import { IonIcon, menuController } from '@ionic/vue'
 import { homeOutline, shieldCheckmarkOutline, settingsOutline, chevronDownOutline } from 'ionicons/icons'
 
@@ -80,8 +80,6 @@ const principal = usePrincipalStore()
 const { isAdminActive, isPrincipalActive, goToPrincipal: navPrincipal, selectCollective: navSelectCollective } = useSectionNav()
 
 const showPrincipalDropdown = ref(false)
-
-const initials = computed(() => getInitials(auth.user))
 
 // Клик по «Руководитель» открывает последний выбранный коллектив (он восстановлен из хранилища по jwt sub)
 function goToPrincipal() {
@@ -274,10 +272,8 @@ function toggleProfileMenu() {
   height: 36px;
   border-radius: 50%;
   border: none;
-  background: linear-gradient(135deg, var(--ion-color-primary), var(--ion-color-primary-shade));
-  color: white;
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-bold);
+  padding: 0;
+  background: none;
   cursor: pointer;
   transition: transform 0.2s;
   display: flex;
@@ -298,11 +294,4 @@ function toggleProfileMenu() {
   transform: translateY(-8px);
 }
 
-.avatar-sm {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
 </style>

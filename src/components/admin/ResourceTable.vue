@@ -156,8 +156,12 @@
         </thead>
         <tbody>
           <tr v-for="item in items" :key="item.id" @click="$emit('edit', item)">
-            <td v-for="col in visibleColumns" :key="col.key" :title="col.resource ? undefined : getCellValue(item, col)">
-              <ResourcePreview v-if="col.resource" v-bind="col.resource(item)" />
+            <td v-for="(col, index) in visibleColumns" :key="col.key" :title="col.resource ? undefined : getCellValue(item, col)">
+              <span v-if="avatar && index === 0" class="rt-named">
+                <DefaultAvatar :kind="avatar" :seed="avatarSeed ? avatarSeed(item) : item.id" :size="28" />
+                <span><ResourcePreview v-if="col.resource" v-bind="col.resource(item)" /><template v-else>{{ getCellValue(item, col) }}</template></span>
+              </span>
+              <ResourcePreview v-else-if="col.resource" v-bind="col.resource(item)" />
               <template v-else>{{ getCellValue(item, col) }}</template>
             </td>
             <td class="actions-cell" @click.stop>
@@ -192,6 +196,7 @@
         <div v-for="item in items" :key="item.id" class="mobile-card" @click="$emit('edit', item)">
           <div class="mobile-card-main">
             <span class="mobile-card-title">
+              <DefaultAvatar v-if="avatar" class="rt-mobile-avatar" :kind="avatar" :seed="avatarSeed ? avatarSeed(item) : item.id" :size="24" />
               <ResourcePreview v-if="labelResource?.(item)" v-bind="labelResource(item)!" />
               <template v-else>{{ getLabel(item) }}</template>
             </span>
@@ -324,6 +329,8 @@ import type { AxiosResponse } from 'axios'
 import AppFab from '@/components/common/AppFab.vue'
 import SortFab from '@/components/common/SortFab.vue'
 import ResourceFilterFields from '@/components/admin/ResourceFilterFields.vue'
+import DefaultAvatar from '@/components/common/DefaultAvatar.vue'
+import type { AvatarKind } from '@/utils/defaultAvatar'
 import ResourcePreview from '@/components/common/ResourcePreview.vue'
 import RowActionsMenu, { type RowAction } from '@/components/admin/RowActionsMenu.vue'
 import UiSelectPill from '@/components/common/UiSelectPill.vue'
@@ -397,6 +404,9 @@ const props = withDefaults(defineProps<{
   rowLinks?: RowLink[]
   /** Поиск, сортировка и фильтры дублируются в адресной строке (q, sort, order, <ключ фильтра>) */
   urlSync?: boolean
+  /** Иконка по умолчанию у записи (по её id) */
+  avatar?: AvatarKind
+  avatarSeed?: (item: any) => string
 }>(), {
   searchPlaceholder: 'Поиск или ID',
   defaultSort: '',
@@ -979,7 +989,16 @@ defineExpose({ loadData: reload })
   margin-bottom: 8px;
 }
 
+.rt-named {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .mobile-card-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   font-weight: var(--fw-semibold);
   font-size: var(--fs-lg);
   color: var(--ion-text-color, #000);

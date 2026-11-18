@@ -6,6 +6,7 @@
     :debounce="300"
     :options="options"
     :selected="selected"
+    :avatar="avatarKindOf(resource)"
     :loading="resolving"
     :locked="locked"
     :hint="hint"
@@ -20,6 +21,7 @@
 <script setup lang="ts">
 import { computed, ref, watch, onMounted } from 'vue'
 import EntityPickerField from '@/components/common/EntityPickerField.vue'
+import { avatarKindOf } from '@/utils/defaultAvatar'
 import { resolveResourceLabel, type ResourceKind } from '@/utils/resourceLabels'
 
 const props = defineProps<{

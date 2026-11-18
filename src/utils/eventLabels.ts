@@ -1,3 +1,4 @@
+import { archiveOutline, copyOutline, createOutline, pulseOutline, timeOutline } from 'ionicons/icons'
 import type {
   EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1, EventPriorityEnumV1,
 } from '@/api/generated/almaEventFlow'
@@ -31,6 +32,13 @@ const statusColors: Record<EventStatusEnumV1, string> = {
 
 export function statusColor(status: EventStatusEnumV1 | null | undefined): string {
   return statusColors[status ?? 'draft']
+}
+const statusIcons: Record<EventStatusEnumV1, string> = {
+  draft: createOutline, planned: timeOutline, template: copyOutline, active: pulseOutline, archived: archiveOutline,
+}
+
+export function statusIcon(status: EventStatusEnumV1 | null | undefined): string {
+  return statusIcons[status ?? 'draft']
 }
 export function statusLabel(status: EventStatusEnumV1 | null | undefined): string {
   return statusLabels[status ?? 'draft']

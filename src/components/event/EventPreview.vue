@@ -6,7 +6,7 @@
     @click="$emit('click')"
   >
     <div class="event-card-header">
-      <div v-if="isPrincipal" class="event-status" :style="{ background: statusColor }" :title="statusLabel" />
+      <DefaultAvatar kind="event" :seed="event.id" :size="32" />
       <div class="event-info">
         <h4 class="event-name">{{ event.name }}</h4>
         <span class="event-date">
@@ -19,13 +19,22 @@
       <div class="event-members" v-if="showAttendanceCount && items.length === 1 && items[0]?.totalCount">
         <span class="member-badge">{{ items[0].attendedCount }}/{{ items[0].totalCount }}</span>
       </div>
+      <ion-icon
+        v-if="isPrincipal"
+        class="event-status"
+        :icon="statusIcon(event.status)"
+        :style="{ color: statusColor }"
+        :title="statusLabel"
+        role="img"
+        :aria-label="statusLabel"
+      />
     </div>
 
     <div v-if="items.length > 0" class="event-card-body">
       <template v-for="item in items" :key="item.collectiveId">
         <div v-if="items.length === 1 && item.attendance" class="attendance-row">
           <div class="collective-info">
-            <span class="collective-dot" :style="{ background: getColor(item.collectiveId) }" />
+            <DefaultAvatar kind="collective" :seed="item.collectiveId" :size="24" />
             <span class="collective-name">{{ item.collectiveName }}</span>
           </div>
           <div class="attendance-chips" @click.stop>
@@ -50,7 +59,7 @@
         </div>
         <div v-else class="collective-row">
           <div class="collective-info">
-            <span class="collective-dot" :style="{ background: getColor(item.collectiveId) }" />
+            <DefaultAvatar kind="collective" :seed="item.collectiveId" :size="24" />
             <span class="collective-name">{{ item.collectiveName }}</span>
           </div>
           <div class="collective-badge" v-if="showAttendanceCount && (item.totalCount ?? 0) > 0">
@@ -85,12 +94,13 @@
 import { computed } from 'vue'
 import { IonIcon } from '@ionic/vue'
 import { useSettingsStore } from '@/stores/settings'
+import { statusColor as colorOf, statusIcon, statusLabel as labelOf } from '@/utils/eventLabels'
 import { formatDate, formatTime } from '@/utils/date'
-import { getCollectiveColor } from '@/utils/colors'
 import EventAttendanceChip from './EventAttendanceChip.vue'
 import EventCommentChip from './EventCommentChip.vue'
+import DefaultAvatar from '@/components/common/DefaultAvatar.vue'
 import LocationDisplay from '@/components/geo/LocationDisplay.vue'
-import type { EventCard, AttendanceReadV2, EventStatusEnumV1, LocationRead } from '@/api/generated/almaEventFlow'
+import type { EventCard, AttendanceReadV2, LocationRead } from '@/api/generated/almaEventFlow'
 import type { EventTimeRange } from '@/stores/eventCalendar'
 import { calendarOutline, lockClosed } from 'ionicons/icons'
 
@@ -102,7 +112,6 @@ export interface CollectiveAttendanceItem {
   totalCount?: number
 }
 
-const getColor = getCollectiveColor
 
 const props = defineProps<{
   event: EventCard
@@ -145,27 +154,8 @@ const eventTime = computed(() => {
   return first === last ? first : `${first}–${last}`
 })
 
-const statusColor = computed(() => {
-  const map: Record<EventStatusEnumV1, string> = {
-    draft: '#92949c',
-    template: '#6C63FF',
-    planned: '#FFB800',
-    active: '#00D9A6',
-    archived: '#FF4757',
-  }
-  return map[props.event.status ?? 'draft']
-})
-
-const statusLabel = computed(() => {
-  const map: Record<EventStatusEnumV1, string> = {
-    draft: 'Черновик',
-    template: 'Шаблон',
-    planned: 'Запланировано',
-    active: 'Активно',
-    archived: 'Архив',
-  }
-  return map[props.event.status ?? 'draft']
-})
+const statusColor = computed(() => colorOf(props.event.status))
+const statusLabel = computed(() => labelOf(props.event.status))
 
 
 </script>
@@ -210,10 +200,9 @@ const statusLabel = computed(() => {
 }
 
 .event-status {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
   flex-shrink: 0;
+  margin-left: auto;
+  font-size: var(--icon-xl);
 }
 
 .event-info {
@@ -265,7 +254,7 @@ const statusLabel = computed(() => {
 }
 
 .event-card-body {
-  padding: 12px 16px;
+  padding: 12px 16px 12px 20px;
 }
 
 .attendance-row {
@@ -309,13 +298,6 @@ const statusLabel = computed(() => {
 .collective-badge {
   flex-shrink: 0;
   margin-left: auto;
-}
-
-.collective-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
 }
 
 .collective-name {

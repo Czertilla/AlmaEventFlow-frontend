@@ -1,17 +1,21 @@
 <template>
-  <div class="user-avatar" :style="style">{{ initials }}</div>
+  <DefaultAvatar v-if="seed" kind="user" :seed="seed" :size="size" />
+  <div v-else class="user-avatar" :style="style">{{ initials }}</div>
 </template>
 
 <script setup lang="ts">
 import { computed } from 'vue'
 import { getInitials } from '@/utils/names'
+import { userAvatarSeed } from '@/utils/defaultAvatar'
+import DefaultAvatar from '@/components/common/DefaultAvatar.vue'
 
 const props = withDefaults(defineProps<{
-  user?: { username?: string | null; email?: string | null } | null
+  user?: { id?: string | null; person_id?: string | null; username?: string | null; email?: string | null } | null
   size?: number
 }>(), { size: 40 })
 
 const initials = computed(() => getInitials(props.user))
+const seed = computed(() => (props.user ? userAvatarSeed(props.user) : null))
 
 const style = computed(() => ({
   width: `${props.size}px`,

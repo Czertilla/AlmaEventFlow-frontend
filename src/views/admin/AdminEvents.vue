@@ -2,6 +2,7 @@
   <ResourceTable
     ref="tableRef"
     :columns="columns"
+    avatar="event"
     :get-label="(e) => e.name"
     :get-subtitle="(e) => e.date || 'Нет даты'"
     :fetch-items="fetchEvents"

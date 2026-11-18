@@ -25,7 +25,7 @@
       <AttendanceHead :rate="summary.rate" :period-label="periodLabel" :sub="rateSub">
         <ProfileWho :name="profile.collective.name" :tags="tags">
           <template #avatar>
-            <span class="cp-mark" :style="{ background: color }">{{ initials }}</span>
+            <DefaultAvatar kind="collective" :seed="profile.collective.id" :size="56" />
           </template>
           <template #sub>
             <p class="cp-sub">
@@ -95,6 +95,7 @@ import { useRouter } from 'vue-router'
 import { calendarOutline, lockClosedOutline } from 'ionicons/icons'
 import { getCollectiveProfileEventV2CollectivesCollectiveIdProfileGet } from '@/api/generated/almaEventFlow'
 import type { CollectiveProfileRead } from '@/api/generated/almaEventFlow'
+import DefaultAvatar from '@/components/common/DefaultAvatar.vue'
 import BackLink from '@/components/common/BackLink.vue'
 import PageState from '@/components/common/PageState.vue'
 import CollectiveEventList from '@/components/collective/CollectiveEventList.vue'
@@ -109,7 +110,6 @@ import TypeBars from '@/components/member/TypeBars.vue'
 import { useAttendancePeriod } from '@/composables/useAttendancePeriod'
 import { usePlatform } from '@/composables/usePlatform'
 import { principalNavigateKey } from '@/composables/usePrincipalNavigate'
-import { getCollectiveColor } from '@/utils/colors'
 import { collectiveDays, collectiveOutcomeLabels, dayKey, monthSeries } from '@/utils/memberAttendance'
 import { formatPersonName } from '@/utils/names'
 
@@ -137,8 +137,6 @@ const stateText = computed(() => {
 })
 
 const summary = computed(() => profile.value!.summary)
-const color = computed(() => getCollectiveColor(profile.value?.collective.id ?? ''))
-const initials = computed(() => (profile.value?.collective.name ?? '').slice(0, 2).toUpperCase())
 const leader = computed(() => {
   const principal = profile.value?.collective.principal
   return principal ? formatPersonName(principal) : 'не назначен'
@@ -254,19 +252,6 @@ onMounted(load)
   flex: 1;
   flex-direction: column;
   gap: 6px;
-}
-
-.cp-mark {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 56px;
-  height: 56px;
-  flex-shrink: 0;
-  border-radius: var(--radius-lg);
-  font-size: var(--fs-xl);
-  font-weight: var(--fw-bold);
-  color: var(--ion-color-primary-contrast);
 }
 
 .cp-sub {

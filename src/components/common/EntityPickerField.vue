@@ -1,7 +1,8 @@
 <template>
   <div class="epf">
     <UiField v-if="selected" :label="label" float :hint="hint" :help="help">
-      <template v-if="icon" #prefix><ion-icon :icon="icon" /></template>
+      <template v-if="avatar" #prefix><DefaultAvatar :kind="avatar" :seed="selected.id" :size="24" /></template>
+      <template v-else-if="icon" #prefix><ion-icon :icon="icon" /></template>
       <span class="ui-field-value">
         <span v-if="loading" class="skeleton skeleton--text epf-skeleton" aria-busy="true" />
         <template v-else>{{ selected.name }}</template>
@@ -54,6 +55,8 @@
 import { computed, onBeforeUnmount, ref } from 'vue'
 import { IonIcon } from '@ionic/vue'
 import { closeOutline, lockClosedOutline, searchOutline } from 'ionicons/icons'
+import DefaultAvatar from '@/components/common/DefaultAvatar.vue'
+import type { AvatarKind } from '@/utils/defaultAvatar'
 import UiField from '@/components/common/UiField.vue'
 import UiInput from '@/components/common/UiInput.vue'
 import UiSelectMenu from '@/components/common/UiSelectMenu.vue'
@@ -70,6 +73,7 @@ const props = withDefaults(
     placeholder?: string
     clearLabel?: string
     icon?: string
+    avatar?: AvatarKind
     debounce?: number
     /** Имя выбранного ещё грузится: вместо него скелетон, а не голый id */
     loading?: boolean
@@ -81,7 +85,7 @@ const props = withDefaults(
   }>(),
   {
     placeholder: 'Поиск…', clearLabel: 'Убрать', icon: undefined, debounce: 400,
-    loading: false, disabled: false, hint: undefined, help: undefined, locked: false,
+    avatar: undefined, loading: false, disabled: false, hint: undefined, help: undefined, locked: false,
   },
 )
 
@@ -97,7 +101,11 @@ const listboxId = nextFieldId('ui-listbox')
 const anchor = ref<HTMLElement | null>(null)
 const dismissed = ref(false)
 const nav = useComboNav(computed(() => props.options.length))
-const menuOptions = computed(() => props.options.map((option) => ({ value: option.id, label: option.name })))
+const menuOptions = computed(() => props.options.map((option) => ({
+  value: option.id,
+  label: option.name,
+  avatar: props.avatar && !option.id.startsWith('\u0000') ? { kind: props.avatar, seed: option.id } : undefined,
+})))
 const listOpen = computed(() => props.options.length > 0 && !dismissed.value)
 
 let timer: ReturnType<typeof setTimeout> | undefined

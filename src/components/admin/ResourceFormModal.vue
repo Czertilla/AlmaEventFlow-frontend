@@ -1,6 +1,7 @@
 <template>
   <div class="ui-sheet-head">
     <div class="modal-header-title">
+      <DefaultAvatar v-if="avatar && item?.id" :kind="avatar" :seed="avatarSeed ? avatarSeed(item) : item.id" :size="32" />
       <h3 class="ui-sheet-title">{{ title }}</h3>
       <UuidBadge v-if="item?.id" :id="item.id" />
     </div>
@@ -107,6 +108,8 @@
 </template>
 
 <script setup lang="ts">
+import DefaultAvatar from '@/components/common/DefaultAvatar.vue'
+import type { AvatarKind } from '@/utils/defaultAvatar'
 import { ref, reactive, computed, onMounted, watch } from 'vue'
 import { IonButton, IonIcon, IonContent, IonToggle, IonSpinner, modalController } from '@ionic/vue'
 import { closeOutline } from 'ionicons/icons'
@@ -163,6 +166,8 @@ const props = defineProps<{
   item: any | null
   onSave: (data: any) => Promise<void>
   links?: FormLink[]
+  avatar?: AvatarKind
+  avatarSeed?: (item: any) => string
 }>()
 
 defineEmits<{ close: [] }>()

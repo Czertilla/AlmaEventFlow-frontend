@@ -2,6 +2,7 @@
       <ResourceTable
         ref="tableRef"
         :columns="columns"
+        avatar="collective"
         :get-label="(c) => c.name"
         :get-subtitle="(c) => c.acronym"
         :fetch-items="fetchCollectives"
@@ -18,6 +19,7 @@
     <ion-modal :is-open="editModal" @ion-modal-did-dismiss="editModal = false">
       <ResourceFormModal
         v-if="editModal"
+        avatar="collective"
         :title="isCreating ? 'Создать коллектив' : 'Редактировать коллектив'"
         :fields="formFields"
         :item="editingItem"

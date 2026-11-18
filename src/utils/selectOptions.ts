@@ -1,8 +1,11 @@
+import type { AvatarKind } from '@/utils/defaultAvatar'
+
 export interface SelectOption<T = string | number | null> {
   value: T
   label: string
   disabled?: boolean
   icon?: string
+  avatar?: { kind: AvatarKind; seed: string }
 }
 
 export function optionsFromPairs<T extends string | number>(

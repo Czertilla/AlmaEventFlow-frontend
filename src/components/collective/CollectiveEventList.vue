@@ -10,6 +10,7 @@
     <ul v-if="visible.length" class="cel-list">
       <li v-for="event in visible" :key="event.event_id">
         <button type="button" class="cel-row" @click="emit('open', event.event_id)">
+          <DefaultAvatar kind="event" :seed="event.event_id" :size="32" />
           <span class="cel-main">
             <span class="cel-name">{{ event.event_name }}</span>
             <span class="cel-meta">
@@ -42,6 +43,7 @@
 </template>
 
 <script setup lang="ts">
+import DefaultAvatar from '@/components/common/DefaultAvatar.vue'
 import { computed, ref, watch } from 'vue'
 import { IonIcon } from '@ionic/vue'
 import { closeOutline } from 'ionicons/icons'
@@ -91,7 +93,7 @@ watch([() => props.day, () => props.events], () => { limit.value = PAGE })
 
 .cel-row {
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 12px;
   width: 100%;

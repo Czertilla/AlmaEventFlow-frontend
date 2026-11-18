@@ -2,7 +2,12 @@
   <ion-modal :is-open="open" @ion-modal-did-dismiss="close">
     <ion-header>
       <ion-toolbar>
-        <ion-title>{{ event ? 'Редактирование' : 'Новое мероприятие' }}</ion-title>
+        <ion-title>
+          <span class="em-title">
+            <DefaultAvatar v-if="event" kind="event" :seed="event.id" :size="28" />
+            {{ event ? 'Редактирование' : 'Новое мероприятие' }}
+          </span>
+        </ion-title>
         <ion-buttons slot="end">
           <ion-button aria-label="Закрыть" @click="close">
             <ion-icon slot="icon-only" :icon="closeOutline" />
@@ -52,6 +57,7 @@
 </template>
 
 <script setup lang="ts">
+import DefaultAvatar from '@/components/common/DefaultAvatar.vue'
 import { reactive, ref, watch } from 'vue'
 import { IonHeader, IonToolbar, IonButtons, IonTitle, IonContent, IonButton, IonIcon, IonModal } from '@ionic/vue'
 import { closeOutline } from 'ionicons/icons'
@@ -192,6 +198,12 @@ async function submit() {
 </script>
 
 <style scoped>
+.em-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .form {
   display: flex;
   flex-direction: column;

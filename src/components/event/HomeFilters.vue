@@ -29,7 +29,7 @@
         :disabled="principal.showAllEvents || loading"
         @click="principal.selectCollective(c.id)"
       >
-        <span class="filter-dot" :style="{ background: c.color || getColor(c.id) }" />
+        <DefaultAvatar kind="collective" :seed="c.id" :size="24" class="filter-icon" />
         <span class="filter-chip-text">
           <span class="filter-chip-name">{{ c.name }}</span>
           <span class="filter-chip-role">{{ roleLabel(c.id) }}</span>
@@ -123,8 +123,8 @@
 import { computed } from 'vue'
 import { IonToggle } from '@ionic/vue'
 import HelpTip from '@/components/common/HelpTip.vue'
+import DefaultAvatar from '@/components/common/DefaultAvatar.vue'
 import { usePrincipalStore } from '@/stores/principal'
-import { getCollectiveColor } from '@/utils/colors'
 import { typeOptions, levelOptions, formatOptions, statusOptions, typeColor, statusColor } from '@/utils/eventLabels'
 import { LISTED_STATUSES, toggled } from '@/utils/homeFilters'
 import type {
@@ -145,7 +145,6 @@ const formats = defineModel<EventFormatEnumV1[]>('formats', { required: true })
 const upcoming = defineModel<boolean>('upcoming', { required: true })
 
 const principal = usePrincipalStore()
-const getColor = getCollectiveColor
 
 // Статус доступен только руководителю (участник всегда видит лишь активные), шаблоны в списке не показываются
 const STATUS_OPTIONS = computed(() => statusOptions.filter(([value]) => LISTED_STATUSES.includes(value)))
@@ -228,12 +227,6 @@ function roleLabel(collectiveId: string): string {
   opacity: 0.75;
 }
 
-.filter-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-}
-
 .filters-empty {
   font-size: var(--fs-sm);
   color: var(--ion-color-step-400);
@@ -266,9 +259,10 @@ function roleLabel(collectiveId: string): string {
 }
 
 .filter-dot--skeleton {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: var(--radius-sm);
   background: var(--ion-color-step-200);
 }
 

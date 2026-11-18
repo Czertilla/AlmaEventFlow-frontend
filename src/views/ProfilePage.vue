@@ -81,7 +81,7 @@
           </div>
           <ul class="collective-list">
             <li v-for="row in collectiveRows" :key="row.collectiveId" class="collective-row">
-              <span class="collective-dot" :style="{ background: row.color }" />
+              <DefaultAvatar kind="collective" :seed="row.collectiveId" :size="40" />
               <div class="collective-main">
                 <span class="collective-name">{{ row.name }}</span>
                 <span class="collective-meta">{{ row.meta }}</span>
@@ -144,6 +144,7 @@ import HelpTip from '@/components/common/HelpTip.vue'
 import UuidBadge from '@/components/common/UuidBadge.vue'
 import TimestampsMeta from '@/components/common/TimestampsMeta.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import DefaultAvatar from '@/components/common/DefaultAvatar.vue'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBackButton, IonIcon,
   onIonViewWillEnter,
@@ -152,7 +153,6 @@ import {
   settingsOutline, logOutOutline, chevronForwardOutline,
   createOutline, shieldCheckmarkOutline,
 } from 'ionicons/icons'
-import { getCollectiveColor } from '@/utils/colors'
 import { contactTypeLabels } from '@/utils/contactTypes'
 import { formatDate } from '@/utils/date'
 import { formatPersonName } from '@/utils/names'
@@ -179,7 +179,6 @@ const studentLine = computed(() => {
 interface CollectiveRow {
   collectiveId: string
   name: string
-  color: string
   memberId: string | null
   meta: string
   order: number
@@ -197,7 +196,6 @@ const collectiveRows = computed<CollectiveRow[]>(() =>
       return {
         collectiveId: c.id,
         name: c.name,
-        color: getCollectiveColor(c.id),
         memberId: c.member_id,
         meta: meta.join(' · ') || 'Участник',
         order: inactive ? 1 : 0,
@@ -395,14 +393,6 @@ async function handleLogout() {
   display: flex;
   gap: 12px;
   padding: 12px 0;
-}
-
-.collective-dot {
-  width: 10px;
-  height: 10px;
-  margin-top: 6px;
-  flex-shrink: 0;
-  border-radius: 50%;
 }
 
 .collective-main {

@@ -2,6 +2,8 @@
       <ResourceTable
         ref="tableRef"
         :columns="columns"
+        avatar="user"
+        :avatar-seed="(u) => u.person_id ?? u.id"
         :get-label="(u) => u.username"
         :get-subtitle="(u) => u.email"
         :fetch-items="fetchUsers"
@@ -15,6 +17,8 @@
     <ion-modal :is-open="editModal" @ion-modal-did-dismiss="editModal = false">
       <ResourceFormModal
         v-if="editModal"
+        avatar="user"
+        :avatar-seed="(u) => u.person_id ?? u.id"
         title="Редактировать пользователя"
         :fields="editFields"
         :item="editingItem"

@@ -3,20 +3,9 @@
     <!-- Мобильная шапка: на десктопе её заменяет глобальная шапка приложения -->
     <ion-header v-if="!isDesktop">
       <ion-toolbar>
-        <!-- Точка-индикатор коллектива живёт здесь, а НЕ внутри ion-title:
-             ion-title рендерит слот через свой внутренний .toolbar-title
-             (overflow: hidden в его собственном shadow DOM, см.
-             @ionic/core/.../title.md.css) -- что угодно, вынесенное оттуда
-             через position:absolute с отрицательным отступом, было бы
-             обрезано этим overflow. Здесь же, в ion-buttons (overflow не
-             задан), точка спокойно свисает в отступе СПРАВА от кнопки назад,
-             никак не влияя на ширину/положение ion-buttons и, значит, не
-             сдвигая сам ion-title -- поэтому текст начинается ровно там же,
-             где и обычный <ion-title>{{ title }}</ion-title> в других
-             разделах (см. AdminLayout.vue). -->
         <ion-buttons slot="start" class="collective-buttons">
           <ion-back-button default-href="/" />
-          <span class="collective-select-dot" :style="{ background: activeColor }" />
+          <DefaultAvatar v-if="activeCollectiveId" kind="collective" :seed="activeCollectiveId" :size="28" class="collective-icon" />
         </ion-buttons>
         <ion-title>
           <div class="collective-select collective-select--toolbar">
@@ -63,7 +52,7 @@
                "Руководитель"), второй интерактивный select здесь был лишним
                и вводил в заблуждение. Просто название текущего коллектива. -->
           <div v-if="isDesktop" class="collective-title">
-            <span class="collective-select-dot" :style="{ background: activeColor }" />
+            <DefaultAvatar v-if="activeCollectiveId" kind="collective" :seed="activeCollectiveId" :size="40" />
             <span class="collective-title-name">{{ activeCollectiveName }}</span>
           </div>
 
@@ -107,7 +96,7 @@ import {
 } from 'ionicons/icons'
 import { usePrincipalStore } from '@/stores/principal'
 import { usePlatform } from '@/composables/usePlatform'
-import { getCollectiveColor } from '@/utils/colors'
+import DefaultAvatar from '@/components/common/DefaultAvatar.vue'
 import { syncAddressBar } from '@/utils/inPlaceNav'
 import { splitTarget } from '@/utils/urlState'
 import { principalPageActions as pageActions } from '@/composables/usePrincipalPageActions'
@@ -217,9 +206,7 @@ onIonViewWillEnter(() => {
   remountTick.value++
 })
 
-const activeColor = computed(() =>
-  principal.activePrincipalCollectiveId ? getCollectiveColor(principal.activePrincipalCollectiveId) : '#92949c',
-)
+const activeCollectiveId = computed(() => principal.activePrincipalCollectiveId)
 
 const activeCollectiveName = computed(() =>
   principal.principalCollectives.find((c) => c.id === principal.activePrincipalCollectiveId)?.name ?? '',
@@ -286,13 +273,6 @@ function setCollectiveTrigger(el: unknown) {
   box-shadow: 0 0 0 3px rgba(var(--ion-color-primary-rgb), 0.12);
 }
 
-.collective-select-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  flex-shrink: 0;
-}
-
 .collective-select-input {
   appearance: none;
   text-align: left;
@@ -334,12 +314,6 @@ function setCollectiveTrigger(el: unknown) {
   margin: 4px 0 16px;
 }
 
-.collective-title .collective-select-dot {
-  width: 12px;
-  height: 12px;
-  flex-shrink: 0;
-}
-
 .collective-title-name {
   font-size: var(--fs-2xl);
   font-weight: var(--fw-bold);
@@ -350,21 +324,6 @@ function setCollectiveTrigger(el: unknown) {
   min-width: 0;
 }
 
-/* Точка-индикатор в ion-buttons (см. комментарий в шаблоне) -- position:relative
-   на самой ion-buttons даёт точке систему координат, не влияя на её ширину
-   (точка absolute, из потока исключена), и свисает в отступе СПРАВА от кнопки
-   назад, то есть левее текста заголовка, не сдвигая сам ion-title. */
-.collective-buttons {
-  position: relative;
-}
-
-.collective-buttons .collective-select-dot {
-  position: absolute;
-  right: -12px;
-  top: 50%;
-  transform: translateY(-50%);
-  pointer-events: none;
-}
 
 /* Заголовок панели (мобильный ion-toolbar) -- единственное место, где
    коллектив реально переключается select'ом (на десктопе для этого есть
