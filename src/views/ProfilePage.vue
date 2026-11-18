@@ -36,6 +36,17 @@
               <ion-icon :icon="createOutline" />
             </button>
           </div>
+          <div v-if="profile && accountLink.status.value !== 'ok'" class="ui-banner profile-link" role="status">
+            <span>{{ accountLink.status.value === 'checking' ? 'Привязываем к аккаунту…' : 'Не привязано к аккаунту' }}</span>
+            <button
+              v-if="accountLink.status.value === 'failed'"
+              type="button"
+              class="ui-btn ui-btn--ghost ui-btn--sm"
+              @click="accountLink.start"
+            >
+              Повторить
+            </button>
+          </div>
           <span v-if="!myProfile.loaded && !myProfile.failed" class="skeleton profile-skeleton" aria-hidden="true" />
           <div v-else-if="myProfile.failed" class="profile-cta">
             <p class="profile-hint">Не удалось загрузить подробную информацию.</p>
@@ -147,8 +158,9 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 import DefaultAvatar from '@/components/common/DefaultAvatar.vue'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBackButton, IonIcon,
-  onIonViewWillEnter,
+  onIonViewWillEnter, onIonViewWillLeave,
 } from '@ionic/vue'
+import { useAccountLink } from '@/composables/useAccountLink'
 import {
   settingsOutline, logOutOutline, chevronForwardOutline,
   createOutline, shieldCheckmarkOutline,
@@ -164,6 +176,7 @@ const { isDesktop } = usePlatform()
 
 const myProfile = useMyProfileStore()
 const settings = useSettingsStore()
+const accountLink = useAccountLink()
 
 const profile = computed(() => myProfile.profile)
 const fullName = computed(() => (profile.value ? formatPersonName(profile.value) : ''))
@@ -209,10 +222,12 @@ async function loadAll() {
   await myProfile.load(true)
   if (!myProfile.profile) return
   await myProfile.syncToken()
+  void accountLink.check()
   await principal.fetchCollectives(true)
 }
 
 onIonViewWillEnter(loadAll)
+onIonViewWillLeave(accountLink.stop)
 
 async function handleLogout() {
   await auth.logout()
@@ -356,6 +371,10 @@ async function handleLogout() {
 
 .profile-hint .ui-help-wrap {
   margin-left: 6px;
+}
+
+.profile-link {
+  margin-bottom: 12px;
 }
 
 .profile-skeleton {
