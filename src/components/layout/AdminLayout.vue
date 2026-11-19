@@ -87,7 +87,7 @@ import {
 import {
   peopleOutline, personOutline, businessOutline, peopleCircleOutline,
   idCardOutline, mapOutline, calendarOutline, homeOutline,
-  schoolOutline, restaurantOutline, ribbonOutline, checkmarkDoneOutline,
+  schoolOutline, restaurantOutline, ribbonOutline, checkmarkDoneOutline, flagOutline,
   personAddOutline, layersOutline, medalOutline,
 } from 'ionicons/icons'
 import { useRouter } from 'vue-router'
@@ -120,6 +120,7 @@ const PAGES: Record<string, AdminPageEntry> = {
   '/admin/attendance': { title: 'Посещаемость', component: defineAsyncComponent(() => import('@/views/admin/AdminAttendance.vue')) },
   '/admin/members': { title: 'Участники', component: defineAsyncComponent(() => import('@/views/admin/AdminMembers.vue')) },
   '/admin/roles': { title: 'Роли', component: defineAsyncComponent(() => import('@/views/admin/AdminRoles.vue')) },
+  '/admin/onboarding-reports': { title: 'Жалобы', component: defineAsyncComponent(() => import('@/views/admin/AdminOnboardingReports.vue')) },
 }
 
 const personFilePage: AdminPageEntry = {
@@ -186,6 +187,7 @@ const NAV_GROUPS = [
     { path: '/admin/attendance', label: 'Посещаемость', icon: checkmarkDoneOutline },
     { path: '/admin/members', label: 'Участники', icon: peopleOutline },
     { path: '/admin/roles', label: 'Роли', icon: ribbonOutline },
+    { path: '/admin/onboarding-reports', label: 'Жалобы', icon: flagOutline },
   ]},
 ]
 

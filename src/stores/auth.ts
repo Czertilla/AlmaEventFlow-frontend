@@ -36,6 +36,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   const isAuthenticated = computed(() => !!accessToken.value)
   const isSuperuser = computed(() => jwtPayload.value?.sup === true)
+  const personId = computed(() => jwtPayload.value?.per ?? user.value?.person_id ?? null)
 
   function setAccess(token: string) {
     accessToken.value = token
@@ -140,6 +141,7 @@ export const useAuthStore = defineStore('auth', () => {
     refreshAttempted,
     isAuthenticated,
     isSuperuser,
+    personId,
     login,
     loginWithTelegram,
     tryRefresh,

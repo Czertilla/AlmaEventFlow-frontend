@@ -18,7 +18,7 @@ describe('my profile store', () => {
     setActivePinia(createPinia())
     exists = false
     backend = stubBackend((config) => {
-      if (config.url !== '/profile/v2/profiles/my') return { status: 404 }
+      if (config.url !== '/profile/v3/profiles/my') return { status: 404 }
       if (config.method === 'get') return exists ? { status: 200, data: PROFILE } : { status: 404, data: { detail: 'PROFILE_NOT_FOUND' } }
       exists = true
       return { status: 200, data: PROFILE }

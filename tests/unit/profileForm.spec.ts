@@ -62,7 +62,7 @@ describe('profile form', () => {
     push.mockClear()
     existing = null
     backend = stubBackend((config): Reply => {
-      if (config.url === '/profile/v2/profiles/my') {
+      if (config.url === '/profile/v3/profiles/my') {
         if (config.method === 'get') return existing ? { status: 200, data: existing } : { status: 404, data: { detail: 'PROFILE_NOT_FOUND' } }
         return { status: 200, data: PROFILE }
       }
@@ -135,7 +135,7 @@ describe('profile form', () => {
     expect(writes()[0].method).toBe('post')
     expect(sent()).toEqual({
       surname: 'Иванова', name: 'Мария', patronymic: null, birthdate: null, workplace_id: null,
-      diet_id: null, student: null, contacts: [],
+      diet_id: null, student: null, contacts: [], passports: [],
     })
     expect(refresh).toHaveBeenCalledExactlyOnceWith('p1')
     expect(push).toHaveBeenCalledWith('/profile')
@@ -180,11 +180,11 @@ describe('profile form', () => {
     expect(body('/profile/v2/faculties')).toEqual({ name: 'ИТ', university_id: 'uni-1' })
     expect(body('/profile/v2/student-degrees')).toEqual({ name: 'Бакалавриат' })
     expect(body('/profile/v2/student-groups')).toEqual({ name: 'ИС-23', degree_id: 7, faculty_id: 'fac-1', grade: 2 })
-    expect(body('/profile/v2/profiles/my').student).toMatchObject({ student_id: 'S-1', group_id: 42, faculty_id: 'fac-1' })
+    expect(body('/profile/v3/profiles/my').student).toMatchObject({ student_id: 'S-1', group_id: 42, faculty_id: 'fac-1' })
     const order = backend.calls.filter((call) => call.method === 'post').map((call) => call.url)
     expect(order.slice(0, 5)).toEqual([
       '/profile/v2/universities', '/profile/v2/faculties', '/profile/v2/student-degrees',
-      '/profile/v2/student-groups', '/profile/v2/profiles/my',
+      '/profile/v2/student-groups', '/profile/v3/profiles/my',
     ])
   })
 
@@ -207,7 +207,7 @@ describe('profile form', () => {
   test('an existing profile opens as tabs and is saved with a replace that keeps the contact ids', async () => {
     existing = PROFILE
     const wrapper = await open()
-    expect(wrapper.findAll('.sliding-tab')).toHaveLength(4)
+    expect(wrapper.findAll('.sliding-tab')).toHaveLength(5)
     expect(submit(wrapper).text()).toBe('Нет изменений')
     expect(submit(wrapper).attributes('disabled')).toBeDefined()
 

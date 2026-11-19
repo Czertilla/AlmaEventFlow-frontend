@@ -19,7 +19,7 @@ describe('account link check', () => {
     vi.useFakeTimers()
     setActivePinia(createPinia())
     backend = stubBackend((config) =>
-      config.url === '/profile/v2/profiles/my' ? { status: 200, data: PROFILE } : { status: 404 },
+      config.url === '/profile/v3/profiles/my' ? { status: 200, data: PROFILE } : { status: 404 },
     )
     const auth = useAuthStore()
     auth.jwtPayload = { per: undefined }
@@ -58,7 +58,7 @@ describe('account link check', () => {
 
     expect(link.status.value).toBe('ok')
     expect(tryRefresh).toHaveBeenCalledTimes(2)
-    expect(backend.to('/profile/v2/profiles/my')).toHaveLength(3)
+    expect(backend.to('/profile/v3/profiles/my')).toHaveLength(3)
   })
 
   test('gives up after a bounded number of attempts and can be started again', async () => {

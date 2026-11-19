@@ -34,6 +34,16 @@
             </p>
           </template>
           <template v-if="profile.can_manage" #actions>
+            <button
+              v-if="leadsCollective"
+              type="button"
+              class="ui-icon-btn"
+              title="Подробная информация"
+              aria-label="Подробная информация"
+              @click="dataOpen = true"
+            >
+              <ion-icon :icon="documentLockOutline" />
+            </button>
             <button type="button" class="ui-icon-btn" title="Редактировать" aria-label="Редактировать" @click="editorOpen = true">
               <ion-icon :icon="pencilOutline" />
             </button>
@@ -96,6 +106,14 @@
         @close="editorOpen = false"
         @saved="load"
       />
+      <MemberDataModal
+        v-if="leadsCollective"
+        :is-open="dataOpen"
+        :collective-id="profile.member.collective_id"
+        :person-id="profile.person.id"
+        :member-name="fullName"
+        @close="dataOpen = false"
+      />
       <MemberDeleteAlert
         v-if="profile.can_manage"
         :is-open="deleteOpen"
@@ -114,12 +132,13 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 import { computed, inject, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { IonIcon } from '@ionic/vue'
-import { flameOutline, lockClosedOutline, pencilOutline, trashOutline } from 'ionicons/icons'
+import { documentLockOutline, flameOutline, lockClosedOutline, pencilOutline, trashOutline } from 'ionicons/icons'
 import {
   getMemberProfileEventV2MembersMemberIdProfileGet,
   getMyCollectiveRolesEventV1MeCollectivesCollectiveIdRolesGet,
 } from '@/api/generated/almaEventFlow'
 import type { MemberProfileRead, RoleRead } from '@/api/generated/almaEventFlow'
+import MemberDataModal from '@/components/access/MemberDataModal.vue'
 import BackLink from '@/components/common/BackLink.vue'
 import PageState from '@/components/common/PageState.vue'
 import AttendanceActivity from '@/components/member/AttendanceActivity.vue'
@@ -158,6 +177,10 @@ const profile = ref<MemberProfileRead | null>(null)
 const roles = ref<RoleRead[]>([])
 const editorOpen = ref(false)
 const deleteOpen = ref(false)
+const dataOpen = ref(false)
+const leadsCollective = computed(() =>
+  !!profile.value && principal.principalCollectives.some((c) => c.id === profile.value!.member.collective_id),
+)
 const loading = ref(true)
 const refreshing = ref(false)
 const notFound = ref(false)

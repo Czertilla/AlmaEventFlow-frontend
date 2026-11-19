@@ -4,6 +4,15 @@ import { useAuthStore } from '@/stores/auth'
 import { usePrincipalStore } from '@/stores/principal'
 import { isNavigating } from '@/composables/useNavigationProgress'
 import { verifyReachable } from '@/composables/useBackendStatus'
+import {
+  collectiveFromPath,
+  collectiveFromQuery,
+  forgetCollective,
+  isEntry,
+  pendingCollective,
+  quickStartRoute,
+  rememberCollective,
+} from '@/utils/quickStart'
 
 // Аутентифицированные страницы живут детьми TabsShell, поэтому их рендерит
 // внутренний ion-router-outlet внутри ion-tabs (отдельные стеки на вкладку,
@@ -113,6 +122,16 @@ const appRoutes: Array<RouteRecordRaw> = [
     component: () => import('@/views/SessionsPage.vue'),
     meta: { auth: true },
   },
+  {
+    path: '/collectives',
+    component: () => import('@/views/CollectivesPage.vue'),
+    meta: { auth: true },
+  },
+  {
+    path: '/onboarding/:onboardingId',
+    component: () => import('@/views/OnboardingPage.vue'),
+    meta: { auth: true },
+  },
 ]
 
 const routes: Array<RouteRecordRaw> = [
@@ -171,9 +190,11 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach(async (to, _from, next) => {
+router.beforeEach(async (to, from, next) => {
   isNavigating.value = true
   if (to.meta.offline) return next()
+  const linkedCollective = collectiveFromQuery(to.query)
+  if (linkedCollective) rememberCollective(linkedCollective)
   const auth = useAuthStore()
   // Попытку refresh делаем один раз за загрузку приложения: иначе аноним дёргает
   // /auth/jwt/refresh на каждой навигации (после первой неудачи токена так и нет).
@@ -197,9 +218,11 @@ router.beforeEach(async (to, _from, next) => {
     if (to.path === '/auth/register' && typeof to.query.token === 'string' && to.query.token) {
       return next({ path: '/auth/link-invite', query: { token: to.query.token } })
     }
-    return next('/')
+    return next((await quickStartRoute(auth)) ?? '/')
   }
   if (needsAuth && !isAuthenticated) {
+    const wanted = collectiveFromPath(to.path)
+    if (wanted) rememberCollective(wanted)
     return next('/auth/login')
   }
   if (needsSup && !isSuperuser) {
@@ -213,6 +236,12 @@ router.beforeEach(async (to, _from, next) => {
     await principal.fetchCollectives()
     if (!principal.isPrincipal) return next('/')
   }
+  if (isAuthenticated && (linkedCollective || (to.path === '/' && isEntry(from)))) {
+    const target = await quickStartRoute(auth)
+    if (target && target !== to.path) return next(target)
+  }
+  const opened = collectiveFromPath(to.path)
+  if (opened && auth.jwtPayload?.per && opened === pendingCollective()) forgetCollective()
   next()
 })
 

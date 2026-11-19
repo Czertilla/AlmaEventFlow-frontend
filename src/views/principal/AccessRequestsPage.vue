@@ -1,5 +1,33 @@
 <template>
   <div class="ar-page">
+    <section class="ui-card ar-policy">
+      <div class="ui-card-head">
+        <h3 class="ui-card-title">
+          Политика доступа
+          <HelpTip text="Участники соглашаются на политику коллектива сами. Пока согласие действует, вы открываете перечисленные поля в «Подробной информации» участника и в выгрузке." />
+        </h3>
+        <span v-if="policy" class="ar-term">Версия {{ policy.version }} · {{ formatDate(policy.created_at) }}</span>
+      </div>
+      <ion-spinner v-if="policyLoading" name="crescent" />
+      <template v-else-if="policy">
+        <div class="ui-chips">
+          <span v-for="field in policy.fields" :key="field.key" class="ui-chip ui-chip--static">{{ field.label }}</span>
+        </div>
+        <p class="ar-comment">{{ policy.purpose }}</p>
+      </template>
+      <p v-else class="ar-counts">Политики ещё нет</p>
+      <div class="ar-actions">
+        <button type="button" class="ui-btn ui-btn--primary ui-btn--sm" :disabled="policyLoading" @click="editingPolicy = true">
+          {{ policy ? 'Изменить' : 'Составить' }}
+        </button>
+        <button v-if="policy" type="button" class="ui-btn ui-btn--ghost ui-btn--sm" @click="exportingPolicy = true">
+          Выгрузить
+        </button>
+      </div>
+    </section>
+
+    <h3 class="ui-field-title ar-section">Разовые запросы</h3>
+
     <div v-if="loading" class="ar-state">
       <ion-spinner name="crescent" />
     </div>
@@ -39,6 +67,25 @@
       />
     </ion-modal>
 
+    <ion-modal :is-open="editingPolicy" @ion-modal-did-dismiss="editingPolicy = false">
+      <PolicyForm
+        v-if="editingPolicy && collectiveId"
+        :collective-id="collectiveId"
+        :current="policy"
+        @close="editingPolicy = false"
+        @published="onPublished"
+      />
+    </ion-modal>
+
+    <ion-modal :is-open="exportingPolicy" @ion-modal-did-dismiss="exportingPolicy = false">
+      <PolicyExport
+        v-if="exportingPolicy && collectiveId && policy"
+        :collective-id="collectiveId"
+        :policy="policy"
+        @close="exportingPolicy = false"
+      />
+    </ion-modal>
+
     <ion-modal :is-open="!!opened" @ion-modal-did-dismiss="opened = null">
       <AccessRequestDetail v-if="opened" :request="opened" @close="opened = null" />
     </ion-modal>
@@ -49,11 +96,16 @@
 import { computed, ref, watch } from 'vue'
 import { IonButton, IonModal, IonSpinner } from '@ionic/vue'
 import {
+  getCollectivePoliciesProfileV3CollectivesCollectiveIdPoliciesGet,
   getMyAccessRequestsProfileV2AccessRequestsGet,
   type AccessRequestRead,
+  type CollectivePolicyRead,
 } from '@/api/generated/almaEventFlow'
 import AccessRequestDetail from '@/components/access/AccessRequestDetail.vue'
 import AccessRequestForm from '@/components/access/AccessRequestForm.vue'
+import PolicyExport from '@/components/access/PolicyExport.vue'
+import PolicyForm from '@/components/access/PolicyForm.vue'
+import HelpTip from '@/components/common/HelpTip.vue'
 import PageState from '@/components/common/PageState.vue'
 import { useLayoutAddButton } from '@/composables/usePrincipalPageActions'
 import { useToast } from '@/composables/useToast'
@@ -69,6 +121,10 @@ const loading = ref(true)
 const failed = ref(false)
 const creating = ref(false)
 const opened = ref<AccessRequestRead | null>(null)
+const policy = ref<CollectivePolicyRead | null>(null)
+const policyLoading = ref(false)
+const editingPolicy = ref(false)
+const exportingPolicy = ref(false)
 
 const collectiveId = computed(() => principal.activePrincipalCollectiveId)
 
@@ -104,7 +160,28 @@ async function onCreated(request: AccessRequestRead) {
   await showSuccess(`Запрос отправлен: ${request.grants.length}`)
 }
 
+async function loadPolicy() {
+  policy.value = null
+  if (!collectiveId.value) return
+  policyLoading.value = true
+  try {
+    const { data } = await getCollectivePoliciesProfileV3CollectivesCollectiveIdPoliciesGet(collectiveId.value)
+    policy.value = data[0] ?? null
+  } catch {
+    policy.value = null
+  } finally {
+    policyLoading.value = false
+  }
+}
+
+async function onPublished(published: CollectivePolicyRead) {
+  editingPolicy.value = false
+  policy.value = published
+  await showSuccess(`Опубликована версия ${published.version}`)
+}
+
 watch(collectiveId, load, { immediate: true })
+watch(collectiveId, loadPolicy, { immediate: true })
 
 useLayoutAddButton('Новый запрос', () => {
   creating.value = true
@@ -117,6 +194,25 @@ useLayoutAddButton('Новый запрос', () => {
   flex-direction: column;
   gap: 12px;
   padding-bottom: 88px;
+}
+
+.ar-policy {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ar-policy .ui-card-head {
+  margin-bottom: 0;
+}
+
+.ar-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.ar-section {
+  margin: 8px 0 0;
 }
 
 .ar-state {

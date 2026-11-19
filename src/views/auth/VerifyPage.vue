@@ -49,7 +49,8 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { verifyRequestTokenUserV1AuthRequestVerifyTokenPost } from '@/api/generated/almaEventFlow'
+import { requestVerifyTokenUserV3AuthRequestVerifyTokenPost } from '@/api/generated/almaEventFlow'
+import { pendingCollective } from '@/utils/quickStart'
 import { IonPage, IonContent, IonIcon } from '@ionic/vue'
 import { mailUnreadOutline, mailOpenOutline, timeOutline, checkmarkCircleOutline, arrowBackOutline } from 'ionicons/icons'
 
@@ -88,7 +89,10 @@ function goToLogin() {
 
 async function resend() {
   try {
-    await verifyRequestTokenUserV1AuthRequestVerifyTokenPost({ email: email.value })
+    await requestVerifyTokenUserV3AuthRequestVerifyTokenPost({
+      email: email.value,
+      collective_id: pendingCollective(),
+    })
     startTimer()
   } catch (err) {
     console.error('Resend failed', err)

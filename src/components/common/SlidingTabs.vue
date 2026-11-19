@@ -17,6 +17,7 @@
         'sliding-tab--active': modelValue === tab.key,
         'sliding-tab--invalid': tab.invalid,
         'sliding-tab--shake': shake?.includes(tab.key),
+        'ui-attention': tab.attention,
       }"
       :aria-selected="modelValue === tab.key"
       @click="emit('update:modelValue', tab.key)"
@@ -40,6 +41,8 @@ export interface SlidingTab {
   badge?: number
   /** Вкладка требует внимания: подписана красным */
   invalid?: boolean
+  /** Здесь что-то надо дополнить: пульсирует жёлтым */
+  attention?: boolean
 }
 
 const props = defineProps<{

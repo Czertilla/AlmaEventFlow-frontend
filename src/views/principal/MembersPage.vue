@@ -1,5 +1,6 @@
 <template>
       <div class="page-body">
+        <CollectiveOnboardings v-if="collectiveId && leadsActive" ref="onboardings" :collective-id="collectiveId" />
         <div class="toolbar-row">
           <ion-searchbar v-model="searchQuery" placeholder="Поиск по имени или роли..." />
           <button v-if="roles.length" class="sort-btn" title="Сортировка по ролям" @click="openSort">
@@ -113,6 +114,7 @@ import { getCollectiveRosterEventV2CollectivesCollectiveIdRosterGet } from '@/ap
 import HelpTip from '@/components/common/HelpTip.vue'
 import MemberDeleteAlert from '@/components/member/MemberDeleteAlert.vue'
 import MemberEditorModal from '@/components/member/MemberEditorModal.vue'
+import CollectiveOnboardings from '@/components/collective/CollectiveOnboardings.vue'
 import { formatPersonName } from '@/utils/names'
 import type { RosterMember, RoleRead } from '@/api/generated/almaEventFlow'
 
@@ -176,6 +178,8 @@ const displayMembers = computed(() => {
 })
 
 const collectiveId = computed(() => principal.activePrincipalCollectiveId)
+const leadsActive = computed(() => !!collectiveId.value && principal.principalCollectiveIds.has(collectiveId.value))
+const onboardings = ref<InstanceType<typeof CollectiveOnboardings> | null>(null)
 
 const editorOpen = ref(false)
 const editingMember = ref<RosterMember | null>(null)
@@ -244,6 +248,7 @@ watch(() => principal.activePrincipalCollectiveId, async (collectiveId) => {
 }, { immediate: true })
 
 if (auth.isSuperuser) useLayoutAddButton('Добавить участника', openAdd)
+else useLayoutAddButton('Пригласить', () => onboardings.value?.openInvite())
 </script>
 
 <style scoped>

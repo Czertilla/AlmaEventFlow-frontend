@@ -29,7 +29,7 @@ describe('profile form diff', () => {
       contacts: [{ id: 'c1', type: 'email', value: 'other@example.com', is_main: true }, { type: 'tg', value: '@m', is_main: true }],
     }
 
-    expect(sectionCounts(base, edited)).toEqual({ about: 1, study: 1, extra: 1, contacts: 2 })
+    expect(sectionCounts(base, edited)).toEqual({ about: 1, study: 1, extra: 1, contacts: 2, passport: 0 })
     expect(sectionCounts(base, { ...form(), contacts: [] }).contacts).toBe(1)
   })
 })

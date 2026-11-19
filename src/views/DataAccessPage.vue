@@ -22,6 +22,28 @@
           <ion-button fill="clear" size="small" @click="load()">Повторить</ion-button>
         </PageState>
 
+        <template v-else-if="tab === 'consents'">
+          <p v-if="!consents.length" class="da-empty">Согласий нет</p>
+          <article v-for="consent in consents" :key="consent.collective_id" class="ui-card da-card">
+            <div class="ui-card-head">
+              <h3 class="ui-card-title">{{ consent.collective_name }}</h3>
+              <span class="da-status" :class="consent.is_revoked ? 'da-status--revoked' : 'da-status--active'">
+                {{ consent.is_revoked ? 'Отозвано' : 'Действует' }}
+              </span>
+            </div>
+            <p class="da-meta">
+              <template v-if="consent.version">Версия {{ consent.version }}</template>
+              <template v-if="consent.given_at"> · дано {{ formatDateTime(consent.given_at) }}</template>
+              <template v-if="consent.revoked_at"> · отозвано {{ formatDateTime(consent.revoked_at) }}</template>
+            </p>
+            <div v-if="!consent.is_revoked" class="da-actions">
+              <button class="ui-btn ui-btn--ghost ui-btn--sm" :disabled="busy === consent.collective_id" @click="revoking = consent">
+                Отозвать
+              </button>
+            </div>
+          </article>
+        </template>
+
         <template v-else-if="tab === 'requests'">
           <p v-if="!grants.length" class="da-empty">Запросов нет</p>
           <article v-for="grant in grants" :key="grant.id" class="ui-card da-card">
@@ -87,6 +109,13 @@
       :buttons="confirmButtons"
       @ion-alert-did-dismiss="confirming = null"
     />
+    <ion-alert
+      :is-open="!!revoking"
+      header="Отозвать согласие?"
+      message="Руководитель коллектива сразу потеряет доступ к вашим данным по всем версиям политики. Членство в коллективе останется."
+      :buttons="revokeButtons"
+      @ion-alert-did-dismiss="revoking = null"
+    />
   </ion-page>
 </template>
 
@@ -102,13 +131,17 @@ import {
   getIncomingGrantsProfileV2GrantsIncomingGet,
   getMyAccessLogProfileV2AccessLogMyGet,
   revokeGrantProfileV2GrantsGrantIdRevokePost,
+  getMyConsentsProfileV3ConsentsMyGet,
+  revokeConsentProfileV3CollectivesCollectiveIdConsentRevokePost,
   type AccessLogEntryRead,
   type IncomingGrantRead,
+  type MyConsentRead,
 } from '@/api/generated/almaEventFlow'
 import PageState from '@/components/common/PageState.vue'
 import SlidingTabs from '@/components/common/SlidingTabs.vue'
 import { usePlatform } from '@/composables/usePlatform'
 import { useToast } from '@/composables/useToast'
+import { useTodoStore } from '@/stores/todo'
 import { formatDateTime } from '@/utils/date'
 import { ACCESS_ACTION_LABELS, GRANT_STATE_LABELS } from '@/utils/dataAccess'
 
@@ -135,11 +168,44 @@ const loading = ref(true)
 const failed = ref(false)
 const busy = ref<string | null>(null)
 const confirming = ref<{ grant: IncomingGrantRead; decision: Decision } | null>(null)
+const consents = ref<MyConsentRead[]>([])
+const revoking = ref<MyConsentRead | null>(null)
+const todo = useTodoStore()
 
 const tabs = computed(() => [
   { key: 'requests', label: 'Запросы', badge: grants.value.filter((grant) => grant.status === 'pending').length || undefined },
+  { key: 'consents', label: 'Согласия' },
   { key: 'journal', label: 'Журнал' },
 ])
+
+const revokeButtons = [
+  { text: 'Отмена', role: 'cancel' },
+  {
+    text: 'Отозвать',
+    role: 'destructive',
+    handler: () => {
+      if (revoking.value) void revoke(revoking.value)
+    },
+  },
+]
+
+async function loadConsents() {
+  consents.value = (await getMyConsentsProfileV3ConsentsMyGet()).data
+}
+
+async function revoke(consent: MyConsentRead) {
+  if (busy.value) return
+  busy.value = consent.collective_id
+  try {
+    await revokeConsentProfileV3CollectivesCollectiveIdConsentRevokePost(consent.collective_id)
+    await Promise.all([loadConsents(), loadJournal()])
+    void todo.refresh(true)
+  } catch (err) {
+    await showError(err, 'Не удалось отозвать согласие')
+  } finally {
+    busy.value = null
+  }
+}
 
 const confirmButtons = [
   { text: 'Отмена', role: 'cancel' },
@@ -176,7 +242,7 @@ async function load() {
   loading.value = true
   failed.value = false
   try {
-    await Promise.all([loadGrants(), loadJournal()])
+    await Promise.all([loadGrants(), loadJournal(), loadConsents()])
   } catch {
     failed.value = true
   } finally {

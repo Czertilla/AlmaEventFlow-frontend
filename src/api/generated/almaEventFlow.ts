@@ -2505,6 +2505,493 @@ export interface DestroyedKeyRead {
   rows_cleared: number;
 }
 
+export interface CollectivePolicyRead {
+  id: string;
+  collective_id: string;
+  collective_name: string;
+  version: number;
+  purpose: string;
+  comment: string | null;
+  /** The text a member agrees to, kept with the version. */
+  text: string;
+  /** SHA-256 of `text`, hex. */
+  text_hash: string;
+  fields: AccessFieldRead[];
+  created_at: string;
+}
+
+export interface ConsentCreate {
+  /** The latest version of the policy. */
+  policy_id: string;
+  /**
+     * SHA-256 of the text shown to the member, hex.
+     * @minLength 64
+     * @maxLength 64
+     */
+  text_hash: string;
+}
+
+/**
+ * Where a member stands with the latest policy of a collective.
+ */
+export type ConsentState = typeof ConsentState[keyof typeof ConsentState];
+
+
+export const ConsentState = {
+  current: 'current',
+  consent_missing: 'consent_missing',
+  consent_outdated: 'consent_outdated',
+} as const;
+
+export interface ConsentStateRead {
+  collective_id: string;
+  /** The latest version. */
+  policy: CollectivePolicyRead | null;
+  state: ConsentState;
+  /** Versions the member's consent is valid for now. */
+  consented_versions: number[];
+  given_at: string | null;
+  /** Fields of the latest version the member has no value for yet. */
+  empty_fields: AccessFieldRead[];
+}
+
+export type ConsentSubjectReadRecordsItem = { [key: string]: unknown };
+
+export interface ConsentSubjectRead {
+  person_id: string;
+  /** One record per stored row, only of the fields the consent covers. */
+  records: ConsentSubjectReadRecordsItem[];
+  /** Why some fields are empty: `consent_missing` or `consent_outdated`. */
+  reason: ConsentState | null;
+  missing_fields: string[];
+}
+
+export interface TodoField {
+  key: string;
+  label: string;
+}
+
+export interface ConsentTodo {
+  policy_id: string;
+  version: number;
+  /** `consent_missing`: no valid consent (none yet, revoked, or given before the member came back); `consent_outdated`: a newer version. */
+  state: ConsentState;
+  purpose: string;
+  comment: string | null;
+  /** What the member agrees to. */
+  text: string;
+  /** SHA-256 of `text`, to send back on consent. */
+  text_hash: string;
+  fields: TodoField[];
+}
+
+export interface FillFieldsTodo {
+  /** Fields the member agreed to share and has no value for. */
+  fields: TodoField[];
+}
+
+export interface MemberFieldRead {
+  key: string;
+  label: string;
+  /** A valid consent of the member covers it. */
+  available: boolean;
+}
+
+export interface MemberDataRead {
+  collective_id: string;
+  person_id: string;
+  state: ConsentState;
+  consented_versions: number[];
+  /** Every field of every version of the policy, without values. */
+  fields: MemberFieldRead[];
+}
+
+export interface MyConsentRead {
+  collective_id: string;
+  collective_name: string;
+  /** The version of the last consent. */
+  version: number | null;
+  given_at: string | null;
+  revoked_at: string | null;
+  is_revoked: boolean;
+}
+
+export interface MyNameVariantData {
+  /**
+     * @minLength 1
+     * @maxLength 128
+     */
+  surname: string;
+  /**
+     * @minLength 1
+     * @maxLength 128
+     */
+  name: string;
+  patronymic?: string | null;
+}
+
+export interface MyNameVariantRead {
+  surname: string;
+  name: string;
+  patronymic: string | null;
+}
+
+export interface MyPassportData {
+  /** Keeps and changes an existing passport; one left out is deleted. */
+  id?: string | null;
+  /**
+     * @minLength 1
+     * @maxLength 32
+     */
+  number: string;
+  expire_date: string;
+  is_foreign?: boolean;
+  issued_date?: string | null;
+  issued_authority?: string | null;
+  /** The name as the passport spells it, when it differs. */
+  name_variant?: MyNameVariantData | null;
+}
+
+export interface MyPassportRead {
+  id: string;
+  number: string;
+  expire_date: string;
+  is_foreign: boolean;
+  issued_date: string | null;
+  issued_authority: string | null;
+  name_variant: MyNameVariantRead | null;
+  created_at: string;
+  edited_at: string | null;
+}
+
+export interface MyProfileReadV3 {
+  created_at: string;
+  edited_at: string | null;
+  id: string;
+  surname: string;
+  name: string;
+  patronymic: string | null;
+  birthdate: string | null;
+  workplace_id: string | null;
+  diet_id: number | null;
+  diet: DietRead | null;
+  student: MyStudentRead | null;
+  contacts: ContactItemRead[];
+  /** Read through the journal of sensitive data, as the owner. */
+  passports?: MyPassportRead[];
+}
+
+export interface MyProfileWriteV3 {
+  /**
+     * @minLength 1
+     * @maxLength 128
+     */
+  surname: string;
+  /**
+     * @minLength 1
+     * @maxLength 128
+     */
+  name: string;
+  patronymic?: string | null;
+  birthdate?: string | null;
+  workplace_id?: string | null;
+  diet_id?: number | null;
+  /** Left out or null: the user is not a student. */
+  student?: MyStudentData | null;
+  /** @maxItems 50 */
+  contacts?: MyContactData[];
+  /** @maxItems 5 */
+  passports?: MyPassportData[];
+}
+
+export interface PolicyCreate {
+  /**
+     * Keys of grantable fields (`GET /profile/v2/access-requests/fields`).
+     * @minItems 1
+     * @maxItems 64
+     */
+  fields: string[];
+  /**
+     * Why the leader processes the data. Its length after trimming is bounded by the server settings.
+     * @maxLength 4000
+     */
+  purpose: string;
+  comment?: string | null;
+}
+
+export interface PolicyExportRead {
+  policy_id: string;
+  version: number;
+  exported_at: string;
+  /** The latest version's fields. */
+  fields: AccessFieldRead[];
+  /** Every active member but the leader, with or without data. */
+  subjects: ConsentSubjectRead[];
+}
+
+export interface RevealedFieldRead {
+  key: string;
+  label: string;
+  /** One value per stored row (each contact, each passport); a field of several columns as an object of them. */
+  values: unknown[];
+  /** The version whose consent opened it. */
+  policy_version: number;
+}
+
+/**
+ * A kind of thing a person has to do. A new kind is a value here, its payload
+ * on `TodoItemDTO` and the source that fills it in `TodoService`.
+ */
+export type TodoKind = typeof TodoKind[keyof typeof TodoKind];
+
+
+export const TodoKind = {
+  attendance: 'attendance',
+  consent: 'consent',
+  fill_fields: 'fill_fields',
+  onboarding: 'onboarding',
+} as const;
+
+export interface OnboardingPerson {
+  id: string;
+  surname: string;
+  name: string;
+  patronymic?: string | null;
+}
+
+export type OnboardingStatus = typeof OnboardingStatus[keyof typeof OnboardingStatus];
+
+
+export const OnboardingStatus = {
+  requested: 'requested',
+  invited: 'invited',
+  accepted: 'accepted',
+  declined: 'declined',
+  withdrawn: 'withdrawn',
+  expired: 'expired',
+  cancelled: 'cancelled',
+} as const;
+
+export type OnboardingSide = typeof OnboardingSide[keyof typeof OnboardingSide];
+
+
+export const OnboardingSide = {
+  candidate: 'candidate',
+  leader: 'leader',
+  system: 'system',
+} as const;
+
+/**
+ * A line of the feed: a message, or a decision that moved the status.
+ */
+export type OnboardingEntryKind = typeof OnboardingEntryKind[keyof typeof OnboardingEntryKind];
+
+
+export const OnboardingEntryKind = {
+  message: 'message',
+  request: 'request',
+  invite: 'invite',
+  accept: 'accept',
+  decline: 'decline',
+  withdraw: 'withdraw',
+  expire: 'expire',
+  cancel: 'cancel',
+} as const;
+
+export interface OnboardingEntry {
+  id: string;
+  /** `message`, or the decision that moved the status. */
+  kind: OnboardingEntryKind;
+  author_side: OnboardingSide;
+  /** None for the system. */
+  author_person_id: string | null;
+  body: string | null;
+  created_at: string;
+}
+
+export interface OnboardingRead {
+  id: string;
+  collective_id: string;
+  collective_name: string;
+  /** The candidate. */
+  person: OnboardingPerson;
+  status: OnboardingStatus;
+  opened_by: OnboardingSide;
+  /** The side whose answer it waits for; none once closed. */
+  awaiting: OnboardingSide | null;
+  /** The caller's side; none for a superuser who only reads. */
+  my_side: OnboardingSide | null;
+  expires_at: string;
+  closed_at: string | null;
+  /** The member made by the acceptance. */
+  member_id: string | null;
+  created_at: string;
+  edited_at: string | null;
+  last_entry?: OnboardingEntry | null;
+}
+
+export interface TodoItem {
+  /** Stable while the thing stays to do. */
+  id: string;
+  kind: TodoKind;
+  collective_id?: string | null;
+  collective_name?: string | null;
+  /** `attendance` only. */
+  event?: EventCard | null;
+  /** `consent` only. */
+  consent?: ConsentTodo | null;
+  /** `fill_fields` only. */
+  fill?: FillFieldsTodo | null;
+  /** `onboarding` only: a request to a collective the caller leads or an invitation to the caller, waiting for their answer. */
+  onboarding?: OnboardingRead | null;
+}
+
+export interface TodoList {
+  items: TodoItem[];
+  /** Kinds that could not be worked out now (a service did not answer); the client keeps what it showed for them. */
+  unavailable: TodoKind[];
+}
+
+/**
+ * How the viewer stands to a collective of the directory.
+ */
+export type CollectiveRelation = typeof CollectiveRelation[keyof typeof CollectiveRelation];
+
+
+export const CollectiveRelation = {
+  principal: 'principal',
+  member: 'member',
+  former: 'former',
+  requested: 'requested',
+  invited: 'invited',
+  none: 'none',
+} as const;
+
+export interface CollectiveCard {
+  id: string;
+  name: string;
+  university_id: string | null;
+  university_name: string | null;
+  is_verified: boolean;
+  /** The leader; their name and contacts come from profile, as far as they opened them. */
+  principal_id: string | null;
+  /** Active members. */
+  member_count: number;
+  /** How the caller stands to it. */
+  relation: CollectiveRelation;
+  /** The caller's open onboarding with it. */
+  onboarding_id?: string | null;
+  /** Whether the caller may ask to join now; why not is not told beyond `relation` and `retry_after`. */
+  can_request?: boolean;
+  /** When the caller may ask again after a declined or withdrawn request. */
+  retry_after?: string | null;
+}
+
+export interface CollectiveIntake {
+  collective_id: string;
+  /** Whether the collective takes requests. */
+  is_open: boolean;
+}
+
+export interface CollectiveIntakeWrite {
+  is_open: boolean;
+}
+
+export interface OnboardingActions {
+  accept: boolean;
+  decline: boolean;
+  withdraw: boolean;
+  message: boolean;
+  report: boolean;
+}
+
+export interface OnboardingDecision {
+  comment?: string | null;
+}
+
+export interface OnboardingDetail {
+  onboarding: OnboardingRead;
+  /** The feed, oldest first. */
+  entries: OnboardingEntry[];
+  /** What the caller may do now. */
+  actions: OnboardingActions;
+}
+
+export interface OnboardingInviteCreate {
+  /** A person who has an account. */
+  person_id: string;
+  comment?: string | null;
+}
+
+export interface OnboardingMessageCreate {
+  /** @maxLength 1000 */
+  body: string;
+}
+
+export interface OnboardingReportCreate {
+  /** @maxLength 1000 */
+  reason: string;
+}
+
+export interface OnboardingReportRead {
+  id: string;
+  onboarding_id: string;
+  collective_id: string;
+  collective_name: string | null;
+  person_id: string;
+  reporter_person_id: string;
+  reporter_side: OnboardingSide;
+  reason: string;
+  created_at: string;
+}
+
+export interface OnboardingRequestCreate {
+  comment?: string | null;
+}
+
+export interface PageV1CollectiveCard {
+  items: CollectiveCard[];
+  pagination: PaginationV1;
+}
+
+export interface PageV1OnboardingRead {
+  items: OnboardingRead[];
+  pagination: PaginationV1;
+}
+
+export interface PageV1OnboardingReportRead {
+  items: OnboardingReportRead[];
+  pagination: PaginationV1;
+}
+
+export interface PersonIntake {
+  /** Off: leaders cannot invite the person; they are not told why. */
+  accepts_invites: boolean;
+}
+
+export interface PersonIntakeWrite {
+  accepts_invites: boolean;
+}
+
+export interface StreamTicket {
+  /** Opens one stream once: `GET /event/v3/me/stream?ticket=...`. */
+  ticket: string;
+  /** Seconds the ticket stays valid. */
+  expires_in: number;
+}
+
+export interface VisibleContactRead {
+  type: ContactType;
+  value: string;
+  is_main: boolean;
+}
+
+export interface VerifyTokenRequestV3 {
+  /** The collective whose link brought the person here; the letter's link carries it back to the sign-in page. */
+  collective_id?: string | null;
+  email: string;
+}
+
 export type GetAttendancesEventV1AttendancesGetParams = {
 id?: string | null;
 id__in?: string | null;
@@ -3425,6 +3912,11 @@ page?: number;
 limit?: number;
 };
 
+export type VerifyEmailUserV3AuthVerifyEmailGetParams = {
+token: string;
+collective?: string | null;
+};
+
 export type GetRecentLocationsEventV2CollectivesCollectiveIdRecentLocationsGetParams = {
 /**
  * @minimum 1
@@ -3529,6 +4021,53 @@ export type GetCardsEventV2FeedCardsGetParams = {
  * @maxItems 100
  */
 id: string[];
+};
+
+export type GetCollectiveDirectoryEventV3CollectivesGetParams = {
+search?: string | null;
+university_id?: string | null;
+is_verified?: boolean | null;
+page?: number;
+/**
+ * @maximum 100
+ * @exclusiveMinimum 0
+ */
+limit?: number;
+};
+
+export type GetOnboardingsEventV3OnboardingsGetParams = {
+/**
+ * Repeat the key for several.
+ */
+status?: OnboardingStatus[] | null;
+collective_id?: string | null;
+person_id?: string | null;
+/**
+ * `candidate`: the caller's own; `leader`: of the collectives the caller leads. Superusers see all.
+ */
+side?: OnboardingSide | null;
+page?: number;
+/**
+ * @maximum 100
+ * @exclusiveMinimum 0
+ */
+limit?: number;
+};
+
+export type GetOnboardingReportsEventV3OnboardingReportsGetParams = {
+page?: number;
+/**
+ * @maximum 100
+ * @exclusiveMinimum 0
+ */
+limit?: number;
+};
+
+export type OpenStreamEventV3MeStreamGetParams = {
+/**
+ * @maxLength 128
+ */
+ticket: string;
 };
 
 /**
@@ -6955,6 +7494,34 @@ export const patchMySettingsUserV2UsersMeSettingsPatch = (
   }
 
 /**
+ * Sends the confirmation letter; the answer is the same for any address.
+ * @summary Request Verify Token
+ */
+export const requestVerifyTokenUserV3AuthRequestVerifyTokenPost = (
+    verifyTokenRequestV3: VerifyTokenRequestV3, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<unknown>> => {
+    return axios.post(
+      `/user/v3/auth/request-verify-token`,
+      verifyTokenRequestV3,options
+    );
+  }
+
+/**
+ * The page the letter opens: confirms the address and leads to sign-in.
+ * @summary Verify Email
+ */
+export const verifyEmailUserV3AuthVerifyEmailGet = (
+    params: VerifyEmailUserV3AuthVerifyEmailGetParams, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<string>> => {
+    return axios.get(
+      `/user/v3/auth/verify/email`,{
+        responseType: 'text',
+    ...options,
+        params: {...params, ...options?.params},}
+    );
+  }
+
+/**
  * Where the collective held its events lately, the latest first.
  *
  * A place counts from the time its event was last edited (created, when it
@@ -7285,6 +7852,454 @@ export const resetMyVisibilityProfileV2VisibilityMyFieldKeyDelete = (
     );
   }
 
+/**
+ * Everything the caller has to do, in one answer: places on active events to
+ * mark, policies of their collectives to agree to (again, after coming back),
+ * fields those policies need. Each item has a stable `id` and a `kind`.
+ * @summary Get My Todo
+ */
+export const getMyTodoEventV3MeTodoGet = (
+     options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<TodoList>> => {
+    return axios.get(
+      `/event/v3/me/todo`,options
+    );
+  }
+
+/**
+ * Every version of the collective's policy, the latest first: for its leader,
+ * its active members and superusers.
+ * @summary Get Collective Policies
+ */
+export const getCollectivePoliciesProfileV3CollectivesCollectiveIdPoliciesGet = (
+    collectiveId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<CollectivePolicyRead[]>> => {
+    return axios.get(
+      `/profile/v3/collectives/${collectiveId}/policies`,options
+    );
+  }
+
+/**
+ * The leader of a confirmed collective publishes the next version: the fields
+ * it processes and why. Versions never change; any change of the fields, the
+ * purpose or the comment is a new version every active member is asked to agree
+ * to (`409 POLICY_UNCHANGED` when nothing changed).
+ * @summary Publish Collective Policy
+ */
+export const publishCollectivePolicyProfileV3CollectivesCollectiveIdPoliciesPost = (
+    collectiveId: string,
+    policyCreate: PolicyCreate, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<CollectivePolicyRead>> => {
+    return axios.post(
+      `/profile/v3/collectives/${collectiveId}/policies`,
+      policyCreate,options
+    );
+  }
+
+/**
+ * The latest version as an active member sees it, and whether their consent
+ * holds: given no earlier than they last joined, and not revoked since.
+ * @summary Get My Consent
+ */
+export const getMyConsentProfileV3CollectivesCollectiveIdConsentGet = (
+    collectiveId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<ConsentStateRead>> => {
+    return axios.get(
+      `/profile/v3/collectives/${collectiveId}/consent`,options
+    );
+  }
+
+/**
+ * Agrees to the latest version as shown: the hash of the text, the time and
+ * the user agent are kept as the evidence. Agreeing again changes nothing.
+ * @summary Give Consent
+ */
+export const giveConsentProfileV3CollectivesCollectiveIdConsentPost = (
+    collectiveId: string,
+    consentCreate: ConsentCreate, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<ConsentStateRead>> => {
+    return axios.post(
+      `/profile/v3/collectives/${collectiveId}/consent`,
+      consentCreate,options
+    );
+  }
+
+/**
+ * Closes the access at once, for every version; the membership stays.
+ * @summary Revoke Consent
+ */
+export const revokeConsentProfileV3CollectivesCollectiveIdConsentRevokePost = (
+    collectiveId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<ConsentStateRead>> => {
+    return axios.post(
+      `/profile/v3/collectives/${collectiveId}/consent/revoke`,
+      undefined,options
+    );
+  }
+
+/**
+ * The collectives the caller has answered, with their last word to each.
+ * @summary Get My Consents
+ */
+export const getMyConsentsProfileV3ConsentsMyGet = (
+     options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<MyConsentRead[]>> => {
+    return axios.get(
+      `/profile/v3/consents/my`,options
+    );
+  }
+
+/**
+ * Which fields of an active member the leader may open; no values.
+ * @summary Get Member Data
+ */
+export const getMemberDataProfileV3CollectivesCollectiveIdMembersPersonIdDataGet = (
+    collectiveId: string,
+    personId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<MemberDataRead>> => {
+    return axios.get(
+      `/profile/v3/collectives/${collectiveId}/members/${personId}/data`,options
+    );
+  }
+
+/**
+ * One field of one member, open when a valid consent of theirs to any version
+ * names it. Journaled; the member is told, at most once an hour per leader.
+ * @summary Reveal Member Field
+ */
+export const revealMemberFieldProfileV3CollectivesCollectiveIdMembersPersonIdDataFieldKeyPost = (
+    collectiveId: string,
+    personId: string,
+    fieldKey: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<RevealedFieldRead>> => {
+    return axios.post(
+      `/profile/v3/collectives/${collectiveId}/members/${personId}/data/${fieldKey}`,
+      undefined,options
+    );
+  }
+
+/**
+ * The active members along the columns of the latest version: a cell is filled
+ * when a valid consent of the member, of any version, covers its field. Every
+ * exported member is journaled and told.
+ * @summary Export Collective Policy
+ */
+export const exportCollectivePolicyProfileV3CollectivesCollectiveIdPolicyExportPost = (
+    collectiveId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<PolicyExportRead>> => {
+    return axios.post(
+      `/profile/v3/collectives/${collectiveId}/policy-export`,
+      undefined,options
+    );
+  }
+
+/**
+ * The whole profile of v2 and the passports, read as the owner (journaled).
+ * @summary Get My Profile V3
+ */
+export const getMyProfileV3ProfileV3ProfilesMyGet = (
+     options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<MyProfileReadV3>> => {
+    return axios.get(
+      `/profile/v3/profiles/my`,options
+    );
+  }
+
+/**
+ * Replaces the whole profile: a student card, a contact or a passport left out
+ * is removed; a passport that carries its `id` is kept and changed.
+ * @summary Put My Profile V3
+ */
+export const putMyProfileV3ProfileV3ProfilesMyPut = (
+    myProfileWriteV3: MyProfileWriteV3, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<MyProfileReadV3>> => {
+    return axios.put(
+      `/profile/v3/profiles/my`,
+      myProfileWriteV3,options
+    );
+  }
+
+/**
+ * As in v2, with the passports sealed in the same transaction.
+ * @summary Create My Profile V3
+ */
+export const createMyProfileV3ProfileV3ProfilesMyPost = (
+    myProfileWriteV3: MyProfileWriteV3, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<MyProfileReadV3>> => {
+    return axios.post(
+      `/profile/v3/profiles/my`,
+      myProfileWriteV3,options
+    );
+  }
+
+/**
+ * Collectives to look for and ask to join, by name, with how the caller
+ * stands to each.
+ * @summary Get Collective Directory
+ */
+export const getCollectiveDirectoryEventV3CollectivesGet = (
+    params?: GetCollectiveDirectoryEventV3CollectivesGetParams, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<PageV1CollectiveCard>> => {
+    return axios.get(
+      `/event/v3/collectives`,{
+    ...options,
+        params: {...params, ...options?.params},}
+    );
+  }
+
+/**
+ * @summary Get Collective Card
+ */
+export const getCollectiveCardEventV3CollectivesCollectiveIdGet = (
+    collectiveId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<CollectiveCard>> => {
+    return axios.get(
+      `/event/v3/collectives/${collectiveId}`,options
+    );
+  }
+
+/**
+ * The caller asks to join a confirmed collective that takes requests. Not for
+ * its leader, a member or a former member (the leader brings them back).
+ * @summary Request Onboarding
+ */
+export const requestOnboardingEventV3CollectivesCollectiveIdOnboardingPost = (
+    collectiveId: string,
+    onboardingRequestCreate: OnboardingRequestCreate, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<OnboardingDetail>> => {
+    return axios.post(
+      `/event/v3/collectives/${collectiveId}/onboarding`,
+      onboardingRequestCreate,options
+    );
+  }
+
+/**
+ * The leader of a confirmed collective invites a person who has an account;
+ * a person who takes no invitations is `ONBOARDING_UNAVAILABLE`, as is one
+ * without an account.
+ * @summary Invite To Collective
+ */
+export const inviteToCollectiveEventV3CollectivesCollectiveIdInvitesPost = (
+    collectiveId: string,
+    onboardingInviteCreate: OnboardingInviteCreate, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<OnboardingDetail>> => {
+    return axios.post(
+      `/event/v3/collectives/${collectiveId}/invites`,
+      onboardingInviteCreate,options
+    );
+  }
+
+/**
+ * @summary Get Collective Intake
+ */
+export const getCollectiveIntakeEventV3CollectivesCollectiveIdIntakeGet = (
+    collectiveId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<CollectiveIntake>> => {
+    return axios.get(
+      `/event/v3/collectives/${collectiveId}/intake`,options
+    );
+  }
+
+/**
+ * Closes or opens the collective for requests; invitations still go.
+ * @summary Put Collective Intake
+ */
+export const putCollectiveIntakeEventV3CollectivesCollectiveIdIntakePut = (
+    collectiveId: string,
+    collectiveIntakeWrite: CollectiveIntakeWrite, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<CollectiveIntake>> => {
+    return axios.put(
+      `/event/v3/collectives/${collectiveId}/intake`,
+      collectiveIntakeWrite,options
+    );
+  }
+
+/**
+ * @summary Get My Intake
+ */
+export const getMyIntakeEventV3MeIntakeGet = (
+     options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<PersonIntake>> => {
+    return axios.get(
+      `/event/v3/me/intake`,options
+    );
+  }
+
+/**
+ * Whether leaders may invite the caller; a leader who tries is not told why
+ * they cannot.
+ * @summary Put My Intake
+ */
+export const putMyIntakeEventV3MeIntakePut = (
+    personIntakeWrite: PersonIntakeWrite, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<PersonIntake>> => {
+    return axios.put(
+      `/event/v3/me/intake`,
+      personIntakeWrite,options
+    );
+  }
+
+/**
+ * The caller's onboardings, as a candidate and as the leader of their
+ * collectives, the latest changed first; superusers see all.
+ * @summary Get Onboardings
+ */
+export const getOnboardingsEventV3OnboardingsGet = (
+    params?: GetOnboardingsEventV3OnboardingsGetParams, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<PageV1OnboardingRead>> => {
+    return axios.get(
+      `/event/v3/onboardings`,{
+    ...options,
+        params: {...params, ...options?.params},}
+    );
+  }
+
+/**
+ * The onboarding with its whole feed and what the caller may do now; for
+ * its candidate, the leader of its collective and superusers.
+ * @summary Get Onboarding
+ */
+export const getOnboardingEventV3OnboardingsOnboardingIdGet = (
+    onboardingId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<OnboardingDetail>> => {
+    return axios.get(
+      `/event/v3/onboardings/${onboardingId}`,options
+    );
+  }
+
+/**
+ * The awaited side agrees and the candidate becomes a member; a repeated
+ * acceptance answers the same onboarding and makes no second member.
+ * @summary Accept Onboarding
+ */
+export const acceptOnboardingEventV3OnboardingsOnboardingIdAcceptPost = (
+    onboardingId: string,
+    onboardingDecision: OnboardingDecision, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<OnboardingDetail>> => {
+    return axios.post(
+      `/event/v3/onboardings/${onboardingId}/accept`,
+      onboardingDecision,options
+    );
+  }
+
+/**
+ * The awaited side refuses. It may open the pair again itself at any time;
+ * the side that was refused waits for the cooldown.
+ * @summary Decline Onboarding
+ */
+export const declineOnboardingEventV3OnboardingsOnboardingIdDeclinePost = (
+    onboardingId: string,
+    onboardingDecision: OnboardingDecision, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<OnboardingDetail>> => {
+    return axios.post(
+      `/event/v3/onboardings/${onboardingId}/decline`,
+      onboardingDecision,options
+    );
+  }
+
+/**
+ * The side that opened it changes its mind.
+ * @summary Withdraw Onboarding
+ */
+export const withdrawOnboardingEventV3OnboardingsOnboardingIdWithdrawPost = (
+    onboardingId: string,
+    onboardingDecision: OnboardingDecision, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<OnboardingDetail>> => {
+    return axios.post(
+      `/event/v3/onboardings/${onboardingId}/withdraw`,
+      onboardingDecision,options
+    );
+  }
+
+/**
+ * A message of either side while the onboarding is open; limited per hour.
+ * @summary Write Onboarding Message
+ */
+export const writeOnboardingMessageEventV3OnboardingsOnboardingIdMessagesPost = (
+    onboardingId: string,
+    onboardingMessageCreate: OnboardingMessageCreate, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<OnboardingDetail>> => {
+    return axios.post(
+      `/event/v3/onboardings/${onboardingId}/messages`,
+      onboardingMessageCreate,options
+    );
+  }
+
+/**
+ * A complaint about the other side, once per onboarding; superusers read it.
+ * @summary Report Onboarding
+ */
+export const reportOnboardingEventV3OnboardingsOnboardingIdReportPost = (
+    onboardingId: string,
+    onboardingReportCreate: OnboardingReportCreate, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<unknown>> => {
+    return axios.post(
+      `/event/v3/onboardings/${onboardingId}/report`,
+      onboardingReportCreate,options
+    );
+  }
+
+/**
+ * Complaints of both sides, the latest first.
+ * @summary Get Onboarding Reports
+ */
+export const getOnboardingReportsEventV3OnboardingReportsGet = (
+    params?: GetOnboardingReportsEventV3OnboardingReportsGetParams, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<PageV1OnboardingReportRead>> => {
+    return axios.get(
+      `/event/v3/onboarding-reports`,{
+    ...options,
+        params: {...params, ...options?.params},}
+    );
+  }
+
+/**
+ * A ticket for one stream: `EventSource` sends no headers, so the stream is
+ * opened with this instead of the token. It works once and soon expires.
+ * @summary Issue Stream Ticket
+ */
+export const issueStreamTicketEventV3MeStreamTicketPost = (
+     options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<StreamTicket>> => {
+    return axios.post(
+      `/event/v3/me/stream/ticket`,
+      undefined,options
+    );
+  }
+
+/**
+ * What changed for the caller, as server-sent events: `changed` with
+ * `{topic, id, deleted}` (`todo`: read the list again; `onboarding`: read that
+ * one again, or drop it when `deleted`), `ready` once at the start and a comment
+ * line as a heartbeat. The data is never in the event. The stream ends after a
+ * while; the client opens a new one with a new ticket and reads everything
+ * again, as it does after any break.
+ * @summary Open Stream
+ */
+export const openStreamEventV3MeStreamGet = (
+    params: OpenStreamEventV3MeStreamGetParams, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<unknown>> => {
+    return axios.get(
+      `/event/v3/me/stream`,{
+    ...options,
+        params: {...params, ...options?.params},}
+    );
+  }
+
+/**
+ * The contacts of the person the caller may see: their own, everything for a
+ * superuser, else the kinds whose audience the owner opened to the caller. A
+ * hidden kind and a missing one look the same.
+ * @summary Get Visible Contacts
+ */
+export const getVisibleContactsProfileV3PersonsPersonIdContactsGet = (
+    personId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<VisibleContactRead[]>> => {
+    return axios.get(
+      `/profile/v3/persons/${personId}/contacts`,options
+    );
+  }
+
 export type GetAttendancesEventV1AttendancesGetResult = AxiosResponse<PageV1AttendanceRead>
 export type CreateAttendanceEventV1AttendancesPostResult = AxiosResponse<AttendanceRead>
 export type GetAttendanceEventV1AttendancesAttendanceIdGetResult = AxiosResponse<AttendanceRead>
@@ -7552,6 +8567,8 @@ export type LinkInviteUserV1UsersMeLinkInvitePostResult = AxiosResponse<UserRead
 export type HealthUserV1HealthGetResult = AxiosResponse<HealthV1>
 export type ReadMySettingsUserV2UsersMeSettingsGetResult = AxiosResponse<UserSettingsRead>
 export type PatchMySettingsUserV2UsersMeSettingsPatchResult = AxiosResponse<UserSettingsRead>
+export type RequestVerifyTokenUserV3AuthRequestVerifyTokenPostResult = AxiosResponse<unknown>
+export type VerifyEmailUserV3AuthVerifyEmailGetResult = AxiosResponse<string>
 export type GetRecentLocationsEventV2CollectivesCollectiveIdRecentLocationsGetResult = AxiosResponse<RecentLocationRead[]>
 export type GetCollectiveProfileEventV2CollectivesCollectiveIdProfileGetResult = AxiosResponse<CollectiveProfileRead>
 export type GetCollectivesEventV1CollectivesGetResult = AxiosResponse<PageV1EventCollectiveRead>
@@ -7575,3 +8592,35 @@ export type ResetPersonVisibilityProfileV2PersonsPersonIdVisibilityFieldKeyDelet
 export type GetMyVisibilityProfileV2VisibilityMyGetResult = AxiosResponse<VisibilityRead>
 export type SetMyVisibilityProfileV2VisibilityMyFieldKeyPutResult = AxiosResponse<VisibilityEntryRead>
 export type ResetMyVisibilityProfileV2VisibilityMyFieldKeyDeleteResult = AxiosResponse<VisibilityEntryRead>
+export type GetMyTodoEventV3MeTodoGetResult = AxiosResponse<TodoList>
+export type GetCollectivePoliciesProfileV3CollectivesCollectiveIdPoliciesGetResult = AxiosResponse<CollectivePolicyRead[]>
+export type PublishCollectivePolicyProfileV3CollectivesCollectiveIdPoliciesPostResult = AxiosResponse<CollectivePolicyRead>
+export type GetMyConsentProfileV3CollectivesCollectiveIdConsentGetResult = AxiosResponse<ConsentStateRead>
+export type GiveConsentProfileV3CollectivesCollectiveIdConsentPostResult = AxiosResponse<ConsentStateRead>
+export type RevokeConsentProfileV3CollectivesCollectiveIdConsentRevokePostResult = AxiosResponse<ConsentStateRead>
+export type GetMyConsentsProfileV3ConsentsMyGetResult = AxiosResponse<MyConsentRead[]>
+export type GetMemberDataProfileV3CollectivesCollectiveIdMembersPersonIdDataGetResult = AxiosResponse<MemberDataRead>
+export type RevealMemberFieldProfileV3CollectivesCollectiveIdMembersPersonIdDataFieldKeyPostResult = AxiosResponse<RevealedFieldRead>
+export type ExportCollectivePolicyProfileV3CollectivesCollectiveIdPolicyExportPostResult = AxiosResponse<PolicyExportRead>
+export type GetMyProfileV3ProfileV3ProfilesMyGetResult = AxiosResponse<MyProfileReadV3>
+export type PutMyProfileV3ProfileV3ProfilesMyPutResult = AxiosResponse<MyProfileReadV3>
+export type CreateMyProfileV3ProfileV3ProfilesMyPostResult = AxiosResponse<MyProfileReadV3>
+export type GetCollectiveDirectoryEventV3CollectivesGetResult = AxiosResponse<PageV1CollectiveCard>
+export type GetCollectiveCardEventV3CollectivesCollectiveIdGetResult = AxiosResponse<CollectiveCard>
+export type RequestOnboardingEventV3CollectivesCollectiveIdOnboardingPostResult = AxiosResponse<OnboardingDetail>
+export type InviteToCollectiveEventV3CollectivesCollectiveIdInvitesPostResult = AxiosResponse<OnboardingDetail>
+export type GetCollectiveIntakeEventV3CollectivesCollectiveIdIntakeGetResult = AxiosResponse<CollectiveIntake>
+export type PutCollectiveIntakeEventV3CollectivesCollectiveIdIntakePutResult = AxiosResponse<CollectiveIntake>
+export type GetMyIntakeEventV3MeIntakeGetResult = AxiosResponse<PersonIntake>
+export type PutMyIntakeEventV3MeIntakePutResult = AxiosResponse<PersonIntake>
+export type GetOnboardingsEventV3OnboardingsGetResult = AxiosResponse<PageV1OnboardingRead>
+export type GetOnboardingEventV3OnboardingsOnboardingIdGetResult = AxiosResponse<OnboardingDetail>
+export type AcceptOnboardingEventV3OnboardingsOnboardingIdAcceptPostResult = AxiosResponse<OnboardingDetail>
+export type DeclineOnboardingEventV3OnboardingsOnboardingIdDeclinePostResult = AxiosResponse<OnboardingDetail>
+export type WithdrawOnboardingEventV3OnboardingsOnboardingIdWithdrawPostResult = AxiosResponse<OnboardingDetail>
+export type WriteOnboardingMessageEventV3OnboardingsOnboardingIdMessagesPostResult = AxiosResponse<OnboardingDetail>
+export type ReportOnboardingEventV3OnboardingsOnboardingIdReportPostResult = AxiosResponse<unknown>
+export type GetOnboardingReportsEventV3OnboardingReportsGetResult = AxiosResponse<PageV1OnboardingReportRead>
+export type IssueStreamTicketEventV3MeStreamTicketPostResult = AxiosResponse<StreamTicket>
+export type OpenStreamEventV3MeStreamGetResult = AxiosResponse<unknown>
+export type GetVisibleContactsProfileV3PersonsPersonIdContactsGetResult = AxiosResponse<VisibleContactRead[]>

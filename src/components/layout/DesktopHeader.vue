@@ -55,6 +55,7 @@
           </nav>
         </div>
         <div class="header-right">
+          <TodoAlert v-if="auth.isAuthenticated" />
           <button v-if="auth.isAuthenticated" class="header-profile" id="profile-trigger" @click="toggleProfileMenu">
             <UserAvatar :user="auth.user" :size="36" />
           </button>
@@ -70,6 +71,7 @@ import { useAuthStore } from '@/stores/auth'
 import { usePrincipalStore } from '@/stores/principal'
 import { useSectionNav } from '@/composables/useSectionNav'
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import TodoAlert from '@/components/layout/TodoAlert.vue'
 import { IonIcon, menuController } from '@ionic/vue'
 import { homeOutline, shieldCheckmarkOutline, settingsOutline, chevronDownOutline } from 'ionicons/icons'
 
@@ -265,6 +267,7 @@ function toggleProfileMenu() {
 .header-right {
   display: flex;
   align-items: center;
+  gap: 12px;
 }
 
 .header-profile {

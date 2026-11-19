@@ -1,8 +1,10 @@
 import type {
   AccessAction,
   AccessExportRead,
+  ConsentState,
   GrantState,
   GrantStateRead,
+  PolicyExportRead,
   SkipReason,
 } from '@/api/generated/almaEventFlow'
 
@@ -89,6 +91,32 @@ export function exportTable(exported: AccessExportRead, names: Map<string, strin
       ),
     ]),
   }
+}
+
+export const CONSENT_STATE_LABELS: Record<ConsentState, string> = {
+  current: 'Согласие действует',
+  consent_missing: 'Нет согласия',
+  consent_outdated: 'Согласие на прежнюю версию',
+}
+
+export const POLICY_PURPOSES = [
+  'Оформление поездок и выездов',
+  'Пропуска на площадки мероприятий',
+  'Договоры и отчёты перед организаторами',
+]
+
+/** Одна строка на участника по колонкам последней версии; пустая ячейка там, где нет согласия. */
+export function policyExportTable(exported: PolicyExportRead, names: Map<string, string | null>): ExportTable {
+  return exportTable(
+    { ...exported, request_id: exported.policy_id, skipped: [] },
+    names,
+  )
+}
+
+/** SHA-256 показанного текста политики, шестнадцатеричной строкой. */
+export async function sha256Hex(text: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text))
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')
 }
 
 const FORMULA = /^[=@\t\r]|^[+-](?![\d\s(])/

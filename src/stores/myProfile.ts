@@ -1,15 +1,15 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import {
-  createMyProfileProfileV2ProfilesMyPost,
-  getMyProfileProfileV2ProfilesMyGet,
-  putMyProfileProfileV2ProfilesMyPut,
+  createMyProfileV3ProfileV3ProfilesMyPost,
+  getMyProfileV3ProfileV3ProfilesMyGet,
+  putMyProfileV3ProfileV3ProfilesMyPut,
 } from '@/api/generated/almaEventFlow'
-import type { MyProfileRead, MyProfileWrite } from '@/api/generated/almaEventFlow'
+import type { MyProfileReadV3, MyProfileWriteV3 } from '@/api/generated/almaEventFlow'
 import { useAuthStore } from './auth'
 
 export const useMyProfileStore = defineStore('myProfile', () => {
-  const profile = ref<MyProfileRead | null>(null)
+  const profile = ref<MyProfileReadV3 | null>(null)
   const loaded = ref(false)
   const failed = ref(false)
   let inFlight: Promise<void> | null = null
@@ -17,7 +17,7 @@ export const useMyProfileStore = defineStore('myProfile', () => {
   async function fetchProfile() {
     failed.value = false
     try {
-      profile.value = (await getMyProfileProfileV2ProfilesMyGet()).data
+      profile.value = (await getMyProfileV3ProfileV3ProfilesMyGet()).data
     } catch (error) {
       const status = (error as { response?: { status?: number } })?.response?.status
       if (status === 404) profile.value = null
@@ -33,10 +33,10 @@ export const useMyProfileStore = defineStore('myProfile', () => {
     return inFlight
   }
 
-  async function save(form: MyProfileWrite): Promise<MyProfileRead> {
+  async function save(form: MyProfileWriteV3): Promise<MyProfileReadV3> {
     const response = profile.value
-      ? await putMyProfileProfileV2ProfilesMyPut(form)
-      : await createMyProfileProfileV2ProfilesMyPost(form)
+      ? await putMyProfileV3ProfileV3ProfilesMyPut(form)
+      : await createMyProfileV3ProfileV3ProfilesMyPost(form)
     profile.value = response.data
     loaded.value = true
     return response.data

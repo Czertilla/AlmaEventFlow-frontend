@@ -12,13 +12,6 @@
               <p class="home-date">{{ todayFormatted }}</p>
             </div>
             <div class="home-stats">
-              <button v-if="pendingCount > 0" class="pending-chip" @click="openPending">
-                <ion-icon :icon="alertCircleOutline" />
-                <span class="pending-chip-text">
-                  <span class="pending-chip-num">{{ pendingCount }}</span>
-                  <span class="pending-chip-label">требуют отметки</span>
-                </span>
-              </button>
               <div class="stat-chip">
                 <span class="stat-num">{{ calendar.events.length }}</span>
                 <span class="stat-label">мероприятий</span>
@@ -168,20 +161,6 @@
       </ion-content>
     </ion-modal>
 
-    <!-- Pending attendance modal -->
-    <PendingAttendanceModal
-      :is-open="showPendingModal"
-      :loading="pendingLoading"
-      :events="pendingEvents"
-      :attendances="calendar.attendances"
-      :is-principal="principal.isPrincipal"
-      :all-done="allPendingDone"
-      @close="showPendingModal = false"
-      @toggle-attendance="onToggleAttendance"
-      @save-comment="onSaveComment"
-      @delete-comment="onDeleteComment"
-    />
-
     <ion-modal :is-open="showFullCalendar" @ion-modal-did-dismiss="showFullCalendar = false">
       <ion-header>
         <ion-toolbar>
@@ -217,13 +196,11 @@ import { useSettingsStore } from '@/stores/settings'
 import { usePlatform } from '@/composables/usePlatform'
 import { useUrlState } from '@/composables/useUrlState'
 import { useCalendarSync } from '@/composables/useCalendarSync'
-import { useAttendancePending } from '@/composables/useAttendancePending'
-import { usePendingAttendance } from '@/composables/usePendingAttendance'
+import { useAttendanceMark } from '@/composables/useAttendanceMark'
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addDays, parseISO } from 'date-fns'
 import { ru } from 'date-fns/locale'
 import {
   getFeedEventV2FeedGet,
-  changeAttendanceEventV2AttendancesAttendanceIdPatch,
 } from '@/api/generated/almaEventFlow'
 import type {
   EventFeed, EventStatusEnumV1, EventLevelEnumV1, EventTypeEnumV1, EventFormatEnumV1,
@@ -234,11 +211,10 @@ import MiniCalendar from '@/components/calendar/MiniCalendar.vue'
 import EventList from '@/components/event/EventList.vue'
 import HomeFilters from '@/components/event/HomeFilters.vue'
 import AppFab from '@/components/common/AppFab.vue'
-import PendingAttendanceModal from '@/components/event/PendingAttendanceModal.vue'
 import {
   HOME_FILTER_DEFAULTS, countActiveFilters, homeFilterParams, matchesHomeFilters, parseHomeFilters, statusesToQuery,
 } from '@/utils/homeFilters'
-import { calendarOutline, closeOutline, optionsOutline, alertCircleOutline } from 'ionicons/icons'
+import { calendarOutline, closeOutline, optionsOutline } from 'ionicons/icons'
 
 const router = useRouter()
 const calendar = useEventCalendarStore()
@@ -246,12 +222,7 @@ const principal = usePrincipalStore()
 const settings = useSettingsStore()
 const { isDesktop } = usePlatform()
 const { syncSelectedDateToCalendar } = useCalendarSync()
-const { withPending } = useAttendancePending()
-const {
-  showPendingModal, pendingLoading, pendingCount, pendingEvents, allPendingDone,
-  refreshPendingCount, fetchPending, mergePendingEvents, maybeAutoShow,
-  openPending, resetPending,
-} = usePendingAttendance()
+const mark = useAttendanceMark()
 
 // Ширины скелетон-строк слегка отличаются -- иначе ряд одинаковых полосок
 // читается как явная заглушка, а не намёк на будущий текст разной длины.
@@ -534,13 +505,7 @@ async function showMonth() {
 }
 
 // Ответ несёт и новую отметку, и счётчики участия: список обновляется без повторных запросов
-async function patchAttendance(attendanceId: string, body: { is_attended?: boolean; comment?: string | null }) {
-  await withPending(attendanceId, async () => {
-    const { data } = await changeAttendanceEventV2AttendancesAttendanceIdPatch(attendanceId, body)
-    calendar.applyAttendanceChange(data)
-    refreshPendingCount()
-  })
-}
+const patchAttendance = mark.patch
 
 async function onToggleAttendance(attendanceId: string, isAttended: boolean) {
   try {
@@ -587,7 +552,6 @@ async function initLoad() {
   loading.value = true
   hasMoreUp.value = true
   hasMoreDown.value = true
-  resetPending()
   // Календарь и список всегда стартуют от сегодняшнего дня
   calendar.setSelectedDate(today)
   calendar.setCurrentMonth(today)
@@ -595,10 +559,6 @@ async function initLoad() {
   // Коллективы аккаунта нужны, чтобы знать выбор в фильтре
   await principal.fetchCollectives()
   initializing = false
-
-  // Ожидающие отметки стартуют параллельно с основным списком (только чтение),
-  // чтобы модалка появилась как можно раньше
-  const pendingPromise = fetchPending()
 
   if (noSelection.value) {
     calendar.setEvents([])
@@ -614,21 +574,15 @@ async function initLoad() {
     }
   }
 
-  // Сразу показываем модалку, если есть АКТИВНЫЕ мероприятия с неотмеченной записью
-  // (статус проверяется внутри mergePendingEvents — для неактивных модалка не нужна)
-  maybeAutoShow(mergePendingEvents(await pendingPromise))
-  refreshPendingCount()
-
   if (seq !== loadSeq) return
   loading.value = false
   // Первым видимым делаем самое раннее мероприятие с датой >= сегодня
   await nextTick()
   await aimAt(today, false)
-  refreshPendingCount()
 }
 
 // Смена выбора коллективов, фильтров или прыжок на далёкую дату → новое окно
-// из бэкенда вокруг даты. Лёгкая: не сбрасывает дату и не трогает модалку pending.
+// из бэкенда вокруг даты. Лёгкая: не сбрасывает дату.
 async function reloadWindow(anchorStr: string) {
   const seq = ++loadSeq
   loading.value = true
@@ -637,8 +591,7 @@ async function reloadWindow(anchorStr: string) {
   if (noSelection.value) {
     calendar.setEvents([])
     loading.value = false
-    refreshPendingCount()
-    return
+      return
   }
   try {
     const feed = await loadWindow(anchorStr)
@@ -651,7 +604,6 @@ async function reloadWindow(anchorStr: string) {
   }
   if (seq !== loadSeq) return
   loading.value = false
-  refreshPendingCount()
   await nextTick()
   await aimAt(parseISO(anchorStr), false)
 }
@@ -719,49 +671,6 @@ onIonViewWillEnter(initLoad)
   display: flex;
   align-items: center;
   gap: 8px;
-}
-
-.pending-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border: none;
-  border-radius: 12px;
-  background: rgba(255, 184, 0, 0.14);
-  color: var(--ion-color-warning);
-  cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s;
-}
-
-.pending-chip:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(255, 184, 0, 0.25);
-}
-
-.pending-chip ion-icon {
-  font-size: var(--fs-xl);
-  flex-shrink: 0;
-}
-
-.pending-chip-text {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  line-height: 1.15;
-}
-
-.pending-chip-num {
-  font-size: var(--fs-lg);
-  font-weight: var(--fw-bold);
-}
-
-.pending-chip-label {
-  font-size: var(--fs-2xs);
-  font-weight: var(--fw-semibold);
-  text-transform: uppercase;
-  letter-spacing: 0.3px;
-  opacity: 0.85;
 }
 
 .stat-chip {

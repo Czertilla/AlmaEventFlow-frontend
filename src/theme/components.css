@@ -896,3 +896,47 @@ ion-content::part(scroll)::-webkit-scrollbar-thumb {
 .ui-att-ink--absent { color: rgb(var(--att-absent-rgb)); }
 .ui-att-ink--unmarked { color: rgb(var(--att-unmarked-rgb)); }
 .ui-att-ink--upcoming { color: rgb(var(--att-upcoming-rgb)); }
+
+/* Что-то надо дополнить: жёлтое пульсирующее свечение, как у неотмеченной кнопки отметки */
+.ui-attention {
+  animation: ui-attention-pulse 1.8s ease-in-out infinite;
+}
+
+.ui-attention:hover,
+.ui-attention:focus-visible {
+  animation: none;
+  box-shadow: 0 0 0 2px rgba(var(--att-unmarked-rgb), 0.6);
+}
+
+@keyframes ui-attention-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(var(--att-unmarked-rgb), 0); }
+  50% { box-shadow: 0 0 0 4px rgba(var(--att-unmarked-rgb), 0.45); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ui-attention {
+    animation: none;
+    box-shadow: 0 0 0 2px rgba(var(--att-unmarked-rgb), 0.6);
+  }
+}
+
+/* Кнопка-счётчик «Что сделать» в правом верхнем углу */
+.ui-todo-alert {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: var(--border-w) solid rgba(var(--att-unmarked-rgb), 0.45);
+  border-radius: var(--radius-pill);
+  background: rgba(var(--att-unmarked-rgb), 0.14);
+  color: var(--ion-text-color);
+  font-size: var(--fs-sm);
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+}
+
+.ui-todo-alert ion-icon {
+  font-size: var(--fs-lg);
+  color: rgb(var(--att-unmarked-rgb));
+}

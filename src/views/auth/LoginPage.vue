@@ -16,6 +16,7 @@
               <span class="auth-tab active">Вход</span>
               <router-link to="/auth/register" class="auth-tab">Регистрация</router-link>
             </div>
+            <CollectiveLinkBanner />
 
             <div class="auth-form">
               <UiInput
@@ -83,6 +84,7 @@ import { useTelegramWidget, type TelegramWidgetUser } from '@/composables/useTel
 import { getTelegramLoginConfigUserV1AuthTelegramConfigGet } from '@/api/generated/almaEventFlow'
 import PasswordField from '@/components/common/PasswordField.vue'
 import UiInput from '@/components/common/UiInput.vue'
+import CollectiveLinkBanner from '@/components/collective/CollectiveLinkBanner.vue'
 
 const route = useRoute()
 const router = useIonRouter()

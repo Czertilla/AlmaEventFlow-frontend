@@ -46,7 +46,7 @@
               <div :class="fieldClass('patronymic')">
                 <UiInput v-model="form.patronymic" label="Отчество" autocomplete="additional-name" :maxlength="128" />
               </div>
-              <div :class="fieldClass('birthdate')">
+              <div :class="[fieldClass('birthdate'), attentionClass('profile.birthdate')]">
                 <DateTimeField v-model="form.birthdate" mode="date" label="Дата рождения" />
               </div>
             </section>
@@ -165,9 +165,51 @@
 
             <section v-show="shown('contacts')" class="ui-card pf-card" :class="sectionMotion">
               <div v-if="!editing" class="ui-card-head"><h3 class="ui-card-title">Контакты</h3></div>
-              <div :class="{ 'pf-field--changed': editing && counts.contacts > 0 }">
+              <div :class="[{ 'pf-field--changed': editing && counts.contacts > 0 }, sectionAttention('contacts')]">
                 <ContactsEditor v-model="form.contacts" :account-email="auth.user?.email" :errors="contactErrors" />
               </div>
+            </section>
+
+            <section v-show="shown('passport')" class="ui-card pf-card" :class="sectionMotion">
+              <div v-if="!editing" class="ui-card-head">
+                <h3 class="ui-card-title">
+                  Паспорт
+                  <HelpTip text="Паспорт хранится зашифрованным. Руководитель коллектива видит его, только если вы согласились на политику доступа к данным; каждый просмотр попадает в журнал." />
+                </h3>
+              </div>
+              <div
+                v-for="(row, index) in form.passports"
+                :key="row.key"
+                class="pf-passport"
+                :class="[{ 'pf-field--changed': editing && passportChanged(row) }, sectionAttention('passport')]"
+              >
+                <div class="pf-passport-head">
+                  <h4 class="ui-field-title">{{ index === 0 ? 'Паспорт' : `Паспорт ${index + 1}` }}</h4>
+                  <button type="button" class="ui-icon-btn ui-icon-btn--delete" aria-label="Удалить паспорт" @click="removePassport(row.key)">
+                    <ion-icon :icon="trashOutline" />
+                  </button>
+                </div>
+                <UiInput v-model="row.number" label="Серия и номер" :maxlength="32" :error="passportErrors[row.key]?.number" />
+                <DateTimeField v-model="row.issuedDate" mode="date" label="Дата выдачи" />
+                <UiInput v-model="row.issuedAuthority" label="Кем выдан" :maxlength="512" />
+                <DateTimeField v-model="row.expireDate" mode="date" label="Действителен до" :error="passportErrors[row.key]?.expireDate" />
+                <label class="ui-toggle-row"><span>Заграничный</span><ion-toggle v-model="row.isForeign" /></label>
+                <label class="ui-toggle-row"><span>ФИО в паспорте другое</span><ion-toggle v-model="row.hasVariant" /></label>
+                <template v-if="row.hasVariant">
+                  <UiInput v-model="row.variant.surname" label="Фамилия в паспорте" :maxlength="128" :error="passportErrors[row.key]?.surname" />
+                  <UiInput v-model="row.variant.name" label="Имя в паспорте" :maxlength="128" :error="passportErrors[row.key]?.name" />
+                  <UiInput v-model="row.variant.patronymic" label="Отчество в паспорте" :maxlength="128" />
+                </template>
+              </div>
+              <button
+                v-if="form.passports.length < MAX_PASSPORTS"
+                type="button"
+                class="ui-btn ui-btn--ghost ui-btn--sm pf-add"
+                @click="addPassport"
+              >
+                <ion-icon :icon="addOutline" />
+                Добавить паспорт
+              </button>
             </section>
           </div>
 
@@ -184,10 +226,11 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
+import { addOutline, trashOutline } from 'ionicons/icons'
 import { useRouter } from 'vue-router'
 import {
   IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBackButton,
-  IonSpinner, IonToggle, onIonViewWillEnter,
+  IonIcon, IonSpinner, IonToggle, onIonViewWillEnter,
 } from '@ionic/vue'
 import {
   getFacultyOrgV1FacultiesFacultyIdGet,
@@ -204,7 +247,7 @@ import {
   resolveStudentGroupProfileV2StudentGroupsPost,
   resolveUniversityProfileV2UniversitiesPost,
 } from '@/api/generated/almaEventFlow'
-import type { ContactType, MyProfileRead, MyProfileWrite } from '@/api/generated/almaEventFlow'
+import type { ContactType, MyPassportData, MyProfileReadV3, MyProfileWriteV3 } from '@/api/generated/almaEventFlow'
 import SearchPicker from '@/components/admin/SearchPicker.vue'
 import BackLink from '@/components/common/BackLink.vue'
 import DateTimeField from '@/components/common/DateTimeField.vue'
@@ -218,21 +261,28 @@ import { useSwipe } from '@/composables/useSwipe'
 import { useToast } from '@/composables/useToast'
 import { useAuthStore } from '@/stores/auth'
 import { useMyProfileStore } from '@/stores/myProfile'
+import { useTodoStore } from '@/stores/todo'
 import { contactError, normalizeContact } from '@/utils/contactTypes'
+import { quickStartRoute } from '@/utils/quickStart'
 import {
-  SECTIONS, groupSignature, sectionCounts, snapshot, changedFields,
-  type FieldKey, type FormSnapshot, type SectionKey,
+  SECTIONS, groupSignature, sectionCounts, sectionOfField, snapshot, changedFields,
+  type FieldKey, type FormSnapshot, type PassportRow, type SectionKey,
 } from '@/utils/profileFormDiff'
 
 interface Choice<T> { id: T | null; draft: string | null }
 
 const pick = <T,>(id: T | null = null): Choice<T> => ({ id, draft: null })
 const MAX_GRADE = 12
+const MAX_PASSPORTS = 5
+
+interface PassportFormRow extends PassportRow { key: number }
+interface PassportErrors { number?: string; expireDate?: string; surname?: string; name?: string }
 const SHAKE_MS = 600
 
 const router = useRouter()
 const auth = useAuthStore()
 const myProfile = useMyProfileStore()
+const todo = useTodoStore()
 const { isDesktop } = usePlatform()
 const { showError, showSuccess } = useToast()
 
@@ -250,7 +300,9 @@ const form = reactive({
   grade: '',
   workplace: pick<string>(), diet: pick<number>(),
   contacts: [] as ContactRow[],
+  passports: [] as PassportFormRow[],
 })
+const passportErrors = ref<Record<number, PassportErrors>>({})
 const errors = reactive({
   surname: '', name: '', studentId: '', university: '', faculty: '', group: '', degree: '', grade: '',
 })
@@ -281,8 +333,20 @@ const invalidSections = computed(() => {
   if (errors.surname || errors.name) found.add('about')
   if (errors.studentId || errors.university || errors.faculty || errors.group || errors.degree || errors.grade) found.add('study')
   if (Object.keys(contactErrors.value).length) found.add('contacts')
+  if (Object.keys(passportErrors.value).length) found.add('passport')
   return found
 })
+
+const attentionSections = computed(() => {
+  const found = new Set<SectionKey>()
+  for (const key of todo.missingFields) {
+    const section = sectionOfField(key)
+    if (section) found.add(section)
+  }
+  return found
+})
+const sectionAttention = (key: SectionKey) => ({ 'ui-attention pf-attention': attentionSections.value.has(key) })
+const attentionClass = (fieldKey: string) => ({ 'ui-attention pf-attention': todo.missingFields.has(fieldKey) })
 
 const tabs = computed(() =>
   SECTIONS.map((item) => ({
@@ -290,6 +354,7 @@ const tabs = computed(() =>
     label: item.label,
     badge: counts.value[item.key] || undefined,
     invalid: invalidSections.value.has(item.key),
+    attention: attentionSections.value.has(item.key),
   })),
 )
 
@@ -331,7 +396,36 @@ function adoptUniversity(facultyId: string) {
   })
 }
 
-function fill(profile: MyProfileRead | null) {
+function passportRow(passport?: NonNullable<MyProfileReadV3['passports']>[number]): PassportFormRow {
+  const variant = passport?.name_variant
+  return {
+    key: nextKey++,
+    id: passport?.id,
+    number: passport?.number ?? '',
+    expireDate: passport?.expire_date ?? null,
+    issuedDate: passport?.issued_date ?? null,
+    issuedAuthority: passport?.issued_authority ?? '',
+    isForeign: passport?.is_foreign ?? false,
+    hasVariant: !!variant,
+    variant: { surname: variant?.surname ?? '', name: variant?.name ?? '', patronymic: variant?.patronymic ?? '' },
+  }
+}
+
+function addPassport() {
+  form.passports.push(passportRow())
+}
+
+function removePassport(key: number) {
+  form.passports = form.passports.filter((row) => row.key !== key)
+}
+
+function passportChanged(row: PassportFormRow): boolean {
+  if (!row.id) return true
+  const before = baseline.value.passports.get(row.id)
+  return before !== snapshot({ ...form, passports: [row] }).passports.get(row.id)
+}
+
+function fill(profile: MyProfileReadV3 | null) {
   const student = profile?.student
   form.surname = profile?.surname ?? ''
   form.name = profile?.name ?? ''
@@ -354,6 +448,8 @@ function fill(profile: MyProfileRead | null) {
   form.contacts = (profile?.contacts ?? []).map((c) => ({
     key: nextKey++, id: c.id, type: c.type, value: c.value, is_main: !!c.is_main,
   }))
+  form.passports = (profile?.passports ?? []).map((p) => passportRow(p))
+  passportErrors.value = {}
   error.value = ''
   attempted = false
   Object.keys(errors).forEach((key) => { errors[key as keyof typeof errors] = '' })
@@ -420,7 +516,17 @@ function validate(): boolean {
     if (message) found[row.key] = message
   }
   contactErrors.value = found
-  return !Object.values(errors).some(Boolean) && !Object.keys(found).length
+  const passports: Record<number, PassportErrors> = {}
+  for (const row of form.passports) {
+    const problems: PassportErrors = {}
+    if (!row.number.trim()) problems.number = 'Укажите серию и номер'
+    if (!row.expireDate) problems.expireDate = 'Укажите срок действия'
+    if (row.hasVariant && !row.variant.surname.trim()) problems.surname = 'Укажите фамилию'
+    if (row.hasVariant && !row.variant.name.trim()) problems.name = 'Укажите имя'
+    if (Object.keys(problems).length) passports[row.key] = problems
+  }
+  passportErrors.value = passports
+  return !Object.values(errors).some(Boolean) && !Object.keys(found).length && !Object.keys(passports).length
 }
 
 watch(form, () => { if (attempted) validate() }, { deep: true })
@@ -464,7 +570,25 @@ async function resolveReferences(): Promise<Resolved> {
   return { workplaceId: form.workplace.id, dietId: form.diet.id, groupId: form.group.id, facultyId: form.faculty.id }
 }
 
-function payload(refs: Resolved): MyProfileWrite {
+function passportPayload(row: PassportFormRow): MyPassportData {
+  return {
+    id: row.id,
+    number: row.number.trim(),
+    expire_date: row.expireDate as string,
+    is_foreign: row.isForeign,
+    issued_date: row.issuedDate || null,
+    issued_authority: row.issuedAuthority.trim() || null,
+    name_variant: row.hasVariant
+      ? {
+          surname: row.variant.surname.trim(),
+          name: row.variant.name.trim(),
+          patronymic: row.variant.patronymic.trim() || null,
+        }
+      : null,
+  }
+}
+
+function payload(refs: Resolved): MyProfileWriteV3 {
   return {
     surname: form.surname.trim(),
     name: form.name.trim(),
@@ -484,6 +608,7 @@ function payload(refs: Resolved): MyProfileWrite {
       value: edited(c) ? normalizeContact(c.type, c.value) : c.value,
       is_main: c.is_main,
     })),
+    passports: form.passports.map(passportPayload),
   }
 }
 
@@ -515,8 +640,9 @@ async function submit() {
     saving.value = false
   }
   if (!wasEditing) await auth.refreshWhenLinked(personId)
+  void todo.refresh(true)
   showSuccess(wasEditing ? 'Изменения сохранены' : 'Подробная информация сохранена')
-  router.push('/profile')
+  router.push((!wasEditing && (await quickStartRoute(auth))) || '/profile')
 }
 
 async function start() {
@@ -606,6 +732,32 @@ onIonViewWillEnter(start)
   .pf-section--prev {
     animation: none;
   }
+}
+
+.pf-attention {
+  border-radius: var(--radius-md);
+}
+
+.pf-passport {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pf-passport + .pf-passport {
+  padding-top: 14px;
+  border-top: var(--border-w) solid var(--ion-border-color);
+}
+
+.pf-passport-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pf-add {
+  align-self: flex-start;
 }
 
 .pf-error {

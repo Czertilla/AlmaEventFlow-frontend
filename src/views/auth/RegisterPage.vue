@@ -16,6 +16,7 @@
               <router-link to="/auth/login" class="auth-tab">Вход</router-link>
               <span class="auth-tab active">Регистрация</span>
             </div>
+            <CollectiveLinkBanner />
 
             <div v-if="invitePersonName" class="invite-notice">
               <ion-icon :icon="linkOutline" />
@@ -98,6 +99,7 @@ import PasswordField from '@/components/common/PasswordField.vue'
 import { IonPage, IonContent, IonIcon, onIonViewDidLeave } from '@ionic/vue'
 import { mailOutline, personOutline, checkmarkOutline, alertCircleOutline, linkOutline } from 'ionicons/icons'
 import UiInput from '@/components/common/UiInput.vue'
+import CollectiveLinkBanner from '@/components/collective/CollectiveLinkBanner.vue'
 
 const router = useRouter()
 const route = useRoute()

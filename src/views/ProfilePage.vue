@@ -85,33 +85,74 @@
           </div>
         </section>
 
-        <section v-if="collectiveRows.length" class="ui-card">
+        <section class="ui-card">
           <div class="ui-card-head">
             <h3 class="ui-card-title">Мои коллективы</h3>
-            <span class="ui-count">{{ collectiveRows.length }}</span>
+            <span v-if="collectiveRows.length" class="ui-count">{{ collectiveRows.length }}</span>
+            <button
+              type="button"
+              class="ui-icon-btn ui-icon-btn--primary"
+              title="Найти коллектив"
+              aria-label="Найти коллектив"
+              :disabled="!auth.personId"
+              @click="router.push('/collectives')"
+            >
+              <ion-icon :icon="addOutline" />
+            </button>
           </div>
-          <ul class="collective-list">
-            <li v-for="row in collectiveRows" :key="row.collectiveId" class="collective-row">
-              <DefaultAvatar kind="collective" :seed="row.collectiveId" :size="40" />
-              <div class="collective-main">
-                <span class="collective-name">{{ row.name }}</span>
-                <span class="collective-meta">{{ row.meta }}</span>
-                <div class="collective-actions">
-                  <button
-                    v-if="row.memberId"
-                    type="button"
-                    class="ui-btn ui-btn--primary ui-btn--sm"
-                    @click="router.push(`/member/${row.memberId}`)"
-                  >
-                    Мой профиль участника
-                  </button>
-                  <button type="button" class="ui-btn ui-btn--ghost ui-btn--sm" @click="router.push(`/collective/${row.collectiveId}`)">
-                    О коллективе
-                  </button>
+          <p v-if="!auth.personId" class="profile-hint">Коллективы станут доступны после заполнения подробной информации</p>
+          <template v-else>
+            <ul v-if="collectiveRows.length" class="collective-list">
+              <li v-for="row in collectiveRows" :key="row.collectiveId" class="collective-row">
+                <DefaultAvatar kind="collective" :seed="row.collectiveId" :size="40" />
+                <div class="collective-main">
+                  <span class="collective-name">{{ row.name }}</span>
+                  <span class="collective-meta">{{ row.meta }}</span>
+                  <div class="collective-actions">
+                    <button
+                      v-if="row.memberId"
+                      type="button"
+                      class="ui-btn ui-btn--primary ui-btn--sm"
+                      @click="router.push(`/member/${row.memberId}`)"
+                    >
+                      Мой профиль участника
+                    </button>
+                    <button type="button" class="ui-btn ui-btn--ghost ui-btn--sm" @click="router.push(`/collective/${row.collectiveId}`)">
+                      О коллективе
+                    </button>
+                  </div>
                 </div>
-              </div>
-            </li>
-          </ul>
+              </li>
+            </ul>
+            <ul v-if="myOnboardings.length" class="collective-list">
+              <li v-for="item in myOnboardings" :key="item.id" class="collective-row">
+                <DefaultAvatar kind="collective" :seed="item.collective_id" :size="40" />
+                <div class="collective-main">
+                  <span class="collective-name">{{ item.collective_name }}</span>
+                  <span class="collective-meta" :class="{ 'ui-attention': item.awaiting === 'candidate' }">
+                    {{ item.opened_by === 'candidate' ? 'Запрос' : 'Приглашение' }} · {{ waitingText(item) }}
+                  </span>
+                  <div class="collective-actions">
+                    <button type="button" class="ui-btn ui-btn--ghost ui-btn--sm" @click="router.push(onboardingPath(item.id))">
+                      Переписка
+                    </button>
+                  </div>
+                </div>
+              </li>
+            </ul>
+            <p v-if="!collectiveRows.length && !myOnboardings.length" class="profile-hint">Вы пока не состоите в коллективах</p>
+            <label class="ui-toggle-row">
+              <span>
+                Принимать приглашения
+                <HelpTip text="Если выключить, руководители не смогут пригласить вас в коллектив. Почему, им не сообщается." />
+              </span>
+              <ion-toggle
+                :checked="acceptsInvites ?? false"
+                :disabled="acceptsInvites === null || intakeBusy"
+                @ion-change="setAcceptsInvites($event.detail.checked)"
+              />
+            </label>
+          </template>
         </section>
 
         <div class="profile-actions">
@@ -144,7 +185,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { usePrincipalStore } from '@/stores/principal'
@@ -157,17 +198,26 @@ import TimestampsMeta from '@/components/common/TimestampsMeta.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import DefaultAvatar from '@/components/common/DefaultAvatar.vue'
 import {
-  IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBackButton, IonIcon,
+  IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBackButton, IonIcon, IonToggle,
   onIonViewWillEnter, onIonViewWillLeave,
 } from '@ionic/vue'
 import { useAccountLink } from '@/composables/useAccountLink'
 import {
   settingsOutline, logOutOutline, chevronForwardOutline,
-  createOutline, shieldCheckmarkOutline,
+  createOutline, shieldCheckmarkOutline, addOutline,
 } from 'ionicons/icons'
 import { contactTypeLabels } from '@/utils/contactTypes'
 import { formatDate } from '@/utils/date'
 import { formatPersonName } from '@/utils/names'
+import { onboardingPath, sortOnboardings, waitingText } from '@/utils/onboarding'
+import {
+  getMyIntakeEventV3MeIntakeGet,
+  getOnboardingsEventV3OnboardingsGet,
+  putMyIntakeEventV3MeIntakePut,
+  type OnboardingRead,
+} from '@/api/generated/almaEventFlow'
+import { useLiveStore } from '@/stores/live'
+import { useToast } from '@/composables/useToast'
 
 const auth = useAuthStore()
 const principal = usePrincipalStore()
@@ -217,9 +267,48 @@ const collectiveRows = computed<CollectiveRow[]>(() =>
     .sort((a, b) => a.order - b.order || a.name.localeCompare(b.name, 'ru')),
 )
 
+const live = useLiveStore()
+const { showError } = useToast()
+const myOnboardings = ref<OnboardingRead[]>([])
+const acceptsInvites = ref<boolean | null>(null)
+const intakeBusy = ref(false)
+
+async function loadOnboardings() {
+  if (!auth.personId) {
+    myOnboardings.value = []
+    acceptsInvites.value = null
+    return
+  }
+  try {
+    const [list, intake] = await Promise.all([
+      getOnboardingsEventV3OnboardingsGet({ side: 'candidate', status: ['requested', 'invited'], limit: 50 }),
+      getMyIntakeEventV3MeIntakeGet(),
+    ])
+    myOnboardings.value = sortOnboardings(list.data.items)
+    acceptsInvites.value = intake.data.accepts_invites
+  } catch {
+    /* блок коллективов остаётся с прежними данными */
+  }
+}
+
+async function setAcceptsInvites(value: boolean) {
+  if (value === acceptsInvites.value) return
+  intakeBusy.value = true
+  try {
+    acceptsInvites.value = (await putMyIntakeEventV3MeIntakePut({ accepts_invites: value })).data.accepts_invites
+  } catch (err) {
+    await showError(err, 'Не удалось сохранить')
+  } finally {
+    intakeBusy.value = false
+  }
+}
+
+watch([() => live.tick, () => live.versions], () => void loadOnboardings())
+
 async function loadAll() {
   if (!auth.user) await auth.fetchUser()
   await myProfile.load(true)
+  void loadOnboardings()
   if (!myProfile.profile) return
   await myProfile.syncToken()
   void accountLink.check()
