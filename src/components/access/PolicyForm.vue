@@ -30,22 +30,6 @@
         <ion-spinner v-else name="crescent" />
       </div>
 
-      <div class="pf-purpose">
-        <div class="ui-chips">
-          <button
-            v-for="preset in POLICY_PURPOSES"
-            :key="preset"
-            type="button"
-            class="ui-chip"
-            :class="{ 'ui-chip--active': purpose === preset }"
-            @click="purpose = preset"
-          >
-            {{ preset }}
-          </button>
-        </div>
-        <UiTextarea v-model="purpose" label="Цель" :rows="3" counter :maxlength="COMMENT_MAX" :error="purposeError" />
-      </div>
-
       <UiTextarea v-model="comment" label="Комментарий" :rows="3" counter :maxlength="COMMENT_MAX" />
     </div>
   </ion-content>
@@ -58,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { IonContent, IonIcon, IonSpinner } from '@ionic/vue'
 import { closeOutline } from 'ionicons/icons'
 import {
@@ -70,7 +54,7 @@ import {
 import HelpTip from '@/components/common/HelpTip.vue'
 import UiTextarea from '@/components/common/UiTextarea.vue'
 import { useToast } from '@/composables/useToast'
-import { COMMENT_MAX, COMMENT_MIN, POLICY_PURPOSES } from '@/utils/dataAccess'
+import { COMMENT_MAX } from '@/utils/dataAccess'
 
 const props = defineProps<{ collectiveId: string; current: CollectivePolicyRead | null }>()
 const emit = defineEmits<{ close: []; published: [policy: CollectivePolicyRead] }>()
@@ -79,15 +63,8 @@ const { showError, showMessage } = useToast()
 
 const fields = ref<AccessFieldRead[]>([])
 const chosen = ref(new Set<string>(props.current?.fields.map((field) => field.key) ?? []))
-const purpose = ref(props.current?.purpose ?? '')
 const comment = ref(props.current?.comment ?? '')
 const saving = ref(false)
-const tried = ref(false)
-
-const purposeError = computed(() => {
-  if (!tried.value) return undefined
-  return purpose.value.trim().length < COMMENT_MIN ? `Не короче ${COMMENT_MIN} символов` : undefined
-})
 
 function toggle(key: string) {
   const next = new Set(chosen.value)
@@ -97,13 +74,11 @@ function toggle(key: string) {
 }
 
 async function submit() {
-  tried.value = true
-  if (purposeError.value || !chosen.value.size || saving.value) return
+  if (!chosen.value.size || saving.value) return
   saving.value = true
   try {
     const { data } = await publishCollectivePolicyProfileV3CollectivesCollectiveIdPoliciesPost(props.collectiveId, {
       fields: fields.value.filter((field) => chosen.value.has(field.key)).map((field) => field.key),
-      purpose: purpose.value.trim(),
       comment: comment.value.trim() || null,
     })
     emit('published', data)
@@ -126,15 +101,10 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.pf-form,
-.pf-purpose {
+.pf-form {
   display: flex;
   flex-direction: column;
   gap: 20px;
-}
-
-.pf-purpose {
-  gap: 10px;
 }
 
 .ui-sheet-title {

@@ -99,12 +99,6 @@ export const CONSENT_STATE_LABELS: Record<ConsentState, string> = {
   consent_outdated: 'Согласие на прежнюю версию',
 }
 
-export const POLICY_PURPOSES = [
-  'Оформление поездок и выездов',
-  'Пропуска на площадки мероприятий',
-  'Договоры и отчёты перед организаторами',
-]
-
 /** Одна строка на участника по колонкам последней версии; пустая ячейка там, где нет согласия. */
 export function policyExportTable(exported: PolicyExportRead, names: Map<string, string | null>): ExportTable {
   return exportTable(

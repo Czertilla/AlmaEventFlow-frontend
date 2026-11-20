@@ -2510,7 +2510,6 @@ export interface CollectivePolicyRead {
   collective_id: string;
   collective_name: string;
   version: number;
-  purpose: string;
   comment: string | null;
   /** The text a member agrees to, kept with the version. */
   text: string;
@@ -2576,7 +2575,6 @@ export interface ConsentTodo {
   version: number;
   /** `consent_missing`: no valid consent (none yet, revoked, or given before the member came back); `consent_outdated`: a newer version. */
   state: ConsentState;
-  purpose: string;
   comment: string | null;
   /** What the member agrees to. */
   text: string;
@@ -2711,11 +2709,7 @@ export interface PolicyCreate {
      * @maxItems 64
      */
   fields: string[];
-  /**
-     * Why the leader processes the data. Its length after trimming is bounded by the server settings.
-     * @maxLength 4000
-     */
-  purpose: string;
+  /** Optional. Its length after trimming is bounded by the server settings. */
   comment?: string | null;
 }
 
@@ -7881,8 +7875,8 @@ export const getCollectivePoliciesProfileV3CollectivesCollectiveIdPoliciesGet = 
 
 /**
  * The leader of a confirmed collective publishes the next version: the fields
- * it processes and why. Versions never change; any change of the fields, the
- * purpose or the comment is a new version every active member is asked to agree
+ * it processes and an optional comment. Versions never change; any change of the
+ * fields or the comment is a new version every active member is asked to agree
  * to (`409 POLICY_UNCHANGED` when nothing changed).
  * @summary Publish Collective Policy
  */

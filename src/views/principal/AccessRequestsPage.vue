@@ -13,7 +13,7 @@
         <div class="ui-chips">
           <span v-for="field in policy.fields" :key="field.key" class="ui-chip ui-chip--static">{{ field.label }}</span>
         </div>
-        <p class="ar-comment">{{ policy.purpose }}</p>
+        <p v-if="policy.comment" class="ar-comment">{{ policy.comment }}</p>
       </template>
       <p v-else class="ar-counts">Политики ещё нет</p>
       <div class="ar-actions">

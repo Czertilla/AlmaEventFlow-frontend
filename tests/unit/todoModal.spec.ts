@@ -36,7 +36,7 @@ const consent = item({
   collective_id: 'c1',
   collective_name: 'Хор',
   consent: {
-    policy_id: 'p1', version: 1, state: 'consent_missing', purpose: 'Выезды', comment: null,
+    policy_id: 'p1', version: 1, state: 'consent_missing', comment: null,
     text: 'Текст', text_hash: '0'.repeat(64), fields: [{ key: 'contact.phone', label: 'Телефон' }],
   },
 })

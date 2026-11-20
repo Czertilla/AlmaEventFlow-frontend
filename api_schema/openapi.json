@@ -36012,7 +36012,7 @@
                     "collective-policies"
                 ],
                 "summary": "Publish Collective Policy",
-                "description": "The leader of a confirmed collective publishes the next version: the fields\nit processes and why. Versions never change; any change of the fields, the\npurpose or the comment is a new version every active member is asked to agree\nto (`409 POLICY_UNCHANGED` when nothing changed).",
+                "description": "The leader of a confirmed collective publishes the next version: the fields\nit processes and an optional comment. Versions never change; any change of the\nfields or the comment is a new version every active member is asked to agree\nto (`409 POLICY_UNCHANGED` when nothing changed).",
                 "operationId": "publish_collective_policy_profile_v3_collectives__collective_id__policies_post",
                 "security": [
                     {
@@ -51397,10 +51397,6 @@
                         "type": "integer",
                         "title": "Version"
                     },
-                    "purpose": {
-                        "type": "string",
-                        "title": "Purpose"
-                    },
                     "comment": {
                         "anyOf": [
                             {
@@ -51441,7 +51437,6 @@
                     "collective_id",
                     "collective_name",
                     "version",
-                    "purpose",
                     "comment",
                     "text",
                     "text_hash",
@@ -51621,10 +51616,6 @@
                         "$ref": "#/components/schemas/ConsentState",
                         "description": "`consent_missing`: no valid consent (none yet, revoked, or given before the member came back); `consent_outdated`: a newer version."
                     },
-                    "purpose": {
-                        "type": "string",
-                        "title": "Purpose"
-                    },
                     "comment": {
                         "anyOf": [
                             {
@@ -51659,7 +51650,6 @@
                     "policy_id",
                     "version",
                     "state",
-                    "purpose",
                     "comment",
                     "text",
                     "text_hash",
@@ -52274,12 +52264,6 @@
                         "title": "Fields",
                         "description": "Keys of grantable fields (`GET /profile/v2/access-requests/fields`)."
                     },
-                    "purpose": {
-                        "type": "string",
-                        "maxLength": 4000,
-                        "title": "Purpose",
-                        "description": "Why the leader processes the data. Its length after trimming is bounded by the server settings."
-                    },
                     "comment": {
                         "anyOf": [
                             {
@@ -52290,13 +52274,13 @@
                                 "type": "null"
                             }
                         ],
-                        "title": "Comment"
+                        "title": "Comment",
+                        "description": "Optional. Its length after trimming is bounded by the server settings."
                     }
                 },
                 "type": "object",
                 "required": [
-                    "fields",
-                    "purpose"
+                    "fields"
                 ],
                 "title": "PolicyCreate"
             },
