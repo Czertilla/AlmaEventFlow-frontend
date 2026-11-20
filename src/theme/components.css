@@ -497,6 +497,13 @@ input.ui-field-control {
   font-size: var(--fs-md);
 }
 
+.ui-toggle-row--flat {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: none;
+}
+
 .ui-field-title {
   display: flex;
   align-items: center;

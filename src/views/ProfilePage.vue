@@ -87,8 +87,10 @@
 
         <section class="ui-card">
           <div class="ui-card-head">
-            <h3 class="ui-card-title">Мои коллективы</h3>
-            <span v-if="collectiveRows.length" class="ui-count">{{ collectiveRows.length }}</span>
+            <h3 class="ui-card-title">
+              Мои коллективы
+              <span v-if="collectiveRows.length" class="ui-count">{{ collectiveRows.length }}</span>
+            </h3>
             <button
               type="button"
               class="ui-icon-btn ui-icon-btn--primary"
@@ -141,7 +143,7 @@
               </li>
             </ul>
             <p v-if="!collectiveRows.length && !myOnboardings.length" class="profile-hint">Вы пока не состоите в коллективах</p>
-            <label class="ui-toggle-row">
+            <label class="ui-toggle-row ui-toggle-row--flat collective-setting">
               <span>
                 Принимать приглашения
                 <HelpTip text="Если выключить, руководители не смогут пригласить вас в коллектив. Почему, им не сообщается." />
@@ -423,18 +425,19 @@ async function handleLogout() {
 .profile-lines {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
   margin: 0;
 }
 
 .profile-line {
-  display: grid;
-  grid-template-columns: minmax(96px, 140px) 1fr;
-  gap: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 
 .profile-line dt {
-  font-size: var(--fs-sm);
+  font-size: var(--fs-xs);
   color: var(--ion-color-medium);
 }
 
@@ -528,6 +531,10 @@ async function handleLogout() {
   flex-wrap: wrap;
   gap: 8px;
   margin-top: 8px;
+}
+
+.collective-setting {
+  border-top: 1px solid var(--ion-border-color);
 }
 
 .action-arrow {
