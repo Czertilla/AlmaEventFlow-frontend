@@ -94,9 +94,7 @@ function validate(all: Record<string, string>): boolean {
     }
   }
   if (!hasPassport.value && Object.entries(all).some(([key, value]) => key.startsWith('passport.') && value.trim())) {
-    for (const key of ['passport.number', 'passport.expire_date']) {
-      if (!all[key]?.trim()) errors[key] = 'Нужно для паспорта'
-    }
+    if (!all['passport.number']?.trim()) errors['passport.number'] = 'Нужно для паспорта'
   }
   return !Object.keys(errors).length
 }

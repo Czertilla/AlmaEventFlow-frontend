@@ -2642,7 +2642,7 @@ export interface MyPassportData {
      * @maxLength 32
      */
   number: string;
-  expire_date: string;
+  expire_date?: string | null;
   is_foreign?: boolean;
   issued_date?: string | null;
   issued_authority?: string | null;
@@ -2653,7 +2653,7 @@ export interface MyPassportData {
 export interface MyPassportRead {
   id: string;
   number: string;
-  expire_date: string;
+  expire_date: string | null;
   is_foreign: boolean;
   issued_date: string | null;
   issued_authority: string | null;

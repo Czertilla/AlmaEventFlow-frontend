@@ -192,7 +192,7 @@
                 <UiInput v-model="row.number" label="Серия и номер" :maxlength="32" :error="passportErrors[row.key]?.number" />
                 <DateTimeField v-model="row.issuedDate" mode="date" label="Дата выдачи" />
                 <UiInput v-model="row.issuedAuthority" label="Кем выдан" :maxlength="512" />
-                <DateTimeField v-model="row.expireDate" mode="date" label="Действителен до" :error="passportErrors[row.key]?.expireDate" />
+                <DateTimeField v-model="row.expireDate" mode="date" label="Действителен до" />
                 <label class="ui-toggle-row"><span>Заграничный</span><ion-toggle v-model="row.isForeign" /></label>
                 <label class="ui-toggle-row"><span>ФИО в паспорте другое</span><ion-toggle v-model="row.hasVariant" /></label>
                 <template v-if="row.hasVariant">
@@ -276,7 +276,7 @@ const MAX_GRADE = 12
 const MAX_PASSPORTS = 5
 
 interface PassportFormRow extends PassportRow { key: number }
-interface PassportErrors { number?: string; expireDate?: string; surname?: string; name?: string }
+interface PassportErrors { number?: string; surname?: string; name?: string }
 const SHAKE_MS = 600
 
 const router = useRouter()
@@ -520,7 +520,6 @@ function validate(): boolean {
   for (const row of form.passports) {
     const problems: PassportErrors = {}
     if (!row.number.trim()) problems.number = 'Укажите серию и номер'
-    if (!row.expireDate) problems.expireDate = 'Укажите срок действия'
     if (row.hasVariant && !row.variant.surname.trim()) problems.surname = 'Укажите фамилию'
     if (row.hasVariant && !row.variant.name.trim()) problems.name = 'Укажите имя'
     if (Object.keys(problems).length) passports[row.key] = problems
@@ -574,7 +573,7 @@ function passportPayload(row: PassportFormRow): MyPassportData {
   return {
     id: row.id,
     number: row.number.trim(),
-    expire_date: row.expireDate as string,
+    expire_date: row.expireDate || null,
     is_foreign: row.isForeign,
     issued_date: row.issuedDate || null,
     issued_authority: row.issuedAuthority.trim() || null,

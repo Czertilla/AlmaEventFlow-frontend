@@ -57,11 +57,16 @@ describe('filling the fields a policy asks for', () => {
     expect(body.passports).toEqual([expect.objectContaining({ id: 'pp1', number: '1', issued_authority: 'ОВД' })])
   })
 
-  test('a new passport always asks for its number and term', () => {
-    expect(passportKeys(['passport.issued_date'], false)).toEqual([
-      'passport.number', 'passport.expire_date', 'passport.issued_date',
-    ])
+  test('a new passport asks only for its number: the term is optional', () => {
+    expect(passportKeys(['passport.issued_date'], false)).toEqual(['passport.number', 'passport.issued_date'])
+    expect(passportKeys(['passport.expire_date'], false)).toEqual(['passport.number', 'passport.expire_date'])
     expect(passportKeys(['passport.issued_date'], true)).toEqual(['passport.issued_date'])
+  })
+
+  test('a passport without a term is sent with an empty term', () => {
+    const body = withValues(profileWrite(profile), { 'passport.number': '4510 246813' })
+
+    expect(body.passports).toEqual([expect.objectContaining({ number: '4510 246813', expire_date: null })])
   })
 })
 

@@ -51888,8 +51888,15 @@
                         "title": "Number"
                     },
                     "expire_date": {
-                        "type": "string",
-                        "format": "date",
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "Expire Date"
                     },
                     "is_foreign": {
@@ -51935,8 +51942,7 @@
                 },
                 "type": "object",
                 "required": [
-                    "number",
-                    "expire_date"
+                    "number"
                 ],
                 "title": "MyPassportData"
             },
@@ -51952,8 +51958,15 @@
                         "title": "Number"
                     },
                     "expire_date": {
-                        "type": "string",
-                        "format": "date",
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "format": "date"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
                         "title": "Expire Date"
                     },
                     "is_foreign": {

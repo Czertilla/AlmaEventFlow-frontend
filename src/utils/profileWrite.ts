@@ -56,9 +56,9 @@ export const INLINE_FIELDS = new Set([
   'passport.number', 'passport.expire_date', 'passport.issued_date', 'passport.issued_authority',
 ])
 
-export const PASSPORT_REQUIRED = ['passport.number', 'passport.expire_date']
+export const PASSPORT_REQUIRED = ['passport.number']
 
-/** Поля паспорта, которые надо спросить: у нового паспорта номер и срок обязательны. */
+/** Поля паспорта, которые надо спросить: у нового паспорта обязателен номер. */
 export function passportKeys(missing: string[], hasPassport: boolean): string[] {
   const asked = missing.filter((key) => key.startsWith('passport.'))
   if (!asked.length || hasPassport) return asked
@@ -88,11 +88,11 @@ export function withValues(write: MyProfileWriteV3, values: Record<string, strin
   }
   if (Object.values(passportValues).some(Boolean)) {
     const [current, ...rest] = next.passports!
-    const base: MyPassportData = current ?? { number: '', expire_date: '', is_foreign: false }
+    const base: MyPassportData = current ?? { number: '', expire_date: null, is_foreign: false }
     const merged: MyPassportData = {
       ...base,
       number: passportValues.number || base.number,
-      expire_date: passportValues.expire_date || base.expire_date,
+      expire_date: passportValues.expire_date || base.expire_date || null,
       issued_date: passportValues.issued_date || base.issued_date || null,
       issued_authority: passportValues.issued_authority || base.issued_authority || null,
     }
