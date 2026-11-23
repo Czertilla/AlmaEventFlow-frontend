@@ -37,6 +37,7 @@ export const useTodoStore = defineStore('todo', () => {
 
   const open = computed(() => items.value.filter((item) => !isDone(item)))
   const count = computed(() => open.value.length)
+  const blocking = computed(() => open.value.filter((item) => item.kind === 'attendance' || item.kind === 'fill_fields'))
   const missingFields = computed(() => missingFieldKeys(items.value))
 
   async function load() {
@@ -98,7 +99,7 @@ export const useTodoStore = defineStore('todo', () => {
   }
 
   return {
-    items, unavailable, loaded, loading, isOpen, open, count, missingFields,
+    items, unavailable, loaded, loading, isOpen, open, count, blocking, missingFields,
     isDone, refresh, showOnSignIn, showOnHome, ensureCards, done, reset,
   }
 })

@@ -75,6 +75,29 @@ describe('the modal of things to do', () => {
     expect(router.currentRoute.value.fullPath).toBe('/event/e1')
   })
 
+  test('the done button waits while a place is unmarked or fields are empty', async () => {
+    const todo = useTodoStore()
+    todo.items = [consent, mark, fill]
+    todo.isOpen = true
+    const wrapper = mount(TodoModal, { global: { stubs } })
+    const button = () => wrapper.find('.ui-sheet-actions button')
+
+    expect(button().attributes('disabled')).toBeDefined()
+
+    todo.done('fill_fields:c1')
+    await flushPromises()
+    expect(button().attributes('disabled')).toBeDefined()
+
+    useEventCalendarStore().upsertCards([
+      card({
+        updated_at: '2026-10-21T10:00:00Z',
+        participations: [participation({ my_attendance: attendance({ is_attended: true }) })],
+      }),
+    ])
+    await flushPromises()
+    expect(button().attributes('disabled')).toBeUndefined()
+  })
+
   test('the kinds go in the order of the registry and an unknown kind is left out', () => {
     const odd = item({ id: 'later', kind: 'later' as TodoItem['kind'] })
     const joining = item({ id: 'onboarding:o1', kind: 'onboarding' })

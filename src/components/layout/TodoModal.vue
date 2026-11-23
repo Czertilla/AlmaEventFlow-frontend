@@ -43,7 +43,7 @@
       </div>
     </ion-content>
     <div class="ui-sheet-actions">
-      <button type="button" class="ui-btn ui-btn--primary" @click="close()">Готово</button>
+      <button type="button" class="ui-btn ui-btn--primary" :disabled="todo.blocking.length > 0" @click="close()">Готово</button>
     </div>
   </ion-modal>
 </template>
