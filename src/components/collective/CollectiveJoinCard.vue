@@ -37,7 +37,8 @@
       <OnboardingChat v-if="card.onboarding_id" :onboarding-id="card.onboarding_id" @changed="onChanged" />
       <template v-else-if="card.can_request">
         <UiTextarea v-model="comment" label="Комментарий" :rows="3" :maxlength="1000" counter />
-        <button type="button" class="ui-btn ui-btn--primary" :disabled="sending" @click="request()">
+        <PolicyConsent v-model:agreed="agreed" v-model:ready="consentReady" :collective-id="card.id" />
+        <button type="button" class="ui-btn ui-btn--primary" :disabled="sending || !consentReady" @click="request()">
           Отправить запрос
         </button>
       </template>
@@ -65,6 +66,7 @@ import DefaultAvatar from '@/components/common/DefaultAvatar.vue'
 import HelpTip from '@/components/common/HelpTip.vue'
 import UiTextarea from '@/components/common/UiTextarea.vue'
 import OnboardingChat from '@/components/collective/OnboardingChat.vue'
+import PolicyConsent from '@/components/collective/PolicyConsent.vue'
 import { useToast } from '@/composables/useToast'
 import { useAuthStore } from '@/stores/auth'
 import { useSettingsStore } from '@/stores/settings'
@@ -86,6 +88,8 @@ const needsDetails = computed(
   () => !auth.jwtPayload?.per && props.card.relation === 'none' && !props.card.retry_after,
 )
 const comment = ref('')
+const agreed = ref(false)
+const consentReady = ref(false)
 const sending = ref(false)
 const leaderName = ref('')
 const contacts = ref<VisibleContactRead[]>([])
@@ -130,6 +134,7 @@ async function request() {
   try {
     await requestOnboardingEventV3CollectivesCollectiveIdOnboardingPost(props.card.id, {
       comment: comment.value.trim() || null,
+      consent: agreed.value,
     })
     comment.value = ''
     emit('changed')

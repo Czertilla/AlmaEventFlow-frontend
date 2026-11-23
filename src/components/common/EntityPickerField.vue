@@ -34,6 +34,7 @@
           @keydown="onKeydown"
         >
           <template #prefix><ion-icon :icon="searchOutline" /></template>
+          <template v-if="$slots.suffix" #suffix><slot name="suffix" /></template>
         </UiInput>
       </div>
       <UiSelectMenu

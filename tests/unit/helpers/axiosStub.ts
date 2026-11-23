@@ -19,7 +19,7 @@ export function stubBackend(handler: (config: InternalAxiosRequestConfig) => Rep
     calls.push(config)
     const reply = handler(config)
     if (reply === 'network') throw new AxiosError('Network Error', 'ERR_NETWORK', config, {})
-    const response = { status: reply.status, data: reply.data ?? {}, statusText: '', headers: {}, config }
+    const response = { status: reply.status, data: reply.data === undefined ? {} : reply.data, statusText: '', headers: {}, config }
     if (reply.status >= 200 && reply.status < 300) return response
     throw new AxiosError('failed', 'ERR_BAD_RESPONSE', config, {}, response)
   }

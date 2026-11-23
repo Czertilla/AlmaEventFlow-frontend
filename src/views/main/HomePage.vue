@@ -11,12 +11,7 @@
               <h1 class="home-greeting">{{ greeting }}</h1>
               <p class="home-date">{{ todayFormatted }}</p>
             </div>
-            <div class="home-stats">
-              <div class="stat-chip">
-                <span class="stat-num">{{ calendar.events.length }}</span>
-                <span class="stat-label">мероприятий</span>
-              </div>
-            </div>
+            <TodoAlert v-if="!isDesktop" />
           </div>
         </div>
 
@@ -72,7 +67,6 @@
               <div class="section-card events-card">
                 <div class="section-card-header">
                   <h3>Мероприятия</h3>
-                  <span class="events-count" v-if="!loading && filteredEvents.length">{{ filteredEvents.length }}</span>
                 </div>
                 <!-- EventList монтируется только когда загрузка ПОЛНОСТЬЮ завершена --
                      initLoad()/reloadEventsForFilter() догружают диапазон календаря
@@ -193,6 +187,7 @@ import { IonPage, IonModal, IonHeader, IonToolbar, IonTitle, IonContent, IonButt
 import { useEventCalendarStore } from '@/stores/eventCalendar'
 import { usePrincipalStore } from '@/stores/principal'
 import { useSettingsStore } from '@/stores/settings'
+import { useTodoStore } from '@/stores/todo'
 import { usePlatform } from '@/composables/usePlatform'
 import { useUrlState } from '@/composables/useUrlState'
 import { useCalendarSync } from '@/composables/useCalendarSync'
@@ -211,6 +206,7 @@ import MiniCalendar from '@/components/calendar/MiniCalendar.vue'
 import EventList from '@/components/event/EventList.vue'
 import HomeFilters from '@/components/event/HomeFilters.vue'
 import AppFab from '@/components/common/AppFab.vue'
+import TodoAlert from '@/components/layout/TodoAlert.vue'
 import {
   HOME_FILTER_DEFAULTS, countActiveFilters, homeFilterParams, matchesHomeFilters, parseHomeFilters, statusesToQuery,
 } from '@/utils/homeFilters'
@@ -220,6 +216,7 @@ const router = useRouter()
 const calendar = useEventCalendarStore()
 const principal = usePrincipalStore()
 const settings = useSettingsStore()
+const todo = useTodoStore()
 const { isDesktop } = usePlatform()
 const { syncSelectedDateToCalendar } = useCalendarSync()
 const mark = useAttendanceMark()
@@ -634,7 +631,10 @@ watch(
 
 // Перезагружаем список при каждом входе на главную: смена аккаунта, возврат
 // с деталей мероприятия, создание нового ивента руководителем — всё подхватится
-onIonViewWillEnter(initLoad)
+onIonViewWillEnter(() => {
+  void todo.showOnHome()
+  return initLoad()
+})
 </script>
 
 <style scoped>
@@ -652,6 +652,7 @@ onIonViewWillEnter(initLoad)
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
 }
 
 .home-greeting {
@@ -665,34 +666,6 @@ onIonViewWillEnter(initLoad)
   margin: 4px 0 0;
   font-size: var(--fs-md);
   color: var(--ion-color-medium);
-}
-
-.home-stats {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.stat-chip {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 8px 16px;
-  background: var(--ion-card-background);
-  border-radius: 12px;
-  box-shadow: var(--ion-card-shadow);
-}
-
-.stat-num {
-  font-size: var(--fs-2xl);
-  font-weight: var(--fw-bold);
-  color: var(--ion-color-primary);
-}
-
-.stat-label {
-  font-size: var(--fs-2xs);
-  color: var(--ion-color-medium);
-  font-weight: var(--fw-medium);
 }
 
 .home-content {
@@ -749,20 +722,6 @@ onIonViewWillEnter(initLoad)
   font-size: var(--fs-lg);
   font-weight: var(--fw-semibold);
   color: var(--ion-text-color);
-}
-
-.events-count {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 6px;
-  border-radius: 11px;
-  background: rgba(var(--ion-color-primary-rgb), 0.1);
-  color: var(--ion-color-primary);
-  font-size: var(--fs-xs);
-  font-weight: var(--fw-semibold);
 }
 
 .events-section {

@@ -5,24 +5,7 @@ import type { EventCard, TodoItem, TodoKind } from '@/api/generated/almaEventFlo
 import { useEventCalendarStore } from './eventCalendar'
 import { mergeTodo, missingFieldKeys } from '@/utils/todoKinds'
 
-const SHOWN_KEY = 'todoShown'
 const REFRESH_EVERY_MS = 60_000
-
-function shownFor(): string | null {
-  try {
-    return sessionStorage.getItem(SHOWN_KEY)
-  } catch {
-    return null
-  }
-}
-
-function rememberShown(owner: string) {
-  try {
-    sessionStorage.setItem(SHOWN_KEY, owner)
-  } catch {
-    /* без хранилища модалка просто покажется ещё раз */
-  }
-}
 
 /**
  * Всё, что человеку надо сделать: отметки на мероприятиях, согласия на политики
@@ -39,6 +22,7 @@ export const useTodoStore = defineStore('todo', () => {
   const isOpen = ref(false)
   let fetchedAt = 0
   let inFlight: Promise<void> | null = null
+  let shownFor: string | null = null
 
   function attendanceDone(event: EventCard | null | undefined): boolean {
     if (!event) return true
@@ -78,12 +62,18 @@ export const useTodoStore = defineStore('todo', () => {
     return inFlight
   }
 
-  /** Модалка открывается сама один раз за сессию браузера и аккаунт. */
+  /** После входа и после перезагрузки страницы модалка открывается сама один раз на аккаунт. */
   async function showOnSignIn(owner: string) {
     await refresh(true)
-    if (count.value === 0 || shownFor() === owner) return
-    rememberShown(owner)
+    if (count.value === 0 || shownFor === owner) return
+    shownFor = owner
     isOpen.value = true
+  }
+
+  /** Главная открывает модалку при каждом входе на неё, пока есть дела. */
+  async function showOnHome() {
+    await refresh(true)
+    if (count.value > 0) isOpen.value = true
   }
 
   /** Карточки отметок возвращаются в стор мероприятий, если список их вытеснил. */
@@ -109,6 +99,6 @@ export const useTodoStore = defineStore('todo', () => {
 
   return {
     items, unavailable, loaded, loading, isOpen, open, count, missingFields,
-    isDone, refresh, showOnSignIn, ensureCards, done, reset,
+    isDone, refresh, showOnSignIn, showOnHome, ensureCards, done, reset,
   }
 })

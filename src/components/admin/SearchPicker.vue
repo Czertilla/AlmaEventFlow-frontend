@@ -15,7 +15,9 @@
     @focus="onFocus"
     @select="select"
     @clear="clear"
-  />
+  >
+    <template v-if="$slots.suffix" #suffix><slot name="suffix" /></template>
+  </EntityPickerField>
 </template>
 
 <script setup lang="ts">

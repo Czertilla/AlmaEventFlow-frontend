@@ -1,7 +1,7 @@
 <template>
   <ion-modal ref="modal" :is-open="todo.isOpen" @ion-modal-did-dismiss="todo.isOpen = false">
     <div class="ui-sheet-head">
-      <h3 class="ui-sheet-title">Что сделать</h3>
+      <h3 class="ui-sheet-title">Чек-лист</h3>
       <button type="button" class="ui-icon-btn" aria-label="Закрыть" @click="close()">
         <ion-icon :icon="closeOutline" />
       </button>
@@ -36,7 +36,6 @@
               :key="item.id"
               :item="item"
               @done="onDone"
-              @open-form="openPath('/profile/data')"
               @open-path="openPath"
             />
           </template>

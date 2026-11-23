@@ -155,6 +155,19 @@ ion-toolbar {
   --border-width: 0 !important;
 }
 
+:root {
+  --app-toolbar-h: 56px;
+}
+
+html.ios {
+  --app-toolbar-h: 44px;
+}
+
+/* Заголовок страницы не заходит под кнопку чек-листа в правом углу */
+body:has(.todo-corner .ui-todo-alert) .ion-page:not(ion-modal .ion-page) > ion-header ion-toolbar {
+  --padding-end: 56px;
+}
+
 ion-button {
   --border-radius: 12px;
   font-weight: var(--fw-semibold);

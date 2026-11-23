@@ -2568,6 +2568,8 @@ export interface ConsentSubjectRead {
 export interface TodoField {
   key: string;
   label: string;
+  /** The person may have none and say so (`POST /profile/v3/profiles/my/absent-fields`). */
+  optional?: boolean;
 }
 
 export interface ConsentTodo {
@@ -2899,6 +2901,12 @@ export interface OnboardingActions {
   report: boolean;
 }
 
+export interface OnboardingAcceptance {
+  comment?: string | null;
+  /** The candidate agrees to the collective's data policy in force now; it is recorded once they are a member. Ignored for the leader. */
+  consent?: boolean;
+}
+
 export interface OnboardingDecision {
   comment?: string | null;
 }
@@ -2941,6 +2949,8 @@ export interface OnboardingReportRead {
 
 export interface OnboardingRequestCreate {
   comment?: string | null;
+  /** The candidate agrees to the collective's data policy in force now; it is recorded once they are a member. Ignored for the leader. */
+  consent?: boolean;
 }
 
 export interface PageV1CollectiveCard {
@@ -2985,6 +2995,27 @@ export interface VerifyTokenRequestV3 {
   collective_id?: string | null;
   email: string;
 }
+
+export interface AbsentFields {
+  /**
+     * Optional registry fields the person has no value for (not a student, no Telegram); a policy stops asking for them.
+     * @maxItems 32
+     */
+  keys: string[];
+}
+
+/**
+ * The order of the collective directory; `-` is descending.
+ */
+export type DirectoryOrder = typeof DirectoryOrder[keyof typeof DirectoryOrder];
+
+
+export const DirectoryOrder = {
+  name: 'name',
+  '-name': '-name',
+  member_count: 'member_count',
+  '-member_count': '-member_count',
+} as const;
 
 export type GetAttendancesEventV1AttendancesGetParams = {
 id?: string | null;
@@ -4021,6 +4052,15 @@ export type GetCollectiveDirectoryEventV3CollectivesGetParams = {
 search?: string | null;
 university_id?: string | null;
 is_verified?: boolean | null;
+/**
+ * Whether the collective takes requests.
+ */
+is_open?: boolean | null;
+/**
+ * Collectives the caller leads or is an active member of.
+ */
+joined?: boolean | null;
+order_by?: DirectoryOrder;
 page?: number;
 /**
  * @maximum 100
@@ -7891,6 +7931,19 @@ export const publishCollectivePolicyProfileV3CollectivesCollectiveIdPoliciesPost
   }
 
 /**
+ * The version in force, for anyone who considers joining; none when the
+ * collective has no policy.
+ * @summary Get Collective Policy
+ */
+export const getCollectivePolicyProfileV3CollectivesCollectiveIdPolicyGet = (
+    collectiveId: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<CollectivePolicyRead | null>> => {
+    return axios.get(
+      `/profile/v3/collectives/${collectiveId}/policy`,options
+    );
+  }
+
+/**
  * The latest version as an active member sees it, and whether their consent
  * holds: given no earlier than they last joined, and not revoked since.
  * @summary Get My Consent
@@ -8163,16 +8216,18 @@ export const getOnboardingEventV3OnboardingsOnboardingIdGet = (
 
 /**
  * The awaited side agrees and the candidate becomes a member; a repeated
- * acceptance answers the same onboarding and makes no second member.
+ * acceptance answers the same onboarding and makes no second member. The
+ * candidate's `consent`, given here or with the request, is recorded by profile
+ * for the version of the policy in force when it was given.
  * @summary Accept Onboarding
  */
 export const acceptOnboardingEventV3OnboardingsOnboardingIdAcceptPost = (
     onboardingId: string,
-    onboardingDecision: OnboardingDecision, options?: AxiosRequestConfig
+    onboardingAcceptance: OnboardingAcceptance, options?: AxiosRequestConfig
  ): Promise<AxiosResponse<OnboardingDetail>> => {
     return axios.post(
       `/event/v3/onboardings/${onboardingId}/accept`,
-      onboardingDecision,options
+      onboardingAcceptance,options
     );
   }
 
@@ -8291,6 +8346,43 @@ export const getVisibleContactsProfileV3PersonsPersonIdContactsGet = (
  ): Promise<AxiosResponse<VisibleContactRead[]>> => {
     return axios.get(
       `/profile/v3/persons/${personId}/contacts`,options
+    );
+  }
+
+/**
+ * The optional fields the caller said they have no value for.
+ * @summary Get My Absent Fields
+ */
+export const getMyAbsentFieldsProfileV3ProfilesMyAbsentFieldsGet = (
+     options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<AbsentFields>> => {
+    return axios.get(
+      `/profile/v3/profiles/my/absent-fields`,options
+    );
+  }
+
+/**
+ * Adds the fields to the declared ones; saving the profile without a student
+ * card declares the student fields, a value that appears withdraws its field.
+ * @summary Declare My Absent Fields
+ */
+export const declareMyAbsentFieldsProfileV3ProfilesMyAbsentFieldsPost = (
+    absentFields: AbsentFields, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<AbsentFields>> => {
+    return axios.post(
+      `/profile/v3/profiles/my/absent-fields`,
+      absentFields,options
+    );
+  }
+
+/**
+ * @summary Withdraw My Absent Field
+ */
+export const withdrawMyAbsentFieldProfileV3ProfilesMyAbsentFieldsFieldKeyDelete = (
+    fieldKey: string, options?: AxiosRequestConfig
+ ): Promise<AxiosResponse<AbsentFields>> => {
+    return axios.delete(
+      `/profile/v3/profiles/my/absent-fields/${fieldKey}`,options
     );
   }
 
@@ -8589,6 +8681,7 @@ export type ResetMyVisibilityProfileV2VisibilityMyFieldKeyDeleteResult = AxiosRe
 export type GetMyTodoEventV3MeTodoGetResult = AxiosResponse<TodoList>
 export type GetCollectivePoliciesProfileV3CollectivesCollectiveIdPoliciesGetResult = AxiosResponse<CollectivePolicyRead[]>
 export type PublishCollectivePolicyProfileV3CollectivesCollectiveIdPoliciesPostResult = AxiosResponse<CollectivePolicyRead>
+export type GetCollectivePolicyProfileV3CollectivesCollectiveIdPolicyGetResult = AxiosResponse<CollectivePolicyRead | null>
 export type GetMyConsentProfileV3CollectivesCollectiveIdConsentGetResult = AxiosResponse<ConsentStateRead>
 export type GiveConsentProfileV3CollectivesCollectiveIdConsentPostResult = AxiosResponse<ConsentStateRead>
 export type RevokeConsentProfileV3CollectivesCollectiveIdConsentRevokePostResult = AxiosResponse<ConsentStateRead>
@@ -8618,3 +8711,6 @@ export type GetOnboardingReportsEventV3OnboardingReportsGetResult = AxiosRespons
 export type IssueStreamTicketEventV3MeStreamTicketPostResult = AxiosResponse<StreamTicket>
 export type OpenStreamEventV3MeStreamGetResult = AxiosResponse<unknown>
 export type GetVisibleContactsProfileV3PersonsPersonIdContactsGetResult = AxiosResponse<VisibleContactRead[]>
+export type GetMyAbsentFieldsProfileV3ProfilesMyAbsentFieldsGetResult = AxiosResponse<AbsentFields>
+export type DeclareMyAbsentFieldsProfileV3ProfilesMyAbsentFieldsPostResult = AxiosResponse<AbsentFields>
+export type WithdrawMyAbsentFieldProfileV3ProfilesMyAbsentFieldsFieldKeyDeleteResult = AxiosResponse<AbsentFields>

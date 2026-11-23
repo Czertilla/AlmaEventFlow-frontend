@@ -53,7 +53,6 @@ beforeEach(() => {
   setActivePinia(createPinia())
   reply = { status: 200, data: { items: [], unavailable: [] } }
   backend = stubBackend((config) => (config.url === TODO ? reply : { status: 404 }))
-  try { sessionStorage.clear() } catch { /* нет хранилища */ }
 })
 afterEach(() => backend.restore())
 
@@ -87,7 +86,7 @@ describe('the modal of things to do', () => {
 })
 
 describe('the list of things to do', () => {
-  test('it comes in one request and opens itself once per session and account', async () => {
+  test('it comes in one request and opens itself once per page load and account', async () => {
     reply = { status: 200, data: { items: [consent, mark], unavailable: [] } }
     const todo = useTodoStore()
 
@@ -99,6 +98,22 @@ describe('the list of things to do', () => {
     expect(todo.count).toBe(2)
     expect(todo.isOpen).toBe(false)
     expect(useEventCalendarStore().events.map((event) => event.id)).toEqual(['e1'])
+  })
+
+  test('the home page opens it on every visit while there is something to do', async () => {
+    reply = { status: 200, data: { items: [consent], unavailable: [] } }
+    const todo = useTodoStore()
+
+    await todo.showOnSignIn('u1')
+    todo.isOpen = false
+    await todo.showOnHome()
+    const reopened = todo.isOpen
+    todo.isOpen = false
+    reply = { status: 200, data: { items: [], unavailable: [] } }
+    await todo.showOnHome()
+
+    expect(reopened).toBe(true)
+    expect(todo.isOpen).toBe(false)
   })
 
   test('a marked place is no longer to do', async () => {

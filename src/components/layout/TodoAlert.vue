@@ -3,27 +3,19 @@
     v-if="todo.count > 0"
     type="button"
     class="ui-todo-alert ui-attention"
-    :aria-label="`Что сделать: ${todo.count}`"
+    :aria-label="`Чек-лист: ${todo.count}`"
+    title="Чек-лист"
     @click="todo.isOpen = true"
   >
-    <ion-icon :icon="alertCircleOutline" />
-    <span>{{ todo.count }}</span>
-    <span class="ta-label">Что сделать</span>
+    <ion-icon :icon="checkboxOutline" />
+    <span class="ui-todo-alert-count">{{ todo.count }}</span>
   </button>
 </template>
 
 <script setup lang="ts">
 import { IonIcon } from '@ionic/vue'
-import { alertCircleOutline } from 'ionicons/icons'
+import { checkboxOutline } from 'ionicons/icons'
 import { useTodoStore } from '@/stores/todo'
 
 const todo = useTodoStore()
 </script>
-
-<style scoped>
-@media (max-width: 420px) {
-  .ta-label {
-    display: none;
-  }
-}
-</style>

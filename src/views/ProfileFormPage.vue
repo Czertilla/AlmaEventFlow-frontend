@@ -53,89 +53,7 @@
 
             <section v-show="shown('study')" class="ui-card pf-card" :class="sectionMotion">
               <div v-if="!editing" class="ui-card-head"><h3 class="ui-card-title">Учёба</h3></div>
-              <div :class="fieldClass('isStudent')">
-                <label class="ui-toggle-row"><span>Я студент</span><ion-toggle v-model="form.isStudent" /></label>
-              </div>
-              <template v-if="form.isStudent">
-                <div :class="fieldClass('studentId')">
-                  <UiInput v-model="form.studentId" label="Студенческий билет" :maxlength="64" :error="errors.studentId" />
-                </div>
-                <div :class="fieldClass('group')">
-                  <SearchPicker
-                    v-model="form.university.id"
-                    v-model:draft="form.university.draft"
-                    label="Университет"
-                    resource="organization"
-                    :fetch="searchUniversities"
-                    :locked="universityLocked"
-                    :hint="universityLocked ? 'Берётся из факультета' : undefined"
-                    creatable
-                    browse
-                  />
-                  <p v-if="errors.university" class="pf-error">{{ errors.university }}</p>
-                </div>
-                <div :class="fieldClass('group')">
-                  <SearchPicker
-                    :model-value="form.faculty.id"
-                    v-model:draft="form.faculty.draft"
-                    label="Факультет"
-                    resource="organization"
-                    :fetch="searchFaculties"
-                    :locked="groupLocked"
-                    :hint="groupLocked ? 'Берётся из группы' : undefined"
-                    creatable
-                    browse
-                    @update:model-value="onFaculty"
-                  />
-                  <p v-if="errors.faculty" class="pf-error">{{ errors.faculty }}</p>
-                </div>
-                <div :class="fieldClass('group')">
-                  <SearchPicker
-                    :model-value="form.group.id"
-                    v-model:draft="form.group.draft"
-                    label="Группа"
-                    help="Если группа уже есть в списке, университет, факультет, степень и курс подставятся сами. Если нет, впишите её название: группа добавится при сохранении."
-                    resource="group"
-                    numeric
-                    :fetch="searchGroups"
-                    creatable
-                    browse
-                    @update:model-value="onGroup"
-                  />
-                  <p v-if="errors.group" class="pf-error">{{ errors.group }}</p>
-                </div>
-                <div :class="fieldClass('group')">
-                  <SearchPicker
-                    v-model="form.degree.id"
-                    v-model:draft="form.degree.draft"
-                    label="Степень"
-                    numeric
-                    :fetch="searchDegrees"
-                    :locked="groupLocked"
-                    :hint="groupLocked ? 'Берётся из группы' : undefined"
-                    :creatable="auth.isSuperuser"
-                    browse
-                  />
-                  <p v-if="errors.degree" class="pf-error">{{ errors.degree }}</p>
-                </div>
-                <div :class="fieldClass('group')">
-                  <UiInput
-                    v-model="form.grade"
-                    label="Курс"
-                    type="number"
-                    inputmode="numeric"
-                    :disabled="groupLocked"
-                    :hint="groupLocked ? 'Берётся из группы' : undefined"
-                    :error="errors.grade"
-                  />
-                </div>
-                <div :class="fieldClass('isBudget')">
-                  <label class="ui-toggle-row"><span>Бюджет</span><ion-toggle v-model="form.isBudget" /></label>
-                </div>
-                <div :class="fieldClass('isFull')">
-                  <label class="ui-toggle-row"><span>Очная форма</span><ion-toggle v-model="form.isFull" /></label>
-                </div>
-              </template>
+              <StudyFields :model-value="form" :errors="errors" :mark-class="fieldClass" />
             </section>
 
             <section v-show="shown('extra')" class="ui-card pf-card" :class="sectionMotion">
@@ -193,8 +111,8 @@
                 <DateTimeField v-model="row.issuedDate" mode="date" label="Дата выдачи" />
                 <UiInput v-model="row.issuedAuthority" label="Кем выдан" :maxlength="512" />
                 <DateTimeField v-model="row.expireDate" mode="date" label="Действителен до" />
-                <label class="ui-toggle-row"><span>Заграничный</span><ion-toggle v-model="row.isForeign" /></label>
-                <label class="ui-toggle-row"><span>ФИО в паспорте другое</span><ion-toggle v-model="row.hasVariant" /></label>
+                <label class="ui-toggle-row ui-toggle-row--field"><span>Заграничный</span><ion-toggle v-model="row.isForeign" /></label>
+                <label class="ui-toggle-row ui-toggle-row--field"><span>ФИО в паспорте другое</span><ion-toggle v-model="row.hasVariant" /></label>
                 <template v-if="row.hasVariant">
                   <UiInput v-model="row.variant.surname" label="Фамилия в паспорте" :maxlength="128" :error="passportErrors[row.key]?.surname" />
                   <UiInput v-model="row.variant.name" label="Имя в паспорте" :maxlength="128" :error="passportErrors[row.key]?.name" />
@@ -235,17 +153,9 @@ import {
 import {
   getFacultyOrgV1FacultiesFacultyIdGet,
   getManyProfileV1DietsGet,
-  getStudentDegreesProfileV1StudentsDegreesGet,
-  getStudentGroupsProfileV1StudentsGroupsGet,
-  listFacultiesOrgV1FacultiesGet,
   listOrganizationsOrgV1OrganizationsGet,
-  listUniversitiesOrgV1UniversitiesGet,
   resolveDietProfileV2DietsPost,
-  resolveFacultyProfileV2FacultiesPost,
   resolveOrganizationProfileV2OrganizationsPost,
-  resolveStudentDegreeProfileV2StudentDegreesPost,
-  resolveStudentGroupProfileV2StudentGroupsPost,
-  resolveUniversityProfileV2UniversitiesPost,
 } from '@/api/generated/almaEventFlow'
 import type { ContactType, MyPassportData, MyProfileReadV3, MyProfileWriteV3 } from '@/api/generated/almaEventFlow'
 import SearchPicker from '@/components/admin/SearchPicker.vue'
@@ -256,6 +166,7 @@ import PageState from '@/components/common/PageState.vue'
 import SlidingTabs from '@/components/common/SlidingTabs.vue'
 import UiInput from '@/components/common/UiInput.vue'
 import ContactsEditor, { type ContactRow } from '@/components/profile/ContactsEditor.vue'
+import StudyFields from '@/components/profile/StudyFields.vue'
 import { usePlatform } from '@/composables/usePlatform'
 import { useSwipe } from '@/composables/useSwipe'
 import { useToast } from '@/composables/useToast'
@@ -264,15 +175,12 @@ import { useMyProfileStore } from '@/stores/myProfile'
 import { useTodoStore } from '@/stores/todo'
 import { contactError, normalizeContact } from '@/utils/contactTypes'
 import { quickStartRoute } from '@/utils/quickStart'
+import { pick, resolveStudy, studentWrite, studyErrors } from '@/utils/studyForm'
 import {
   SECTIONS, groupSignature, sectionCounts, sectionOfField, snapshot, changedFields,
   type FieldKey, type FormSnapshot, type PassportRow, type SectionKey,
 } from '@/utils/profileFormDiff'
 
-interface Choice<T> { id: T | null; draft: string | null }
-
-const pick = <T,>(id: T | null = null): Choice<T> => ({ id, draft: null })
-const MAX_GRADE = 12
 const MAX_PASSPORTS = 5
 
 interface PassportFormRow extends PassportRow { key: number }
@@ -317,8 +225,6 @@ let attempted = false
 let shakeTimer: ReturnType<typeof setTimeout> | undefined
 
 const title = 'Подробная информация'
-const groupLocked = computed(() => form.group.id != null)
-const universityLocked = computed(() => form.faculty.id != null && form.university.id != null)
 
 const changed = computed(() => (editing.value ? changedFields(baseline.value, form) : new Set<FieldKey>()))
 const counts = computed(() => sectionCounts(baseline.value, form))
@@ -462,33 +368,8 @@ async function items<T>(request: Promise<{ data: { items: T[] } }>): Promise<T[]
   return (await request).data.items
 }
 
-const searchUniversities = (search: string) => items(listUniversitiesOrgV1UniversitiesGet({ search, limit: 20 }))
 const searchOrganizations = (search: string) => items(listOrganizationsOrgV1OrganizationsGet({ search, limit: 20 }))
 const searchDiets = (search: string) => items(getManyProfileV1DietsGet({ search, limit: 20 }))
-const searchDegrees = (search: string) => items(getStudentDegreesProfileV1StudentsDegreesGet({ search, limit: 20 }))
-const searchFaculties = (search: string) =>
-  items(listFacultiesOrgV1FacultiesGet({ search, limit: 20, university_id: form.university.id ?? undefined }))
-const searchGroups = (search: string) =>
-  items(getStudentGroupsProfileV1StudentsGroupsGet({ search, limit: 20, faculty_id: form.faculty.id ?? undefined }))
-
-function onFaculty(value: string | number | null, raw?: { university_id?: string | null }) {
-  form.faculty.id = value as string | null
-  if (raw) form.university = pick(raw.university_id ?? null)
-}
-
-function onGroup(
-  value: string | number | null,
-  raw?: { degree_id: number; faculty_id: string; grade: number },
-) {
-  form.group.id = value as number | null
-  if (!raw) return
-  form.degree = pick(raw.degree_id)
-  form.grade = String(raw.grade)
-  form.faculty = pick(raw.faculty_id)
-  form.university = pick<string>()
-  const facultyId = raw.faculty_id
-  void universityOf(facultyId).then((id) => { if (form.faculty.id === facultyId) form.university = pick(id) })
-}
 
 function edited(row: ContactRow): boolean {
   return !row.id || originalContacts.get(row.id) !== row.value
@@ -498,18 +379,7 @@ function validate(): boolean {
   Object.keys(errors).forEach((key) => { errors[key as keyof typeof errors] = '' })
   errors.surname = form.surname.trim() ? '' : 'Укажите фамилию'
   errors.name = form.name.trim() ? '' : 'Укажите имя'
-  if (form.isStudent) {
-    const named = (value: Choice<unknown>) => value.id != null || !!value.draft
-    if (!form.studentId.trim()) errors.studentId = 'Укажите номер студенческого билета'
-    if (!named(form.group)) errors.group = 'Укажите группу'
-    if (form.group.id == null && named(form.group)) {
-      if (!named(form.faculty)) errors.faculty = 'Укажите факультет'
-      else if (form.faculty.id == null && !named(form.university)) errors.university = 'Укажите университет'
-      if (!named(form.degree)) errors.degree = 'Укажите степень'
-      const grade = Number(form.grade)
-      if (!Number.isInteger(grade) || grade < 1 || grade > MAX_GRADE) errors.grade = `Курс от 1 до ${MAX_GRADE}`
-    }
-  }
+  Object.assign(errors, studyErrors(form))
   const found: Record<number, string> = {}
   for (const row of form.contacts) {
     const message = edited(row) ? contactError(row.type, row.value) : null
@@ -549,23 +419,7 @@ async function resolveReferences(): Promise<Resolved> {
   if (!form.diet.id && form.diet.draft) {
     form.diet = pick((await resolveDietProfileV2DietsPost({ name: form.diet.draft })).data.id)
   }
-  if (form.isStudent && form.group.id == null && form.group.draft) {
-    if (!form.faculty.id && form.faculty.draft) {
-      if (!form.university.id && form.university.draft) {
-        form.university = pick((await resolveUniversityProfileV2UniversitiesPost({ name: form.university.draft })).data.id)
-      }
-      form.faculty = pick((await resolveFacultyProfileV2FacultiesPost({
-        name: form.faculty.draft, university_id: form.university.id as string,
-      })).data.id)
-    }
-    if (!form.degree.id && form.degree.draft) {
-      form.degree = pick((await resolveStudentDegreeProfileV2StudentDegreesPost({ name: form.degree.draft })).data.id)
-    }
-    form.group = pick((await resolveStudentGroupProfileV2StudentGroupsPost({
-      name: form.group.draft, degree_id: form.degree.id as number,
-      faculty_id: form.faculty.id as string, grade: Number(form.grade),
-    })).data.id)
-  }
+  await resolveStudy(form)
   return { workplaceId: form.workplace.id, dietId: form.diet.id, groupId: form.group.id, facultyId: form.faculty.id }
 }
 
@@ -595,12 +449,7 @@ function payload(refs: Resolved): MyProfileWriteV3 {
     birthdate: form.birthdate || null,
     workplace_id: refs.workplaceId,
     diet_id: refs.dietId,
-    student: form.isStudent && refs.groupId != null
-      ? {
-          student_id: form.studentId.trim(), group_id: refs.groupId, faculty_id: refs.facultyId,
-          is_budget: form.isBudget, is_full: form.isFull, is_active: form.isActive,
-        }
-      : null,
+    student: studentWrite(form),
     contacts: form.contacts.map((c) => ({
       id: c.id,
       type: c.type as ContactType,
@@ -695,11 +544,11 @@ onIonViewWillEnter(start)
   margin-bottom: 0;
 }
 
-.pf-field--changed {
+:deep(.pf-field--changed) {
   position: relative;
 }
 
-.pf-field--changed::before {
+:deep(.pf-field--changed)::before {
   content: '';
   position: absolute;
   top: 6px;

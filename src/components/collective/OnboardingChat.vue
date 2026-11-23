@@ -26,12 +26,19 @@
         </li>
       </ol>
 
+      <PolicyConsent
+        v-if="asksConsent"
+        v-model:agreed="agreed"
+        v-model:ready="consentReady"
+        :collective-id="detail.onboarding.collective_id"
+      />
+
       <div v-if="detail.actions.accept || detail.actions.decline || detail.actions.withdraw" class="ob-actions">
         <button
           v-if="detail.actions.accept"
           type="button"
           class="ui-btn ui-btn--primary ui-btn--sm"
-          :disabled="busy"
+          :disabled="busy || (asksConsent && !consentReady)"
           @click="decide('accept')"
         >
           {{ detail.onboarding.awaiting === 'leader' ? 'Принять в коллектив' : 'Вступить' }}
@@ -77,6 +84,7 @@ import {
 } from '@/api/generated/almaEventFlow'
 import PageState from '@/components/common/PageState.vue'
 import UiTextarea from '@/components/common/UiTextarea.vue'
+import PolicyConsent from '@/components/collective/PolicyConsent.vue'
 import { useToast } from '@/composables/useToast'
 import { useLiveStore } from '@/stores/live'
 import { useSettingsStore } from '@/stores/settings'
@@ -98,8 +106,13 @@ const loading = ref(false)
 const busy = ref(false)
 const draft = ref('')
 const reported = ref(false)
+const agreed = ref(false)
+const consentReady = ref(false)
 
 const open = computed(() => (detail.value ? isOpen(detail.value.onboarding.status) : false))
+const asksConsent = computed(
+  () => !!detail.value?.actions.accept && detail.value.onboarding.my_side === 'candidate',
+)
 const waitsForMe = computed(() => {
   const onboarding = detail.value?.onboarding
   return !!onboarding?.awaiting && onboarding.awaiting === onboarding.my_side
@@ -137,7 +150,13 @@ async function load() {
 async function confirm(header: string): Promise<{ ok: boolean; comment: string }> {
   const alert = await alertController.create({
     header,
-    inputs: [{ name: 'comment', type: 'textarea', placeholder: 'Комментарий', attributes: { maxlength: MESSAGE_MAX } }],
+    inputs: [{
+      name: 'comment',
+      type: 'textarea',
+      placeholder: 'Комментарий',
+      value: draft.value.trim(),
+      attributes: { maxlength: MESSAGE_MAX },
+    }],
     buttons: [
       { text: 'Отмена', role: 'cancel' },
       { text: 'Да', role: 'confirm' },
@@ -158,7 +177,10 @@ async function decide(action: keyof typeof HEADERS) {
   const answer = await confirm(HEADERS[action])
   if (!answer.ok) return
   busy.value = true
-  const body = { comment: answer.comment || null }
+  const body = {
+    comment: answer.comment || null,
+    ...(action === 'accept' && asksConsent.value ? { consent: agreed.value } : {}),
+  }
   try {
     const call = {
       accept: acceptOnboardingEventV3OnboardingsOnboardingIdAcceptPost,
@@ -166,6 +188,7 @@ async function decide(action: keyof typeof HEADERS) {
       withdraw: withdrawOnboardingEventV3OnboardingsOnboardingIdWithdrawPost,
     }[action]
     adopt((await call(props.onboardingId, body)).data)
+    if (answer.comment && answer.comment === draft.value.trim()) draft.value = ''
   } catch (err) {
     await showError(err, 'Не удалось сохранить решение')
     await load()
@@ -266,7 +289,7 @@ watch(() => live.versionOf(props.onboardingId), (next, prev) => {
   gap: 4px;
   padding: 8px 12px;
   border-radius: var(--radius-md);
-  background: var(--ion-color-light);
+  background: rgba(var(--ion-text-color-rgb), 0.07);
   color: var(--ion-text-color);
 }
 

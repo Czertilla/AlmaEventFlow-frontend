@@ -14,15 +14,13 @@
         <ion-router-outlet id="main-content" />
       </div>
     </div>
-    <!-- Profile Menu (all platforms) -->
-    <ProfileMenu v-if="auth.isAuthenticated" />
-    <div v-if="!isDesktop && auth.isAuthenticated" class="todo-corner"><TodoAlert /></div>
+    <div v-if="!isDesktop && auth.isAuthenticated && !onHome" class="todo-corner"><TodoAlert /></div>
     <TodoModal v-if="auth.isAuthenticated" />
   </ion-app>
 </template>
 
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { IonApp, IonRouterOutlet } from '@ionic/vue'
 import { useAuthStore } from '@/stores/auth'
@@ -37,7 +35,6 @@ import { isNavigating } from '@/composables/useNavigationProgress'
 import { changelogAfterUpdate, checkForNewVersion } from '@/utils/changelogVersion'
 import BackendStatusBanner from '@/components/layout/BackendStatusBanner.vue'
 import DesktopHeader from '@/components/layout/DesktopHeader.vue'
-import ProfileMenu from '@/components/layout/ProfileMenu.vue'
 import TodoAlert from '@/components/layout/TodoAlert.vue'
 import TodoModal from '@/components/layout/TodoModal.vue'
 
@@ -49,6 +46,7 @@ const calendar = useEventCalendarStore()
 const todo = useTodoStore()
 const live = useLiveStore()
 const { isDesktop } = usePlatform()
+const onHome = computed(() => router.currentRoute.value.path === '/')
 
 useSettingsSync()
 
@@ -114,8 +112,8 @@ watch(() => auth.jwtPayload?.sub ?? null, async (sub) => {
 
 .todo-corner {
   position: fixed;
-  top: calc(var(--ion-safe-area-top, 0px) + 10px);
-  right: 12px;
+  top: calc(var(--ion-safe-area-top, 0px) + (var(--app-toolbar-h) - 40px) / 2);
+  right: calc(var(--ion-safe-area-right, 0px) + 8px);
   z-index: 20;
 }
 

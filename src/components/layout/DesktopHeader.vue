@@ -56,9 +56,9 @@
         </div>
         <div class="header-right">
           <TodoAlert v-if="auth.isAuthenticated" />
-          <button v-if="auth.isAuthenticated" class="header-profile" id="profile-trigger" @click="toggleProfileMenu">
+          <router-link v-if="auth.isAuthenticated" to="/profile" class="header-profile" aria-label="Профиль" title="Профиль">
             <UserAvatar :user="auth.user" :size="36" />
-          </button>
+          </router-link>
           <router-link v-else to="/auth/login" class="nav-link nav-link--login">Войти</router-link>
         </div>
       </div>
@@ -72,7 +72,7 @@ import { usePrincipalStore } from '@/stores/principal'
 import { useSectionNav } from '@/composables/useSectionNav'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import TodoAlert from '@/components/layout/TodoAlert.vue'
-import { IonIcon, menuController } from '@ionic/vue'
+import { IonIcon } from '@ionic/vue'
 import { homeOutline, shieldCheckmarkOutline, settingsOutline, chevronDownOutline } from 'ionicons/icons'
 
 const auth = useAuthStore()
@@ -92,10 +92,6 @@ function goToPrincipal() {
 function selectCollective(id: string) {
   showPrincipalDropdown.value = false
   navSelectCollective(id)
-}
-
-function toggleProfileMenu() {
-  menuController.open('profileMenu')
 }
 </script>
 

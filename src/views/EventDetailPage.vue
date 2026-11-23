@@ -606,16 +606,19 @@ onIonViewWillEnter(async () => {
 
 .info-card-top {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
 }
 
 .info-card-top h2 {
+  min-width: 0;
   margin: 0;
   font-size: var(--fs-2xl);
   font-weight: var(--fw-bold);
   color: var(--ion-text-color);
+  overflow-wrap: anywhere;
 }
 
 .info-card-actions {
@@ -623,6 +626,7 @@ onIonViewWillEnter(async () => {
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
+  margin-left: auto;
 }
 
 .status-badge {
@@ -841,9 +845,14 @@ onIonViewWillEnter(async () => {
 
 .info-card-title {
   display: flex;
+  flex: 1 1 200px;
   align-items: center;
   gap: 12px;
   min-width: 0;
+}
+
+.info-card-title > :first-child {
+  flex-shrink: 0;
 }
 
 .collective-card-title {

@@ -49,12 +49,34 @@ export function passportWrite(passport: NonNullable<MyProfileReadV3['passports']
   }
 }
 
-/** Поля, которые можно дополнить прямо в «Что сделать»; остальные заполняются в форме. */
+/** Поля чек-листа, которые вводятся одной строкой; учёба, диета и ФИО в паспорте рисуются отдельно. */
 export const INLINE_FIELDS = new Set([
   'contact.email', 'contact.phone', 'contact.tg', 'contact.vk', 'contact.address',
   'profile.birthdate',
   'passport.number', 'passport.expire_date', 'passport.issued_date', 'passport.issued_authority',
 ])
+
+export interface NameVariantValue { surname: string; name: string; patronymic: string }
+
+/** ФИО из паспорта у первого паспорта: без паспорта его не к чему приписать. */
+export function withNameVariant(write: MyProfileWriteV3, variant: NameVariantValue): MyProfileWriteV3 {
+  const [first, ...rest] = write.passports ?? []
+  if (!first) return write
+  return {
+    ...write,
+    passports: [
+      {
+        ...first,
+        name_variant: {
+          surname: variant.surname.trim(),
+          name: variant.name.trim(),
+          patronymic: variant.patronymic.trim() || null,
+        },
+      },
+      ...rest,
+    ],
+  }
+}
 
 export const PASSPORT_REQUIRED = ['passport.number']
 

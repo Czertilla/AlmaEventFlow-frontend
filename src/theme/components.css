@@ -230,6 +230,12 @@ input.ui-field-control {
   transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
 
+/* Пилюля рядом с полем: высота поля и тот же запас сверху под подпись на рамке */
+.ui-select-pill--field {
+  height: var(--field-h);
+  margin-top: 8px;
+}
+
 .ui-select-pill:hover {
   border-color: var(--ion-color-step-300);
 }
@@ -497,6 +503,11 @@ input.ui-field-control {
   font-size: var(--fs-md);
 }
 
+/* Переключатель в столбце полей: тот же запас сверху, что у поля под подпись на рамке */
+.ui-toggle-row--field {
+  margin-top: 8px;
+}
+
 .ui-toggle-row--flat {
   padding: 0;
   border: none;
@@ -691,6 +702,11 @@ input.ui-field-control {
 .ui-chip:disabled {
   opacity: 0.4;
   cursor: default;
+}
+
+/* Короткий ответ внутри поля («Нет» у необязательного поля) */
+.ui-field-suffix .ui-chip {
+  padding: 4px 10px;
 }
 
 .ui-chip--static,
@@ -927,23 +943,39 @@ ion-content::part(scroll)::-webkit-scrollbar-thumb {
   }
 }
 
-/* Кнопка-счётчик «Что сделать» в правом верхнем углу */
+/* Кнопка чек-листа в правом верхнем углу: иконка и число дел */
 .ui-todo-alert {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  min-height: 36px;
-  padding: 0 12px;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
   border: var(--border-w) solid rgba(var(--att-unmarked-rgb), 0.45);
   border-radius: var(--radius-pill);
   background: rgba(var(--att-unmarked-rgb), 0.14);
   color: var(--ion-text-color);
-  font-size: var(--fs-sm);
-  font-weight: var(--fw-semibold);
   cursor: pointer;
 }
 
+.ui-todo-alert-count {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: var(--radius-pill);
+  background: rgb(var(--att-unmarked-rgb));
+  color: var(--ion-color-warning-contrast);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-bold);
+  line-height: 18px;
+  text-align: center;
+}
+
 .ui-todo-alert ion-icon {
-  font-size: var(--fs-lg);
+  font-size: var(--fs-xl);
   color: rgb(var(--att-unmarked-rgb));
 }

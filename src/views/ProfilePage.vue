@@ -322,9 +322,7 @@ onIonViewWillLeave(accountLink.stop)
 
 async function handleLogout() {
   await auth.logout()
-  // Жёсткий переход: см. ProfileMenu.vue -- ion-router-outlet не убирает
-  // старый ion-tabs при уходе со страницы с вложенным outlet-ом, новая
-  // auth-страница остаётся визуально под ним.
+  // Полная перезагрузка: ion-router-outlet оставляет ion-tabs в DOM поверх страницы входа
   window.location.href = '/auth/login'
 }
 </script>

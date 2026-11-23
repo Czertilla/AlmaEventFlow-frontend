@@ -20,8 +20,7 @@
           <ion-label>Админ</ion-label>
         </ion-tab-button>
 
-        <!-- Кнопка-действие: открывает боковое меню профиля, не участвует в роутинге -->
-        <ion-tab-button tab="profile" @click="openProfileMenu">
+        <ion-tab-button tab="profile" href="/profile">
           <ion-icon :icon="personOutline" />
           <ion-label>Профиль</ion-label>
         </ion-tab-button>
@@ -34,7 +33,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import {
-  IonPage, IonTabs, IonRouterOutlet, IonTabBar, IonTabButton, IonIcon, IonLabel, menuController,
+  IonPage, IonTabs, IonRouterOutlet, IonTabBar, IonTabButton, IonIcon, IonLabel,
 } from '@ionic/vue'
 import { homeOutline, shieldCheckmarkOutline, settingsOutline, personOutline } from 'ionicons/icons'
 import { useAuthStore } from '@/stores/auth'
@@ -52,10 +51,7 @@ const selectedTab = computed(() => {
   if (route.path.startsWith('/admin')) return 'admin'
   if (route.path.startsWith('/principal')) return 'principal'
   if (route.path === '/' || route.path.startsWith('/event')) return 'home'
+  if (route.path.startsWith('/profile')) return 'profile'
   return ''
 })
-
-function openProfileMenu() {
-  menuController.open('profileMenu')
-}
 </script>

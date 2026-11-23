@@ -50,7 +50,8 @@ const props = withDefaults(
     ariaLabel: string
     icon?: string
     placeholder?: string
-    size?: 'md' | 'sm'
+    /** field: рядом с полем, той же высоты и с тем же запасом сверху */
+    size?: 'md' | 'sm' | 'field'
     align?: 'start' | 'end'
     menuMinWidth?: number
     disabled?: boolean

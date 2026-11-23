@@ -5,8 +5,19 @@
     </div>
     <p class="ot-text">{{ text }}</p>
     <p v-if="comment" class="ot-comment">{{ comment }}</p>
+    <PolicyConsent
+      v-if="isCandidate"
+      v-model:agreed="agreed"
+      v-model:ready="consentReady"
+      :collective-id="onboarding.collective_id"
+    />
     <div class="ot-actions">
-      <button type="button" class="ui-btn ui-btn--primary ui-btn--sm" :disabled="busy" @click="decide('accept')">
+      <button
+        type="button"
+        class="ui-btn ui-btn--primary ui-btn--sm"
+        :disabled="busy || (isCandidate && !consentReady)"
+        @click="decide('accept')"
+      >
         {{ onboarding.my_side === 'leader' ? 'Принять' : 'Вступить' }}
       </button>
       <button type="button" class="ui-btn ui-btn--ghost ui-btn--sm" :disabled="busy" @click="decide('decline')">
@@ -26,6 +37,7 @@ import {
   declineOnboardingEventV3OnboardingsOnboardingIdDeclinePost,
   type TodoItem,
 } from '@/api/generated/almaEventFlow'
+import PolicyConsent from '@/components/collective/PolicyConsent.vue'
 import { useToast } from '@/composables/useToast'
 import { formatPersonName } from '@/utils/names'
 import { onboardingPath } from '@/utils/onboarding'
@@ -35,8 +47,11 @@ const emit = defineEmits<{ done: [id: string]; 'open-path': [path: string] }>()
 
 const { showError } = useToast()
 const busy = ref(false)
+const agreed = ref(false)
+const consentReady = ref(false)
 
 const onboarding = computed(() => props.item.onboarding ?? null)
+const isCandidate = computed(() => onboarding.value?.my_side === 'candidate')
 const text = computed(() => {
   const value = onboarding.value
   if (!value) return ''
@@ -57,7 +72,7 @@ async function decide(action: 'accept' | 'decline') {
     const call = action === 'accept'
       ? acceptOnboardingEventV3OnboardingsOnboardingIdAcceptPost
       : declineOnboardingEventV3OnboardingsOnboardingIdDeclinePost
-    await call(value.id, { comment: null })
+    await call(value.id, action === 'accept' && isCandidate.value ? { comment: null, consent: agreed.value } : { comment: null })
     emit('done', props.item.id)
   } catch (err) {
     await showError(err, 'Не удалось сохранить решение')

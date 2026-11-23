@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import type { CollectiveCard } from '@/api/generated/almaEventFlow'
 import { setAccessToken } from '@/api/client'
 import CollectiveJoinCard from '@/components/collective/CollectiveJoinCard.vue'
+import PolicyConsent from '@/components/collective/PolicyConsent.vue'
 import { pendingCollective } from '@/utils/quickStart'
 import { stubBackend } from './helpers/axiosStub'
 
@@ -16,6 +17,7 @@ vi.mock('vue-router', async (original) => ({
 const NAMES = '/profile/v2/persons/names'
 const CONTACTS = '/profile/v3/persons/lead/contacts'
 const REQUEST = '/event/v3/collectives/c1/onboarding'
+const POLICY = '/profile/v3/collectives/c1/policy'
 const stubs = { OnboardingChat: true, HelpTip: true, DefaultAvatar: true }
 
 function card(patch: Partial<CollectiveCard> = {}): CollectiveCard {
@@ -36,15 +38,18 @@ function card(patch: Partial<CollectiveCard> = {}): CollectiveCard {
 }
 
 let backend: ReturnType<typeof stubBackend>
+let policy: unknown = null
 
 beforeEach(() => {
   setActivePinia(createPinia())
+  policy = null
   backend = stubBackend((config) => {
     if (config.url === NAMES) {
       return { status: 200, data: { items: [{ id: 'lead', surname: null, name: null, patronymic: null }] } }
     }
     if (config.url === CONTACTS) return { status: 200, data: [{ type: 'tg', value: '@lead', is_main: true }] }
     if (config.url === REQUEST) return { status: 200, data: {} }
+    if (config.url === POLICY) return { status: 200, data: policy }
     return { status: 404 }
   })
 })
@@ -62,8 +67,32 @@ describe('the card of a collective to join', () => {
     await flushPromises()
 
     const [posted] = backend.to(REQUEST)
-    expect(JSON.parse(posted.data as string)).toEqual({ comment: null })
+    expect(JSON.parse(posted.data as string)).toEqual({ comment: null, consent: false })
     expect(wrapper.emitted('changed')).toHaveLength(1)
+  })
+
+  test('with a policy the request waits for the consent and carries it', async () => {
+    policy = {
+      id: 'p1', collective_id: 'c1', collective_name: 'Хор', version: 2, comment: null,
+      text: 'Текст', text_hash: '0'.repeat(64), created_at: '2026-11-20T10:00:00Z',
+      fields: [{ key: 'contact.phone', label: 'Телефон' }, { key: 'passport.number', label: 'Номер паспорта' }],
+    }
+    const wrapper = mount(CollectiveJoinCard, { props: { card: card() }, global: { stubs } })
+    await flushPromises()
+    const send = () => wrapper.findAll('button').find((b) => b.text() === 'Отправить запрос')!
+
+    const closed = send().attributes('disabled') !== undefined
+    wrapper.findComponent(PolicyConsent).vm.$emit('update:agreed', true)
+    await flushPromises()
+    await send().trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Телефон')
+    expect(wrapper.text()).toContain('Номер паспорта')
+    expect(wrapper.text()).toContain('только когда вы станете участником')
+    expect(closed).toBe(true)
+    const [posted] = backend.to(REQUEST)
+    expect(JSON.parse(posted.data as string)).toEqual({ comment: null, consent: true })
   })
 
   test('a refused request says when to come back and offers no button', async () => {

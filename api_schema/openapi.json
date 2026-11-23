@@ -3336,7 +3336,7 @@
                     "me"
                 ],
                 "summary": "Get My Members",
-                "description": "Членства текущего пользователя во всех коллективах (для роли участника).",
+                "description": "\u0427\u043b\u0435\u043d\u0441\u0442\u0432\u0430 \u0442\u0435\u043a\u0443\u0449\u0435\u0433\u043e \u043f\u043e\u043b\u044c\u0437\u043e\u0432\u0430\u0442\u0435\u043b\u044f \u0432\u043e \u0432\u0441\u0435\u0445 \u043a\u043e\u043b\u043b\u0435\u043a\u0442\u0438\u0432\u0430\u0445 (\u0434\u043b\u044f \u0440\u043e\u043b\u0438 \u0443\u0447\u0430\u0441\u0442\u043d\u0438\u043a\u0430).",
                 "operationId": "get_my_members_event_v1_me_members_get",
                 "responses": {
                     "200": {
@@ -4862,7 +4862,7 @@
                     "me"
                 ],
                 "summary": "Get My Event Attendance",
-                "description": "Resolves the current user's own attendance row(s) for this event,\nwithout needing to already know member_id/attendance_id — e.g. for the\nTelegram bot's \"mark my attendance\" buttons, which only carry the\nevent_id in their callback data.",
+                "description": "Resolves the current user's own attendance row(s) for this event,\nwithout needing to already know member_id/attendance_id \u2014 e.g. for the\nTelegram bot's \"mark my attendance\" buttons, which only carry the\nevent_id in their callback data.",
                 "operationId": "get_my_event_attendance_event_v1_me_events__event_id__attendance_get",
                 "security": [
                     {
@@ -11115,7 +11115,7 @@
                     "calendar"
                 ],
                 "summary": "Get Calendar Feed",
-                "description": "Public ICS feed — no Authorization header (external calendar clients\nsubscribe by URL only). Security relies on the unguessable token.",
+                "description": "Public ICS feed \u2014 no Authorization header (external calendar clients\nsubscribe by URL only). Security relies on the unguessable token.",
                 "operationId": "get_calendar_feed_event_v2_calendar_feed__token__ics_get",
                 "parameters": [
                     {
@@ -14223,7 +14223,7 @@
                     "search"
                 ],
                 "summary": "Search",
-                "description": "Typeahead over addresses and named locations, ranked together.\n\nThe city counts: \"тверская москва\" narrows to Moscow. With a point the\nnearer of equal matches comes first; with a point and no text the\nnearest places are listed, the houses around the point included when too\nfew are stored. A text that names a settlement (\"суздаль\") lists the\naddresses nearest to its centre and says where it is in `place`.\nAddresses the external geocoder finds are stored, so every result has an\nid usable as `address_id`.",
+                "description": "Typeahead over addresses and named locations, ranked together.\n\nThe city counts: \"\u0442\u0432\u0435\u0440\u0441\u043a\u0430\u044f \u043c\u043e\u0441\u043a\u0432\u0430\" narrows to Moscow. With a point the\nnearer of equal matches comes first; with a point and no text the\nnearest places are listed, the houses around the point included when too\nfew are stored. A text that names a settlement (\"\u0441\u0443\u0437\u0434\u0430\u043b\u044c\") lists the\naddresses nearest to its centre and says where it is in `place`.\nAddresses the external geocoder finds are stored, so every result has an\nid usable as `address_id`.",
                 "operationId": "search_geo_v2_search_get",
                 "security": [
                     {
@@ -36187,6 +36187,105 @@
                 }
             }
         },
+        "/profile/v3/collectives/{collective_id}/policy": {
+            "get": {
+                "tags": [
+                    "collective-policies"
+                ],
+                "summary": "Get Collective Policy",
+                "description": "The version in force, for anyone who considers joining; none when the\ncollective has no policy.",
+                "operationId": "get_collective_policy_profile_v3_collectives__collective_id__policy_get",
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "collective_id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid",
+                            "title": "Collective Id"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful Response",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "anyOf": [
+                                        {
+                                            "$ref": "#/components/schemas/CollectivePolicyRead"
+                                        },
+                                        {
+                                            "type": "null"
+                                        }
+                                    ],
+                                    "title": "Response Get Collective Policy Profile V3 Collectives  Collective Id  Policy Get"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Missing or invalid authentication token",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    },
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Insufficient permissions",
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/HTTPValidationError"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/profile/v3/collectives/{collective_id}/consent": {
             "get": {
                 "tags": [
@@ -37561,6 +37660,51 @@
                         }
                     },
                     {
+                        "description": "Whether the collective takes requests.",
+                        "in": "query",
+                        "name": "is_open",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "boolean"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Whether the collective takes requests.",
+                            "title": "Is Open"
+                        }
+                    },
+                    {
+                        "description": "Collectives the caller leads or is an active member of.",
+                        "in": "query",
+                        "name": "joined",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "boolean"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "description": "Collectives the caller leads or is an active member of.",
+                            "title": "Joined"
+                        }
+                    },
+                    {
+                        "in": "query",
+                        "name": "order_by",
+                        "required": false,
+                        "schema": {
+                            "$ref": "#/components/schemas/DirectoryOrder",
+                            "default": "name"
+                        }
+                    },
+                    {
                         "name": "page",
                         "in": "query",
                         "required": false,
@@ -37779,6 +37923,22 @@
                             "type": "string",
                             "format": "uuid",
                             "title": "Collective Id"
+                        }
+                    },
+                    {
+                        "name": "user-agent",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "User-Agent"
                         }
                     }
                 ],
@@ -38846,7 +39006,7 @@
                     "onboarding"
                 ],
                 "summary": "Accept Onboarding",
-                "description": "The awaited side agrees and the candidate becomes a member; a repeated\nacceptance answers the same onboarding and makes no second member.",
+                "description": "The awaited side agrees and the candidate becomes a member; a repeated\nacceptance answers the same onboarding and makes no second member. The\ncandidate's `consent`, given here or with the request, is recorded by profile\nfor the version of the policy in force when it was given.",
                 "operationId": "accept_onboarding_event_v3_onboardings__onboarding_id__accept_post",
                 "security": [
                     {
@@ -38863,6 +39023,22 @@
                             "format": "uuid",
                             "title": "Onboarding Id"
                         }
+                    },
+                    {
+                        "name": "user-agent",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "anyOf": [
+                                {
+                                    "type": "string"
+                                },
+                                {
+                                    "type": "null"
+                                }
+                            ],
+                            "title": "User-Agent"
+                        }
                     }
                 ],
                 "requestBody": {
@@ -38870,7 +39046,7 @@
                     "content": {
                         "application/json": {
                             "schema": {
-                                "$ref": "#/components/schemas/OnboardingDecision"
+                                "$ref": "#/components/schemas/OnboardingAcceptance"
                             }
                         }
                     }
@@ -39919,6 +40095,303 @@
                     }
                 }
             }
+        },
+        "/profile/v3/profiles/my/absent-fields": {
+            "get": {
+                "description": "The optional fields the caller said they have no value for.",
+                "operationId": "get_my_absent_fields_profile_v3_profiles_my_absent_fields_get",
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AbsentFields"
+                                }
+                            }
+                        },
+                        "description": "Successful Response"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    },
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Missing or invalid authentication token"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Insufficient permissions"
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "summary": "Get My Absent Fields",
+                "tags": [
+                    "profile"
+                ]
+            },
+            "post": {
+                "description": "Adds the fields to the declared ones; saving the profile without a student\ncard declares the student fields, a value that appears withdraws its field.",
+                "operationId": "declare_my_absent_fields_profile_v3_profiles_my_absent_fields_post",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/AbsentFields"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AbsentFields"
+                                }
+                            }
+                        },
+                        "description": "Successful Response"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    },
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Missing or invalid authentication token"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Insufficient permissions"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FIELD_NOT_FOUND": {
+                                        "summary": "FIELD_NOT_FOUND",
+                                        "value": {
+                                            "detail": "FIELD_NOT_FOUND"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        },
+                        "description": "FIELD_NOT_FOUND"
+                    },
+                    "422": {
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FIELD_NOT_OPTIONAL": {
+                                        "summary": "FIELD_NOT_OPTIONAL",
+                                        "value": {
+                                            "detail": "FIELD_NOT_OPTIONAL"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        },
+                        "description": "The field is not optional"
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "summary": "Declare My Absent Fields",
+                "tags": [
+                    "profile"
+                ]
+            }
+        },
+        "/profile/v3/profiles/my/absent-fields/{field_key}": {
+            "delete": {
+                "operationId": "withdraw_my_absent_field_profile_v3_profiles_my_absent_fields__field_key__delete",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "field_key",
+                        "required": true,
+                        "schema": {
+                            "title": "Field Key",
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/AbsentFields"
+                                }
+                            }
+                        },
+                        "description": "Successful Response"
+                    },
+                    "401": {
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "INVALID_AUTHENTICATION_CREDENTIALS": {
+                                        "summary": "Token decode failed",
+                                        "value": {
+                                            "detail": "INVALID_AUTHENTICATION_CREDENTIALS"
+                                        }
+                                    },
+                                    "NOT_AUTHENTICATED": {
+                                        "summary": "Missing or invalid authentication token",
+                                        "value": {
+                                            "detail": "NOT_AUTHENTICATED"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Missing or invalid authentication token"
+                    },
+                    "403": {
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FORBIDDEN": {
+                                        "summary": "Not superuser or not verified",
+                                        "value": {
+                                            "detail": "FORBIDDEN"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        },
+                        "description": "Insufficient permissions"
+                    },
+                    "404": {
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FIELD_NOT_FOUND": {
+                                        "summary": "FIELD_NOT_FOUND",
+                                        "value": {
+                                            "detail": "FIELD_NOT_FOUND"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        },
+                        "description": "FIELD_NOT_FOUND"
+                    },
+                    "422": {
+                        "content": {
+                            "application/json": {
+                                "examples": {
+                                    "FIELD_NOT_OPTIONAL": {
+                                        "summary": "FIELD_NOT_OPTIONAL",
+                                        "value": {
+                                            "detail": "FIELD_NOT_OPTIONAL"
+                                        }
+                                    }
+                                },
+                                "schema": {
+                                    "$ref": "#/components/schemas/ErrorModel"
+                                }
+                            }
+                        },
+                        "description": "The field is not optional"
+                    }
+                },
+                "security": [
+                    {
+                        "HTTPBearer": []
+                    }
+                ],
+                "summary": "Withdraw My Absent Field",
+                "tags": [
+                    "profile"
+                ]
+            }
         }
     },
     "components": {
@@ -40438,7 +40911,7 @@
                     "locality": {
                         "type": "string",
                         "title": "Locality",
-                        "description": "City, and region and country when they add something, as one string: \"Москва, Россия\"."
+                        "description": "City, and region and country when they add something, as one string: \"\u041c\u043e\u0441\u043a\u0432\u0430, \u0420\u043e\u0441\u0441\u0438\u044f\"."
                     },
                     "spot": {
                         "anyOf": [
@@ -49548,7 +50021,7 @@
                     "created_at"
                 ],
                 "title": "SubscriptionCreated",
-                "description": "Returned by create / rotate-token — ``feed_url`` is always present."
+                "description": "Returned by create / rotate-token \u2014 ``feed_url`` is always present."
             },
             "SubscriptionRead": {
                 "properties": {
@@ -51592,6 +52065,12 @@
                     "label": {
                         "type": "string",
                         "title": "Label"
+                    },
+                    "optional": {
+                        "default": false,
+                        "description": "The person may have none and say so (`POST /profile/v3/profiles/my/absent-fields`).",
+                        "title": "Optional",
+                        "type": "boolean"
                     }
                 },
                 "type": "object",
@@ -52928,6 +53407,30 @@
                 ],
                 "title": "OnboardingActions"
             },
+            "OnboardingAcceptance": {
+                "properties": {
+                    "comment": {
+                        "anyOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 1000
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ],
+                        "title": "Comment"
+                    },
+                    "consent": {
+                        "type": "boolean",
+                        "title": "Consent",
+                        "description": "The candidate agrees to the collective's data policy in force now; it is recorded once they are a member. Ignored for the leader.",
+                        "default": false
+                    }
+                },
+                "type": "object",
+                "title": "OnboardingAcceptance"
+            },
             "OnboardingDecision": {
                 "properties": {
                     "comment": {
@@ -53105,6 +53608,12 @@
                             }
                         ],
                         "title": "Comment"
+                    },
+                    "consent": {
+                        "type": "boolean",
+                        "title": "Consent",
+                        "description": "The candidate agrees to the collective's data policy in force now; it is recorded once they are a member. Ignored for the leader.",
+                        "default": false
                     }
                 },
                 "type": "object",
@@ -53265,6 +53774,35 @@
                 ],
                 "title": "VerifyTokenRequestV3",
                 "type": "object"
+            },
+            "AbsentFields": {
+                "properties": {
+                    "keys": {
+                        "description": "Optional registry fields the person has no value for (not a student, no Telegram); a policy stops asking for them.",
+                        "items": {
+                            "type": "string"
+                        },
+                        "maxItems": 32,
+                        "title": "Keys",
+                        "type": "array"
+                    }
+                },
+                "required": [
+                    "keys"
+                ],
+                "title": "AbsentFields",
+                "type": "object"
+            },
+            "DirectoryOrder": {
+                "description": "The order of the collective directory; `-` is descending.",
+                "enum": [
+                    "name",
+                    "-name",
+                    "member_count",
+                    "-member_count"
+                ],
+                "title": "DirectoryOrder",
+                "type": "string"
             }
         },
         "securitySchemes": {
